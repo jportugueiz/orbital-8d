@@ -1028,22 +1028,6 @@ body.playing{overflow:hidden}
 }
 #play .fd-horizontal .fader .th::after{display:none}
 #manualLibrary .pbtn{flex:1 1 130px;min-height:42px}
-/* Campo grande de Mesa (11 nov 2026): el círculo llega casi al marco del visor; logo, planos y altura van compactos a las esquinas
-   y la ESPERA es el velo de afuera (se dibuja en el lienzo; #pWaitingLabel queda solo para lectores de pantalla) */
-#play .play-monitor-screen .play-screen-logo{width:clamp(54px,9vw,120px);max-width:17%}
-#play .play-monitor-screen .play-plane{left:5px;bottom:6px;padding:0}
-#play .play-monitor-screen .play-axes{flex-direction:column;gap:4px}
-#play .play-monitor-screen .pel{top:auto;bottom:6px;right:5px;transform:none;padding:6px 3px;gap:4px;max-height:calc(100% - 96px)}
-#play .play-monitor-screen .pel input{height:150px}
-#play #pWaitingLabel{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-@media(max-width:720px){
-  #play .play-monitor-screen .pel input{height:104px}
-  #play #pFull{min-width:34px;padding:4px 9px}
-  #play #pFull .pfull-txt{display:none}
-  #play .play-monitor-screen .pel{right:3px;padding:5px 2px}
-  #play .play-monitor-screen .pel .lab{display:block;font-size:0;line-height:1}
-  #play .play-monitor-screen .pel .lab::first-letter{font-size:12px}
-}
 /* SESIONES: consola (música IAH) y Mis sesiones */
 #shMus{margin-top:10px;padding:8px;border:1px solid rgba(120,140,200,.18);border-radius:8px;background:rgba(5,8,14,.35)}
 #shMus .row{gap:8px;align-items:center;flex-wrap:nowrap}#shMus select{flex:1;min-width:0}
@@ -2293,8 +2277,8 @@ body[data-mode="ses"] #ship .left{grid-area:library}
     <div class="play-monitor-screen">
       <canvas id="pc" aria-label="Juega: arrastra los sonidos alrededor de tu cabeza"></canvas>
       <img class="play-screen-logo" src="visuales/marca/orbital-logo.png" alt="ORBITAL · 8D Audio Studio" width="1536" height="1024">
-      <div id="pWaitingLabel"><strong>ESPERA</strong><span>Suelta un sonido fuera del círculo para silenciarlo; arrástralo adentro para recuperarlo</span></div>
-      <button id="pFull" class="pbtn" type="button" aria-pressed="false" aria-label="Pantalla completa"><span class="pfull-ico">⤢</span><span class="pfull-txt"> Pantalla completa</span></button>
+      <div id="pWaitingLabel"><strong>◌ ARO DE ESPERA</strong><span>Arrastra al aro para silenciar</span></div>
+      <button id="pFull" class="pbtn" type="button" aria-pressed="false">⤢ Pantalla completa</button>
       <button id="pView3D" class="pbtn" type="button" aria-pressed="false" aria-label="Vista 3D">3D</button>
       <div class="play-plane"></div>
       <div id="pCues" role="group" aria-label="Disparar cues preparados" hidden></div>
@@ -4133,35 +4117,6 @@ const AIRF=[],AIRA=[];for(let i=0;i<=240;i++){const f=100*Math.pow(240,i/240);AI
 // frecuencia donde el aire quita 3 dB en d metros (×k hiperreal) → corte del pasa-bajos Butterworth (pendiente f² ≈ 12 dB/oct cerca del codo)
 function airFc(d,k=1){const A=3/(Math.max(1e-3,d)*k);if(AIRA[AIRA.length-1]<A)return 20000;let i=0;while(AIRA[i+1]<A)i++;const u=(A-AIRA[i])/(AIRA[i+1]-AIRA[i]);return Math.min(20000,AIRF[i]*Math.pow(AIRF[i+1]/AIRF[i],u))}
 const lvlOf=d=>Math.min(G_MAX,Math.hypot(D_REF,D_H)/Math.hypot(Math.max(D_MIN,d),D_H));// 1/r con rodilla a 0,3 m y tope +12 dB (re 1,5 m)
-/* LEY DE DISTANCIA DE MESA EN VIVO (11 nov 2026, elegida por oído de Jorge en entregas/prueba_distancia_didge). Solo para fuentes de
-   Mesa (pista de la mesa o control en vivo, o «edge» explícito en las tomas); el resto de ORBITAL sigue con 1/r. Cuatro presets, un selector:
-   A «lineal»: meseta +1,5 dB, −7,5 dB/m desde 1 m, último 0,5 m a silencio; sala del motor (crece con la distancia).
-   B «física»: 1/r (−6 dB por duplicación, +12 dB pegado), sala constante (DRR real), sin apagado en el borde.
-   C «marcada»: −12 dB por duplicación (tope +6 dB), sala casi pegada al directo, −0,5 oct/m de brillo, último metro a silencio.
-   D «8D»: proximidad +4 dB bajo 1 m, −8 dB por duplicación, mucha sala lejos (lavado), −0,6 oct/m de brillo, 0,7 m finales a silencio.
-   db = nivel del directo (0 dB = referencia del motor a 1,5 m); rev = fracción de esa pendiente que sigue la sala (revk = ganancia de sala);
-   wr = nivel fijo de envío a sala (sustituye la sala que crece con la distancia; null = la del motor); fc = corte de brillo (Hz).
-   Todo pasa por las rampas de distApply (sin clics). Mesa fija el borde con setMesaEdge. */
-// O7 (ACTIVA, pedido de Jorge): de 0 a 4 m (el campo de antes) EXACTAMENTE como en 51ecb14: ley del motor (1/r), sala y aire del motor.
-// De 4 a 7 m (el espacio nuevo) solo una caída pareja de 0 a −50 dB, lineal en dB con las puntas suavizadas (pendiente continua en 4 m) y
-// coseno² a silencio en los últimos 0,15 m, aplicada POR IGUAL al directo y al envío de sala; la sala no sigue creciendo pasado 4 m.
-// O «original»: igual a 51ecb14 en todo el campo (sin caída). La D quitó orbitalidad (sala simétrica lejos, bug histórico de AGENTS.md §2).
-const MESA_LEY="O7";// ← selector: "O7" | "O" | "A" | "B" | "C" | "D"
-const O7_START=4,O7_DROP=50,O7_K=.15,O7_TAIL=.15;
-function o7Gain(d,e){if(d<=O7_START)return 1;const k=O7_K,u=clamp((d-O7_START)/Math.max(.1,e-O7_START),0,1),c=2*k*(1-k);
-  const w=u<k?u*u/c:u>1-k?1-(1-u)*(1-u)/c:(u-k/2)/(1-k),t=clamp((d-(e-O7_TAIL))/O7_TAIL,0,1),z=Math.cos(t*Math.PI/2);return dB(-O7_DROP*w)*z*z}
-const ss01=u=>{u=clamp(u,0,1);return u*u*(3-2*u)};
-const MESA_LEYES={
-  A:{db:(d,e)=>d<=1?1.5*ss01((1-d)/.7):-45*Math.min(d-1,e-1)/Math.max(.1,e-1),tail:.5,rev:.6,wr:null,fc:d=>20000*Math.pow(2,-.45*Math.max(0,d-1))},
-  B:{db:d=>20*Math.log10(lvlOf(d)),tail:0,rev:0,wr:.25,fc:()=>20000},
-  C:{db:d=>Math.min(6,-12*Math.log2(Math.hypot(d,.25)/Math.hypot(.85,.25))),tail:1,rev:.85,wr:.15,fc:d=>20000*Math.pow(2,-.5*Math.max(0,d-.5))},
-  D:{db:d=>d<1?4*ss01((1-d)/.6):-8*Math.log2(d),tail:.7,rev:.4,revk:1.2,wr:.25,fc:d=>20000*Math.pow(2,-.6*Math.max(0,d-1))}};
-let MESA_EDGE=0;
-function setMesaEdge(m){MESA_EDGE=m>0?+m:0;return MESA_EDGE}
-const edgeOf=s=>s.edge>0?+s.edge:(s.deckChannel!=null||s.live)&&MESA_EDGE>0?MESA_EDGE:0;
-function mesaTail(d,e,w){if(!(w>0))return 1;const u=clamp((d-(e-w))/w,0,1),c=Math.cos(u*Math.PI/2);return c*c}
-function mesaLaw(d,e,ley=MESA_LEY){const L=MESA_LEYES[ley]||MESA_LEYES.D,db=L.db(d,e),t=mesaTail(d,e,L.tail);
-  return {db,g:dB(db)*t,rs:(L.revk||1)*dB(L.rev*db)*t,wr:L.wr,fc:L.fc(d)}}
 const ildNF=d=>clamp(2*Math.pow(Math.max(D_MIN,d),-1.17)-2*Math.pow(1.4,-1.17),0,20);// ILD extra de graves (lateral) re 1,4 m (KEMAR): Brungart ≈ 2 dB a 1 m → ≈ 23 dB a 0,125 m
 function itdNF(d,lat){const a=HEAD_A,L=Math.min(1,Math.abs(lat)),bn=Math.acos(L),bf=Math.PI-bn,a0=Math.acos(Math.min(1,a/d));
   const pe=b=>b<=a0?Math.sqrt(d*d+a*a-2*a*d*Math.cos(b)):Math.sqrt(Math.max(0,d*d-a*a))+a*(b-a0);const th=Math.asin(L);return Math.max(0,(pe(bf)-pe(bn))-a*(th+Math.sin(th)))/C_SND}
@@ -4389,14 +4344,14 @@ function elevCue(v,t,P,ramp){if(!v.eHs)return;const u=clamp(P[1]/75,-1,1),up=Mat
   const S_=(p,x)=>{try{ramp?p.linearRampToValueAtTime(x,t):p.setValueAtTime(x,t)}catch(e){}};
   S_(v.eHs.gain,4.5*up-6*dn+x.hs);S_(v.eN.frequency,6800+3400*up-1400*dn);S_(v.eN.gain,-(3+4*Math.abs(u)));S_(v.ePr.gain,2*up-1.5*dn+x.pr);S_(v.eLs.gain,2.5*dn-1.2*up+x.ls)}
 // distancia de una voz: todo sale de distInfo (la misma función que ve la consola/IAH) y se programa con rampas lineales cortas → sin «zipper»
-function distApply(v,t,P,k,ramp){const m=v.m,I=distInfo(P[2],m.space,m.hyper,P[0],P[1],v.ren),iso=m.iso,o7=v.edge>0&&MESA_LEY==="O7",me=v.edge>0&&!/^O/.test(MESA_LEY),ML=me?mesaLaw(P[2],v.edge):null,fo=o7?o7Gain(P[2],v.edge):1,g=ML?ML.g:I.g*fo,rs=ML?ML.rs:fo;
+function distApply(v,t,P,k,ramp){const m=v.m,I=distInfo(P[2],m.space,m.hyper,P[0],P[1],v.ren),iso=m.iso;
   const S_=(p,x)=>{try{ramp?p.linearRampToValueAtTime(x,t):p.setValueAtTime(x,t)}catch(e){}};
-  S_(v.dop.delayTime,I.dop);S_(v.dAir.frequency,ML?Math.min(I.air_fc,ML.fc):I.air_fc);S_(v.dG.gain,iso==="wet"?0:g);S_(v.oG.gain,v.ab?1:iso==="wet"?0:g);S_(v.oD.delayTime,v.ab?0:I.dop);v.dx={hs:I.hs_db,ls:I.body_db,pr:I.pres_db};
+  S_(v.dop.delayTime,I.dop);S_(v.dAir.frequency,I.air_fc);S_(v.dG.gain,iso==="wet"?0:I.g);S_(v.oG.gain,v.ab?1:iso==="wet"?0:I.g);S_(v.oD.delayTime,v.ab?0:I.dop);v.dx={hs:I.hs_db,ls:I.body_db,pr:I.pres_db};
   const nr=I.lat>=0?1:0;S_(v.ls[nr].gain,I.ild_near);S_(v.ls[1-nr].gain,I.ild_far);S_(v.pd[1-nr].delayTime,Math.min(.0025,I.itd_x));S_(v.pd[nr].delayTime,0);
   S_(v.wg[0].gain,I.width);S_(v.wg[1].gain,I.width);
-  const wet=iso==="dir"?0:1,fW=clamp(((o7?Math.min(P[2],O7_START):P[2])-1.5)/4,0,1),wE=wet*(v.wsE==null?1:v.wsE+(Math.max(v.wsE,.35)-v.wsE)*fW),wR=wet*(v.wsR==null?1:v.wsR+(Math.max(v.wsR,.25)-v.wsR)*fW);// v9/v10: casi seco cerca (≤ 1,5 m); la sala vuelve poco a poco hasta 5,5 m (lejos = más sala)for(let i=0;i<4;i++){const T=I.taps[i]||{dl:.01,g:0};S_(v.tp[i].delayTime,Math.min(.29,T.dl));S_(v.tg[i].gain,T.g*wE*(iso==="late"?0:1))}
+  const wet=iso==="dir"?0:1,fW=clamp((P[2]-1.5)/4,0,1),wE=wet*(v.wsE==null?1:v.wsE+(Math.max(v.wsE,.35)-v.wsE)*fW),wR=wet*(v.wsR==null?1:v.wsR+(Math.max(v.wsR,.25)-v.wsR)*fW);// v9/v10: casi seco cerca (≤ 1,5 m); la sala vuelve poco a poco hasta 5,5 m (lejos = más sala)for(let i=0;i<4;i++){const T=I.taps[i]||{dl:.01,g:0};S_(v.tp[i].delayTime,Math.min(.29,T.dl));S_(v.tg[i].gain,T.g*wE*(iso==="late"?0:1))}
   const back=Math.max(0,-Math.cos(P[0]*D2R)),hyper=/^v10-/.test(v.ren)?m.hyper-1:0;
-  S_(v.rpd.delayTime,Math.min(.29,I.rev_pre));S_(v.send.gain,I.rev_amp*(1+(.6+hyper)*back*Math.min(1,k))*(ML&&ML.wr!=null?wet*ML.wr:wR)*v.reverb*rs*(iso==="er"?0:1));v.di=I;v.mesaG=me?g:null}
+  S_(v.rpd.delayTime,Math.min(.29,I.rev_pre));S_(v.send.gain,I.rev_amp*(1+(.6+hyper)*back*Math.min(1,k))*wR*v.reverb*(iso==="er"?0:1));v.di=I}
 // la dirección va a los renderizadores siempre a la distancia de referencia (1,5 m): su nivel/aire internos quedan fijos y la distancia la pone distApply
 function voicePos(v,t,P,k,ramp){
   // At the listener there is no stable direction. Blend to the centered signal before the azimuth flips.
@@ -4822,7 +4777,7 @@ function ctl(){const c=cctx;if(!c)return;const now=c.currentTime;const gap=S.las
     if(s._dr){s._dNow=distAt(s,T);if(T<s._dr.pts[s._dr.pts.length-1][0]+.05)s._dirty=true;else{s._dNow=null;s._dr=null}}
     let P;if(s.live){P=liveStep(s,dt)}else if(S.playing){P=advance(s,s._mo,time,s.cue?Math.min(dt,Math.max(0,time-s.cue.in)):dt,g)}else{if(s._P&&!s._dirty)continue;P=advance(s,s._mo,time,0,g);s._dirty=false}
     if(!(isFinite(P[0])&&isFinite(P[1])&&isFinite(P[2]))){try{window.__nan=window.__nan||{live:JSON.stringify(s.live),path:JSON.stringify(s.path),P:String(P)}}catch(e){}if(s.live){const L=s.live;for(const k of ["az","el","r","w","saz","sel","sr"])if(L[k]!=null&&!isFinite(L[k]))L[k]=k==="r"||k==="sr"?1.5:0}P=s._P&&isFinite(s._P[0])?s._P:[0,0,1.5]}
-    s._P=P;v.edge=edgeOf(s);voicePos(v,T,P,v.k,v.last!=null);
+    s._P=P;voicePos(v,T,P,v.k,v.last!=null);
     const audible=cueAudible(s,time);
     if((v.cueAudible??true)!==audible){
       v.cueAudible=audible;
@@ -4914,7 +4869,7 @@ async function renderRange(sc,T0,T1,fileBuf,used){const sr=48000,pre=Math.min(8,
     }
     // posiciones: 40 Hz (o la tasa de la toma), integradas desde 0; se programan por tramos de 1 s (suspend) para podar los HRIR que no suenan
     const mo=mkMotion(s),step=s.path.type==="take"?Math.max(1/(s.path.fr||50),sc.step||.025):(sc.step||.025);const sAuto=auto.filter(a=>a.id===s.id&&a.param!=="vol_db");
-    v.edge=edgeOf(s);const st={i:0,ai:0,first:true,v,s,mo,step,sAuto};
+    const st={i:0,ai:0,first:true,v,s,mo,step,sAuto};
     st.run=Tend=>{for(;;st.i++){const t=st.i*step;if(t>Math.min(T1,Tend)+1e-9)break;while(st.ai<sAuto.length&&sAuto[st.ai].t<=t){const a=sAuto[st.ai++];if(a.param==="speed")s.speed=a.value;else if(a.param==="distance")s.distance=a.value;else if(a.param==="dist"){if(Array.isArray(a.value))distRamp(s,a.t,a.value,a.curve);else distRamp(s,a.t,[[a.ramp||0,a.value]],a.curve)}else if(a.param==="depth")s.depth=a.value;else if(a.param==="path")s.path=Object.assign({},s.path,a.value)}
       if(s._dr)s._dNow=distAt(s,t);
       const dt=st.i?(s.cue?Math.min(step,Math.max(0,t-s.cue.in)):step):0;
@@ -4953,7 +4908,7 @@ function meters(){if(!M||!M.anL)return null;M.anL.getFloatTimeDomainData(MB.l);M
   let lev=0;for(let i=2;i<200;i++)lev+=MB.f[i];lev/=198*255;
   return {pl,pr,ild,cor,itd:bl/M.ctx.sampleRate*1e6,lufs,lev,gr:M.lim.reduction||0,l:MB.l,r:MB.r,fft:MB.f}}
 
-return {cueEnded,setMesaEdge,mesaLaw,o7Gain,MESA_LEY,MESA_LEYES,get mesaEdge(){return MESA_EDGE},setDist,setDistPath,getDist,setPos,setRoom,setHyperreal,ROOMS,distInfo,airAlpha,airFc,critDist,lvlOf,ildNF,itdNF,DIST:{MIN:D_MIN,MAX:D_MAX,REF:D_REF,C:C_SND,G_MAX_DB:12},get space(){return S.space},get hyper(){return S.hyper},
+return {cueEnded,setDist,setDistPath,getDist,setPos,setRoom,setHyperreal,ROOMS,distInfo,airAlpha,airFc,critDist,lvlOf,ildNF,itdNF,DIST:{MIN:D_MIN,MAX:D_MAX,REF:D_REF,C:C_SND,G_MAX_DB:12},get space(){return S.space},get hyper(){return S.hyper},
   v9Node,v9Set,V9P,onTransport(f){TRL.push(f);return()=>{const i=TRL.indexOf(f);if(i>=0)TRL.splice(i,1)}},gainOf,hdOf,MAXV,DECK_CHANNELS,BANCO,BANCO_IDS,REN,RENDS,HRK,addRenderer,renOf,LVREN,HR,LIC,atribucion,renderAll,renderRange,setPrefCC0(v){PREF_CC0=!!v},get prefCC0(){return PREF_CC0},genEvents,ac,_master,get M(){return M},S,LIB,LIB_IDS,PATHS,PATH_IDS,PRESET01,BEDS,BANDS,revS,radio,xyz,aer,wrap,rng,newSource,addSource,removeSource,setSources,applyMix,play,pause,stop,seek,pos,render,meters,setLim,setVol,setDeckMaster,
   recStart,recStop,takeAt,breathK,advance,mkMotion,libCargar,libSmp,bedLoad,stopBed,stopBin,binStart,bedStart,loadBenzai,clamp,lerp,dB,onEnd:null,ctl,loop,killVoice,rtVoice,
   startExtras(){const c=ac();startLiveBed(c);if(S.binCfg.on&&!S.bin)S.bin=binStart(c,M,S.binCfg,c.currentTime+.05);loop()}};
@@ -7914,10 +7869,7 @@ let startingTake=null,finishingTake=false,takeStartedAt=0;
 let drawing=null;
 let masterMeter;
 const PT=new Map(),trails=[],sparks=[],ghost=new Map(),LINK=new Map();// LINK: seguidor → líder (pareja continua que se mueve como una sola fuente)
-// Campo de Mesa (11 nov 2026, pedido de Jorge): el borde del campo ocupa casi todo el visor (antes 0,31 del lado corto, con el
-// aro de espera en 0,42) y el alcance pasa de 4 m a 7 m (misma escala aproximada en px/m). Anillos: 1 m (interno, fino, bajo el ser)
-// y 6 órbitas de 2 a 7 m; fuera del borde queda la ESPERA libre (velo tenue, sin aro). Lo guardado sigue en metros: no se convierte.
-const RMAX=7,RINGS=[1,2,3,4,5,6,7],ORBIT_FROM=2,TRAIL_MS=900,VA_MS=250;
+const RMAX=4,TRAIL_MS=900,VA_MS=250;
 /* ---------- planos de dibujo: X = planta (desde arriba), Y = perfil (frente a la derecha), Z = frontal (visto desde la nuca: der = der) ----------
    La fuente vive en 3D (az, el, r). Cada plano mueve dos ejes y deja quieto el tercero; al cambiar de plano nada salta. */
 let VIEW="X",VA=null;
@@ -7945,8 +7897,7 @@ function planeTo(v,sx,sy,hold){const [x0,y0]=C(),k=R()/RMAX;let u=(sx-x0)/k,w=-(
 const holdOf=(v,P)=>{const c=cart(P);return v==="Y"?c.x:c.f};
 const sAng=(x,y)=>{const [x0,y0]=C();return Math.atan2(x-x0,-(y-y0))/D2R};
 const vib=ms=>{try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}};
-let FR=0,GZP=null,WLAB=null;// radio del campo (px), sitio del gizmo de ejes y del rótulo ESPERA: los calcula layoutField()
-const R=()=>FR||Math.min(W,H)*.31,C=()=>[W/2,H*.5];
+const R=()=>Math.min(W,H)*.31,C=()=>[W/2,H*.5];
 function toScr(az,r){const [x0,y0]=C(),k=Math.min(1,r/RMAX)*R(),a=az*Math.PI/180;return [x0+Math.sin(a)*k,y0-Math.cos(a)*k]}
 function fromScr(x,y){const [x0,y0]=C();const dx=x-x0,dy=y-y0;return [Math.atan2(dx,-dy)*180/Math.PI,Math.min(RMAX,Math.hypot(dx,dy)/Math.max(1,R())*RMAX)]}
 const colOf=s=>s.kind==="file"?"#3fe6ee":((ORB.LIB[s.inst]||{}).col||"#8a6bff");
@@ -7962,45 +7913,13 @@ const hitR=()=>Math.max(40,Math.min(W,H*.78)*.09);
 function hit(x,y,busy){let best=null,bd=1e9;for(const o of orbs()){if(busy&&busy.has(o.id))continue;if(LINK.has(o.id))continue;const p=proj(o.P),d=Math.hypot(p[0]-x,p[1]-y);if(d<hitR()&&d<bd){bd=d;best=o}}return best}
 
 const shelfSources=()=>S.sources.filter(s=>s.waiting);
-/* ---------- ESPERA: zona libre fuera del campo (sin aro). Soltar fuera del borde silencia; arrastrar de vuelta adentro recupera ---------- */
-const WAIT_GAP=10;// tolerancia (px) fuera del borde antes de pasar a la espera
+const ringRadius=()=>Math.min(W,H)*.42;
+const ringHalfWidth=()=>Math.min(19,Math.min(W,H)*.045);
 const screenRadius=(x,y)=>Math.hypot(x-W/2,y-H/2);
-const inShelf=(x,y)=>screenRadius(x,y)>R()+WAIT_GAP;
-// elementos fijos sobre el visor, en px del lienzo (all: también el logo, que no recibe gestos pero no debe tapar el campo)
-function screenRects(all){
-  if(!cv)return [];
-  const box=cv.getBoundingClientRect(),root=cv.parentElement,out=[];
-  for(const selector of [".play-screen-logo","#pFull","#pView3D",".play-plane",".pel"]){
-    if(!all&&selector===".play-screen-logo")continue;
-    const el=root.querySelector(selector);if(!el)continue;
-    const b=el.getBoundingClientRect();if(!b.width||!b.height||getComputedStyle(el).visibility==="hidden")continue;
-    out.push([b.left-box.left,b.top-box.top,b.right-box.left,b.bottom-box.top]);
-  }
-  return out;
-}
-const rectHit=(x,y,b,pad=0)=>x>b[0]-pad&&x<b[2]+pad&&y>b[1]-pad&&y<b[3]+pad;
-const circleRect=(x,y,r,b)=>Math.hypot(Math.max(b[0]-x,0,x-b[2]),Math.max(b[1]-y,0,y-b[3]))<r;
-// punto de la espera en la dirección «angle» (rad, desde el centro): entre el borde del campo y el del visor
-function rayPoint(angle){
-  const [x0,y0]=C(),c=Math.cos(angle),s=Math.sin(angle),m=14;
-  const t=Math.min(c>1e-6?(W-m-x0)/c:c<-1e-6?(m-x0)/c:1e9,s>1e-6?(H-m-y0)/s:s<-1e-6?(m-y0)/s:1e9);
-  return [x0+c*Math.min(t,(R()+WAIT_GAP+6+t)/2),y0+s*Math.min(t,(R()+WAIT_GAP+6+t)/2)];
-}
-// deja el punto en la espera: fuera del campo, dentro del visor y sin quedar bajo un botón
-function fitWaiting(x,y){
-  const rects=screenRects(true),[x0,y0]=C();
-  const ok=(px,py)=>px>=12&&px<=W-12&&py>=12&&py<=H-12&&screenRadius(px,py)>R()+WAIT_GAP+4&&!rects.some(b=>rectHit(px,py,b,14));
-  x=Math.max(12,Math.min(W-12,x));y=Math.max(12,Math.min(H-12,y));
-  if(ok(x,y))return [x,y];
-  const a0=Math.atan2(y-y0,x-x0);
-  for(let k=0;k<=45;k++)for(const sign of k?[1,-1]:[1]){const p=rayPoint(a0+sign*k*4*D2R);if(ok(...p))return p}
-  return rayPoint(a0);
-}
-// posición guardada (waitingPos, fracción del visor) o, en sesiones anteriores, el ángulo del antiguo aro (waitingAngle)
+const inShelf=(x,y)=>Math.abs(screenRadius(x,y)-ringRadius())<=ringHalfWidth();
 function shelfPoint(s,i){
-  if(Array.isArray(s.waitingPos)&&s.waitingPos.length===2&&s.waitingPos.every(Number.isFinite))return fitWaiting(s.waitingPos[0]*W,s.waitingPos[1]*H);
   const angle=Number.isFinite(s.waitingAngle)?s.waitingAngle:(i/Math.max(1,shelfSources().length)-.25)*2*Math.PI;
-  return fitWaiting(...rayPoint(angle));
+  return [W/2+Math.cos(angle)*ringRadius(),H/2+Math.sin(angle)*ringRadius()];
 }
 function waitingHit(x,y){
   let nearest=null,distance=22;
@@ -8014,15 +7933,11 @@ function waitingHit(x,y){
 function drawShelf(g){
   if(!W||!H)return;
   const receiving=[...PT.values()].some(p=>(p.kind==="waiting"||p.kind==="orb"&&p.oid!=="__ses")&&inShelf(p.x,p.y));
-  const [x0,y0]=C(),RR=R();
   g.save();
-  // velo tenue de la ESPERA: todo lo que queda fuera del campo, sin circunferencia propia
-  g.beginPath();g.rect(0,0,W,H);g.arc(x0,y0,RR+2,0,2*Math.PI,true);
-  const veil=g.createRadialGradient(x0,y0,RR,x0,y0,Math.max(RR+1,Math.hypot(W,H)/2));
-  veil.addColorStop(0,receiving?"rgba(70,190,215,.20)":"rgba(6,16,30,.34)");veil.addColorStop(1,receiving?"rgba(70,190,215,.34)":"rgba(6,16,30,.55)");
-  g.fillStyle=veil;g.fill();
-  if(WLAB){g.save();g.translate(WLAB.x,WLAB.y);if(WLAB.rot)g.rotate(WLAB.rot);g.font="700 10px UI";g.textAlign="center";g.textBaseline="middle";
-    g.fillStyle=receiving?"#c8ffff":"rgba(117,244,255,.6)";g.fillText("E S P E R A",0,0);g.restore()}
+  g.beginPath();g.arc(...C(),ringRadius(),0,2*Math.PI);
+  g.strokeStyle=receiving?"#205365b8":"#102f3b90";g.lineWidth=ringHalfWidth()*2;g.stroke();
+  g.strokeStyle=receiving?"#c8ffff":"#54cddd";g.lineWidth=2;
+  if(!receiving)g.setLineDash([5,5]);g.stroke();g.setLineDash([]);
   g.textBaseline="middle";
   shelfSources().forEach((s,i)=>{
     const [x,y]=shelfPoint(s,i);
@@ -8040,8 +7955,7 @@ function drawShelf(g){
 }
 function setWaiting(s,waiting,x,y,route){
   if(waiting){
-    const [wx,wy]=fitWaiting(x,y);
-    s.waitingPos=[wx/W,wy/H];s.waitingAngle=Math.atan2(wy-H/2,wx-W/2);
+    s.waitingAngle=Math.atan2(y-H/2,x-W/2);
     if(s.waiting){PLAY_DESK.save();return}
     s.waitingRoute=route;
   }
@@ -8051,7 +7965,6 @@ function setWaiting(s,waiting,x,y,route){
   if(!waiting){
     delete s.armedCue;
     delete s.waitingAngle;
-    delete s.waitingPos;
     delete s.waitingRoute;
     const [flatAz,flatRadius]=fromScr(x,y);
     const [az,el,r]=VIEW==="X"?[flatAz,position[1],flatRadius]:planeTo(VIEW,x,y,holdOf(VIEW,position));
@@ -8082,7 +7995,6 @@ function armCue(s){
   if(on&&!s.waiting){
     const [x,y]=proj([az,el,r]);
     s.waitingAngle=Math.atan2(y-H/2,x-W/2);
-    const [wx,wy]=fitWaiting(...rayPoint(s.waitingAngle));s.waitingPos=[wx/W,wy/H];
   }
   const motion=live(s);
   motion.mode="hold";motion.w=0;delete motion.pm;
@@ -8105,7 +8017,6 @@ function fireCue(s){
   Object.assign(s,{path,speed,dist,distance,waiting:false,live:null,_P:null,_dirty:true,_mo:ORB.mkMotion(s)});
   delete s.armedCue;
   delete s.waitingAngle;
-  delete s.waitingPos;
   delete s.waitingRoute;
   s._playCueAt=ORB.pos();
   if(!S.playing){
@@ -8437,7 +8348,7 @@ function up(e){unlock();const p=PT.get(e.pointerId);if(!p)return;PT.delete(e.poi
       if(p.kind==="waiting"){
         if(!p.moved&&Math.hypot(x-p.x0,y-p.y0)<=6){if(s.armedCue)fireCue(s);return}
         if(inShelf(x,y)){setWaiting(s,true,x,y);return}
-        if(screenRadius(x,y)<=R()){setWaiting(s,false,x,y);return}
+        if(screenRadius(x,y)<ringRadius()-ringHalfWidth()){setWaiting(s,false,x,y);return}
       }
     }
     if(p.kind==="waiting")return;
@@ -8483,34 +8394,29 @@ function elDrag(e){if(e.target.id==="pEl"&&e.type==="pointerdown"&&e.pointerType
 
 /* ---------- dibujo ---------- */
 function bgDraw(g,v,x0,y0,RR,lev,m){
-  // anillos: el interno (1 m, bajo el ser) fino; 6 órbitas de 2 a 7 m como guía para dejar o dibujar órbitas; el borde (7 m) más marcado
-  for(const mk of RINGS){const rk=RR*mk/RMAX,edge=mk===RMAX,orbit=mk>=ORBIT_FROM;g.beginPath();g.ellipse(x0,y0,rk,rk*(v==="3D"?.53:1),0,0,7);
-    g.strokeStyle=edge?`rgba(63,230,238,${.45+.25*lev})`:orbit?"rgba(115,155,255,.26)":"rgba(80,120,255,.10)";g.lineWidth=edge?2.2:orbit?1.1:.6;g.stroke()}
+  // anillos de distancia (1, 2, 3, 4 m), radios, anillo FFT
+  for(let k=1;k<=4;k++){g.beginPath();g.ellipse(x0,y0,RR*k/4,RR*k/4*(v==="3D"?.53:1),0,0,7);g.strokeStyle=k===4?`rgba(63,230,238,${.35+.25*lev})`:"rgba(80,120,255,.13)";g.lineWidth=k===4?2:1;g.stroke()}
   if(v==="3D"){
     g.strokeStyle="#7799e944";g.lineWidth=1;
     for(const angle of [-.65,0,.65]){g.beginPath();g.ellipse(x0,y0,RR*.48,RR,angle,0,Math.PI*2);g.stroke()}
   }
-  g.font="500 9px UI,system-ui";g.fillStyle="rgba(150,180,240,.55)";g.textAlign="center";g.textBaseline="middle";// metros de cada órbita, dentro del anillo
-  for(const mk of RINGS)if(mk>=ORBIT_FROM){const rk=RR*mk/RMAX-8,a=32*D2R;g.fillText((mk/S.scale).toFixed(1)+" m",x0+Math.sin(a)*rk,y0-Math.cos(a)*rk*(v==="3D"?.53:1))}
-  g.textBaseline="alphabetic";
+  g.font="500 9px UI,system-ui";g.fillStyle="rgba(140,170,230,.35)";g.textAlign="left";for(let k=1;k<4;k++)g.fillText(k*S.scale<10?(k/S.scale).toFixed(1)+" m":"",x0+3,y0-RR*k/4-3);
   if(v==="X")for(let i=0;i<12;i++){const a=i*Math.PI/6+S.rot*Math.PI/180;g.beginPath();g.moveTo(x0+Math.sin(a)*RR*.12,y0-Math.cos(a)*RR*.12);g.lineTo(x0+Math.sin(a)*RR,y0-Math.cos(a)*RR);g.strokeStyle=i%3?"rgba(80,120,255,.07)":"rgba(80,140,255,.16)";g.lineWidth=1;g.stroke()}
-  if(m){for(let i=0;i<96;i++){const a=i/96*Math.PI*2,v=m.fft[Math.floor(Math.pow(i/96,1.6)*300)+2]/255,L=3+v*v*RR*.06;g.beginPath();g.moveTo(x0+Math.sin(a)*(RR-3),y0-Math.cos(a)*(RR-3));g.lineTo(x0+Math.sin(a)*(RR-3-L),y0-Math.cos(a)*(RR-3-L));g.strokeStyle=`rgba(${120+100*v|0},${150+80*v|0},255,${.25+.5*v})`;g.lineWidth=2;g.stroke()}}
+  if(m){for(let i=0;i<96;i++){const a=i/96*Math.PI*2,v=m.fft[Math.floor(Math.pow(i/96,1.6)*300)+2]/255,L=4+v*v*RR*.22;g.beginPath();g.moveTo(x0+Math.sin(a)*(RR+3),y0-Math.cos(a)*(RR+3));g.lineTo(x0+Math.sin(a)*(RR+3+L),y0-Math.cos(a)*(RR+3+L));g.strokeStyle=`rgba(${120+100*v|0},${150+80*v|0},255,${.25+.5*v})`;g.lineWidth=2;g.stroke()}}
   if(v!=="X"){// horizonte y vertical de la cabeza
     g.strokeStyle="rgba(120,160,255,.28)";g.lineWidth=1.2;g.beginPath();g.moveTo(x0-RR,y0);g.lineTo(x0+RR,y0);g.stroke();g.strokeStyle="rgba(80,120,255,.14)";g.beginPath();g.moveTo(x0,y0-RR);g.lineTo(x0,y0+RR);g.stroke();
     g.fillStyle="rgba(63,230,238,.05)";g.beginPath();g.moveTo(x0-RR,y0);g.arc(x0,y0,RR,Math.PI,2*Math.PI);g.fill();
     g.fillStyle="rgba(122,60,255,.05)";g.beginPath();g.arc(x0,y0,RR,0,Math.PI);g.fill();
-    g.font="500 9px UI,system-ui";g.fillStyle="rgba(140,170,230,.4)";g.textAlign="right";g.fillText("−60° límite",x0-RR*.42,y0+RR*.74)}
+    g.font="500 9px UI,system-ui";g.fillStyle="rgba(140,170,230,.4)";g.textAlign="right";g.fillText("−60° límite",x0-RR*.52,y0+RR*.87)}
   g.font="600 11px UI,system-ui";g.textAlign="center";const lab=(t,x,y,c,rot)=>{g.fillStyle=c;if(rot){g.save();g.translate(x,y);g.rotate(rot);g.fillText(t,0,0);g.restore()}else g.fillText(t,x,y)};
   const AM="rgba(255,179,71,.85)",DIM="rgba(180,200,230,.45)",CY="rgba(63,230,238,.8)";
-  // rótulos dentro del borde (el campo llega casi al marco del visor)
-  const TOP=y0-RR+16,BOT=y0+RR-9,SL=x0-RR+13,SR=x0+RR-13;
-  if(v==="X"){lab("FRENTE",x0,TOP,AM);lab("ATRÁS",x0,BOT,DIM);lab("IZQ",SL,y0,DIM,-Math.PI/2);lab("DER",SR,y0,DIM,Math.PI/2)}
-  else if(v==="Y"){lab("ARRIBA",x0,TOP,CY);lab("ABAJO",x0,BOT,DIM);lab("ATRÁS",SL,y0,DIM,-Math.PI/2);lab("FRENTE",SR,y0,AM,Math.PI/2)}
-  else{lab("ARRIBA",x0,TOP,CY);lab("ABAJO",x0,BOT,DIM);lab("IZQ",SL,y0,DIM,-Math.PI/2);lab("DER",SR,y0,DIM,Math.PI/2)}
+  if(v==="X"){lab("FRENTE",x0,y0-RR-14,AM);lab("ATRÁS",x0,y0+RR+22,DIM);lab("IZQ",x0-RR-14,y0,DIM,-Math.PI/2);lab("DER",x0+RR+14,y0,DIM,Math.PI/2)}
+  else if(v==="Y"){lab("ARRIBA",x0,y0-RR-14,CY);lab("ABAJO",x0,y0+RR+22,DIM);lab("ATRÁS",x0-RR-14,y0,DIM,-Math.PI/2);lab("FRENTE",x0+RR+14,y0,AM,Math.PI/2)}
+  else{lab("ARRIBA",x0,y0-RR-14,CY);lab("ABAJO",x0,y0+RR+22,DIM);lab("IZQ",x0-RR-14,y0,DIM,-Math.PI/2);lab("DER",x0+RR+14,y0,DIM,Math.PI/2)}
   // el mismo ser luminoso de la portada (visuales/ser): halo cálido en la cabeza y la figura completa, sin deformar
-  const RS=RR*SER_FIT,hr=RS*.1;const hg=g.createRadialGradient(x0,y0,0,x0,y0,hr*3);
+  const hr=RR*.1;const hg=g.createRadialGradient(x0,y0,0,x0,y0,hr*3);
   hg.addColorStop(0,`rgba(255,214,150,${(.2+.1*lev).toFixed(3)})`);hg.addColorStop(.45,`rgba(92,104,255,${(.08+.05*lev).toFixed(3)})`);hg.addColorStop(1,"rgba(92,104,255,0)");g.fillStyle=hg;g.beginPath();g.arc(x0,y0,hr*3,0,7);g.fill();
-  if(!drawSer(g,v,x0,y0,RS)){g.strokeStyle="rgba(255,214,160,.7)";g.lineWidth=1.5;g.beginPath();g.ellipse(x0,y0,hr*.92,hr*1.05,0,0,7);g.stroke()}}
+  if(!drawSer(g,v,x0,y0,RR)){g.strokeStyle="rgba(255,214,160,.7)";g.lineWidth=1.5;g.beginPath();g.ellipse(x0,y0,hr*.92,hr*1.05,0,0,7);g.stroke()}}
 // Ser de la portada en los planos, a la misma altura relativa que en la portada. Allí (cámara 3D por defecto) la cabeza queda
 // 0,272 radios de la esfera por encima del centro y la figura mide 1,117 radios (0,228 y 1,009 hasta 760 px). La esfera (3,2 m)
 // equivale a 0,8 del anillo exterior de 4 m de JUGAR. Y (perfil): el mismo ser de perfil mirando al FRENTE (derecha);
@@ -8519,9 +8425,6 @@ function bgDraw(g,v,x0,y0,RR,lev,m){
 // box = recorte en la imagen (px), head = centro de la cabeza; w = ancho en radios del plano (si no, alto según la portada).
 // Se pinta con el brillo y la respiración de .orbital-ser-identidad (paleta v4: sombras doradas/índigo/cian, opacidad .82–.95 en 3,6 s).
 const SER_ID="visuales/ser/orbital_ser_identidad_v4.png",SER_CENITAL="visuales/ser/orbital_ser_cenital.webp",SER_K=.8,SER_MQ=matchMedia("(max-width:760px)");
-// el ser conserva su medida física de antes (esfera 3,2 m = 0,8 del anillo de 4 m) y se achica un 6 % más: en pantalla queda
-// un 15–20 % más chico que antes y las 6 órbitas (2–7 m) quedan por fuera de él. En Mesa 3D, el mismo 18 % (SER_MESA_3D).
-const SER_FIT=4/RMAX*.94,SER_MESA_3D=.82;
 const SER_REL=[{dy:-.272,h:1.117},{dy:-.228,h:1.009}];
 const SER={Y:{src:"visuales/ser/orbital_ser_perfil_v4.webp",box:[47,38,621,1073],head:[240,140]},
   Z:{src:SER_ID,box:[222,55,1089,1102],head:[655,170]},
@@ -8547,13 +8450,12 @@ function drawSer(g,v,x0,y0,RR){let d=SER[v]||SER.Z;
 // de la escena para conservar la relación de la portada. En visores normales no se toca la regla CSS.
 let serFit="";
 function serAlign(){const ser=document.querySelector(".orbital-ser-identidad");if(!ser)return;
-  const mesa=on&&ser.parentElement===cv.parentElement,box=ser.parentElement.getBoundingClientRect(),narrow=mesa&&box.height>0&&box.width/box.height<.8;
-  const m=SER_MQ.matches,key=mesa?(narrow?"n":"w")+(m?"m":"d"):"";if(key===serFit)return;serFit=key;
-  if(!mesa){ser.style.removeProperty("height");ser.style.removeProperty("bottom");return}
-  // medido: radio de la esfera ×0,581 y centro de la escena al 49,3 % (48,9 % en visores normales). En Mesa el ser va un 18 % más chico
-  // (SER_MESA_3D), escalado alrededor del centro de la escena como en los planos Y/Z; la portada no cambia (se quitan los estilos al salir)
-  const k=(narrow?.581:1)*SER_MESA_3D,c=narrow?49.3:48.9,hp=m?47:52,bp=m?20:17.5;
-  ser.style.height=(hp*k).toFixed(2)+"%";ser.style.bottom=(100-c-(100-bp-48.9)*k).toFixed(2)+"%"}
+  const box=ser.parentElement.getBoundingClientRect(),narrow=on&&ser.parentElement===cv.parentElement&&box.height>0&&box.width/box.height<.8;
+  const m=SER_MQ.matches,key=narrow?(m?"m":"d"):"";if(key===serFit)return;serFit=key;
+  if(!narrow){ser.style.removeProperty("height");ser.style.removeProperty("bottom");return}
+  // medido: radio de la esfera ×0,581 y centro de la escena al 49,3 % (48,9 % en visores normales)
+  const k=.581,hp=m?47:52,bp=m?20:17.5;
+  ser.style.height=(hp*k).toFixed(2)+"%";ser.style.bottom=(100-49.3-(100-bp-48.9)*k).toFixed(2)+"%"}
 
 function rr(g,x,y,w,hh,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+hh,r);g.arcTo(x+w,y+hh,x,y+hh,r);g.arcTo(x,y+hh,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
 // la estela se rellena entre muestras (Safari entrega pointermove a ~60 Hz con huecos): puntos cada ≤4 px, tiempo interpolado
@@ -8561,11 +8463,9 @@ function trailAdd(P,x,y,t){const l=P[P.length-1];if(l){const d=Math.hypot(x-l[0]
 function trailDraw(g,pts,col,t,wmax){for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i],age=(t-b[2])/TRAIL_MS;if(age>1)continue;g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.strokeStyle=col+Math.round((1-age)*180).toString(16).padStart(2,"0");g.lineWidth=wmax*(1-age)+1;g.stroke()}}
 // gizmo 3D: tres ejes (DER, ARRIBA, FRENTE) vistos desde la cámara del plano activo; durante el giro se interpolan
 const GZ={X:{x:[1,0],y:[-.42,.42],f:[0,-1]},Y:{x:[-.42,.42],y:[0,-1],f:[1,0]},Z:{x:[1,0],y:[0,-1],f:[.42,-.42]},"3D":{x:[1,0],y:[0,-1],f:[.35,-.45]}};
-function gizmo(g){const u=vaU(),A=VA?GZ[VA.from]:GZ[VIEW],B=GZ[VIEW],mob=W<600;let s=mob?26:34,gx=mob?44:60,gy=mob?H-200:H-150,showLabel=true;
+function gizmo(g){const u=vaU(),A=VA?GZ[VA.from]:GZ[VIEW],B=GZ[VIEW],mob=W<600,s=mob?26:34,gx=mob?44:60;let gy=mob?H-200:H-150;
   // el logo de la pantalla (arriba a la izquierda) no debe tapar el gizmo: se baja por debajo del logo, sin pasar los botones X/Y/Z
-  // sitio calculado por layoutField (fuera del campo, sin tocar logo ni botones); si no hay, la regla anterior
-  if(GZP){gx=GZP.gx;gy=GZP.gy;s=GZP.s;showLabel=GZP.label}
-  else{const box=cv.getBoundingClientRect(),logo=cv.parentElement.querySelector(".play-screen-logo"),plane=cv.parentElement.querySelector(".play-plane");
+  {const box=cv.getBoundingClientRect(),logo=cv.parentElement.querySelector(".play-screen-logo"),plane=cv.parentElement.querySelector(".play-plane");
     const lr=logo&&logo.getBoundingClientRect(),pr=plane&&plane.getBoundingClientRect();
     if(lr&&lr.height){const top=lr.bottom-box.top+s*1.55+6;if(gy<top)gy=top}
     if(pr&&pr.height){const bottom=pr.top-box.top-s*1.55-18;if(gy>bottom)gy=Math.max(lr&&lr.height?lr.bottom-box.top+s*1.55+6:s*1.55+6,bottom)}}
@@ -8573,8 +8473,8 @@ function gizmo(g){const u=vaU(),A=VA?GZ[VA.from]:GZ[VIEW],B=GZ[VIEW],mob=W<600;l
   const ax=[["x","#ff6b6b","DER"],["y","#5dffa8","ARR"],["f","#ffb347","FR"]];
   for(const [k,col,t] of ax){const vx=A[k][0]+(B[k][0]-A[k][0])*u,vy=A[k][1]+(B[k][1]-A[k][1])*u,ex=gx+vx*s,ey=gy+vy*s,inPlane=Math.hypot(vx,vy)>.8;
     g.strokeStyle=col;g.globalAlpha=inPlane?1:.45;g.lineWidth=inPlane?2.5:1.5;g.beginPath();g.moveTo(gx,gy);g.lineTo(ex,ey);g.stroke();g.fillStyle=col;g.beginPath();g.arc(ex,ey,inPlane?3.5:2.5,0,7);g.fill();
-    g.font=`700 ${mob?8:9}px UI`;g.textAlign="center";g.fillText(t,gx+vx*(s+(s<20?8:11)),gy+vy*(s+(s<20?8:11))+3)}
-  g.globalAlpha=1;g.font=`700 ${mob?10:11}px UI`;g.fillStyle="#eef4ff";g.textAlign="center";if(showLabel)g.fillText("PLANO "+VIEW,gx,gy+s*1.55+13);g.restore()}
+    g.font=`700 ${mob?8:9}px UI`;g.textAlign="center";g.fillText(t,gx+vx*(s+11),gy+vy*(s+11)+3)}
+  g.globalAlpha=1;g.font=`700 ${mob?10:11}px UI`;g.fillStyle="#eef4ff";g.textAlign="center";g.fillText("PLANO "+VIEW,gx,gy+s*1.55+13);g.restore()}
 const ledDb=[-72,-72];
 let lastLedTime=null;
 function updateMasterMeters(m,now){
@@ -8655,10 +8555,10 @@ function draw(){raf=requestAnimationFrame(draw);if(!on)return;const cueTime=ORB.
   g.globalCompositeOperation="source-over";
   gizmo(g);
   // lectura de la fuente activa
-  const so=OB.find(o=>o.id===sel);if(so&&so.P){const txt=`${VIEW} · AZ ${ORB.wrap(so.P[0]).toFixed(0).padStart(4)}°  EL ${so.P[1].toFixed(0).padStart(3)}°  ${so.P[2].toFixed(2)} m`;g.font="500 11px Mono,ui-monospace,monospace";g.textAlign="center";g.fillStyle="rgba(201,211,230,.75)";g.fillText(txt,x0,y0+RR-28)}
+  const so=OB.find(o=>o.id===sel);if(so&&so.P){const txt=`${VIEW} · AZ ${ORB.wrap(so.P[0]).toFixed(0).padStart(4)}°  EL ${so.P[1].toFixed(0).padStart(3)}°  ${so.P[2].toFixed(2)} m`;g.font="500 11px Mono,ui-monospace,monospace";g.textAlign="center";g.fillStyle="rgba(201,211,230,.75)";g.fillText(txt,x0,y0+RR+40)}
   // REC: anillo rojo que respira y tiempo transcurrido
-  if(S.rec){const e=ORB.M.ctx.currentTime-takeStartedAt,al=.45+.35*(red?1:Math.sin(t/300));g.strokeStyle=`rgba(255,90,79,${al})`;g.lineWidth=3;g.beginPath();g.arc(x0,y0,RR-5,0,7);g.stroke();
-    const lab=`● REC ${Math.floor(e/60)}:${String(Math.floor(e%60)).padStart(2,"0")}`;g.font="700 12px Mono,ui-monospace,monospace";const w=g.measureText(lab).width+18;rr(g,x0-w/2,6,w,22,11);g.fillStyle="rgba(40,6,8,.85)";g.fill();g.fillStyle="#ff5a4f";g.textAlign="center";g.fillText(lab,x0,21)}
+  if(S.rec){const e=ORB.M.ctx.currentTime-takeStartedAt,al=.45+.35*(red?1:Math.sin(t/300));g.strokeStyle=`rgba(255,90,79,${al})`;g.lineWidth=3;g.beginPath();g.arc(x0,y0,RR+8,0,7);g.stroke();
+    const lab=`● REC ${Math.floor(e/60)}:${String(Math.floor(e%60)).padStart(2,"0")}`;g.font="700 12px Mono,ui-monospace,monospace";const w=g.measureText(lab).width+18;rr(g,x0-w/2,y0-RR-44,w,22,11);g.fillStyle="rgba(40,6,8,.85)";g.fill();g.fillStyle="#ff5a4f";g.textAlign="center";g.fillText(lab,x0,y0-RR-29)}
   $("#pRec").classList.toggle("on",!!S.rec);
   drawShelf(g);
   const sg=S.sources.map(s=>s.id).join()+(SHX.B&&SHX.B.on?"+":"");if(sg!==sig){sig=sg;srcBar()}}
@@ -8734,7 +8634,7 @@ async function recToggle(){
     takeList();
   }finally{finishingTake=false;syncRecord()}
 }
-function takeScene(tk,loop){return {dur:tk.dur,seed:1,inten:S.inten,room:APP.room,vol_db:0,file_offset:tk.file_offset||0,sources:tk.sources.map((s,i)=>({kind:s.kind,inst:s.inst,label:s.label,vol_db:s.vol_db||0,depth:.7,speed:.45,distance:.35,seed:s.seed!=null?s.seed:1000+i,edge:RMAX,path:{type:"take",frames:s.frames,fr:tk.fr,loop:!!loop}}))}}
+function takeScene(tk,loop){return {dur:tk.dur,seed:1,inten:S.inten,room:APP.room,vol_db:0,file_offset:tk.file_offset||0,sources:tk.sources.map((s,i)=>({kind:s.kind,inst:s.inst,label:s.label,vol_db:s.vol_db||0,depth:.7,speed:.45,distance:.35,seed:s.seed!=null?s.seed:1000+i,path:{type:"take",frames:s.frames,fr:tk.fr,loop:!!loop}}))}}
 // audio de la toma: render offline de la automatización (48 kHz float) → WAV 24-bit en IndexedDB
 const caching=new Map();let lastNorm=null;
 // normaliza un AudioBuffer estéreo a −16 LUFS integrados y pico verdadero ≤ −1 dBTP (limitador con anticipación si hace falta)
@@ -8788,32 +8688,7 @@ function resize(){
   const width=Math.round(W*dpr),height=Math.round(H*dpr);
   if(cv.width!==width)cv.width=width;
   if(cv.height!==height)cv.height=height;
-  layoutField();
   updateMixerWindow();
-}
-// radio del campo: casi hasta el marco (margen fino para la ESPERA) sin pasar por debajo del logo, los botones, los planos ni la altura
-function layoutField(){
-  if(!W||!H)return;
-  const [x0,y0]=C(),short=Math.min(W,H),floor=short*.36,rects=screenRects(true);
-  let r=short/2-Math.max(10,short*.028);
-  for(const b of rects){const d=Math.hypot(Math.max(b[0]-x0,0,x0-b[2]),Math.max(b[1]-y0,0,y0-b[3]))-6;if(d>=floor)r=Math.min(r,d)}
-  FR=Math.max(floor,r);
-  // gizmo de ejes: el mayor que quepa fuera del campo sin tocar nada, lo más cerca posible de su sitio (abajo a la izquierda)
-  GZP=null;
-  const mob=W<600,px=0,py=H*.62;
-  for(let s=mob?26:34;s>=12&&!GZP;s-=2){const rr=s*1.55+2,lab=s>=20?16:0;let best=null,bd=1e9;
-    for(let y=rr+4;y<=H-rr-lab-4;y+=4)for(let x=rr+4;x<=W-rr-4;x+=4){
-      if(Math.hypot(x-x0,y-y0)-rr<FR+6||rects.some(b=>circleRect(x,y,rr+4,b)))continue;
-      if(lab&&rects.some(b=>x+36>b[0]&&x-36<b[2]&&y+rr+lab>b[1]&&y+rr<b[3]))continue;
-      const d=Math.hypot(x-px,y-py);if(d<bd){bd=d;best=[x,y]}}
-    if(best)GZP={gx:best[0],gy:best[1],s,label:!!lab}}
-  // rótulo ESPERA: en la franja libre más ancha fuera del campo
-  WLAB=null;let wide=0;
-  for(let deg=0;deg<360;deg+=6){const a=deg*D2R,[x,y]=rayPoint(a),side=Math.abs(Math.cos(a))>.7,hw=side?7:38,hh=side?38:7,box=[x-hw,y-hh,x+hw,y+hh];
-    if([[box[0],box[1]],[box[2],box[1]],[box[0],box[3]],[box[2],box[3]]].some(([cx,cy])=>Math.hypot(cx-x0,cy-y0)<FR+4||cx<2||cy<2||cx>W-2||cy>H-2))continue;
-    if(rects.some(b=>box[0]<b[2]+4&&box[2]>b[0]-4&&box[1]<b[3]+4&&box[3]>b[1]-4))continue;
-    if(GZP&&circleRect(GZP.gx,GZP.gy,GZP.s*1.55+(GZP.label?24:8),box))continue;
-    const room=Math.hypot(x-x0,y-y0)-FR;if(room>wide){wide=room;WLAB={x,y,rot:side?(Math.cos(a)>0?Math.PI/2:-Math.PI/2):0}}}
 }
 function updateMixerWindow(){
   $("#pDeskVisible").textContent=`${$("#pDeskTracks").childElementCount} pistas`;
@@ -8866,8 +8741,7 @@ function syncFullscreen(){
   const screen=cv.closest(".play-stage"),button=$("#pFull");
   const active=document.fullscreenElement===screen||screen.classList.contains("pseudofs");
   button.setAttribute("aria-pressed",String(active));
-  button.innerHTML=active?'<span class="pfull-ico">✕</span><span class="pfull-txt"> Salir de pantalla completa</span>':'<span class="pfull-ico">⤢</span><span class="pfull-txt"> Pantalla completa</span>';
-  button.setAttribute("aria-label",active?"Salir de pantalla completa":"Pantalla completa");
+  button.textContent=active?"✕ Salir de pantalla completa":"⤢ Pantalla completa";
   const mixer=$("#pDeskMixerBody"),destination=active?$("#pFullscreenMix"):$("#pRightMix");
   if(mixer.parentElement!==destination)destination.append(mixer);
   const cues=$("#pDeskCueLaunch"),cueHome=active?destination:$("#pDeskCueBank");
@@ -8918,7 +8792,7 @@ function initHoverDelete(){
   });
 }
 
-function init(){cv=$("#pc");ORB.setMesaEdge(RMAX);PLAY_DESK.init();initScript();axesUI();initHoverDelete();cv.addEventListener("pointerdown",down);cv.addEventListener("pointermove",move);cv.addEventListener("pointerup",up);cv.addEventListener("pointercancel",up);
+function init(){cv=$("#pc");PLAY_DESK.init();initScript();axesUI();initHoverDelete();cv.addEventListener("pointerdown",down);cv.addEventListener("pointermove",move);cv.addEventListener("pointerup",up);cv.addEventListener("pointercancel",up);
   $("#orbArmCue").onclick=()=>armCue(S.sources.find(s=>s.id===$("#orbCueSource").value));
   $("#orbCueSource").onchange=syncCues;
   const screen=cv.closest(".play-stage");
@@ -8956,7 +8830,7 @@ function init(){cv=$("#pc");ORB.setMesaEdge(RMAX);PLAY_DESK.init();initScript();
   const pel=document.querySelector("#play .pel");if(pel){let act=null;pel.addEventListener("pointerdown",e=>{act=e.pointerId;try{pel.setPointerCapture(e.pointerId)}catch(_){}elDrag(e)});pel.addEventListener("pointermove",e=>{if(act===e.pointerId)elDrag(e)});
     const end=e=>{if(act===e.pointerId)act=null};pel.addEventListener("pointerup",end);pel.addEventListener("pointercancel",end)}
   $("#pTakeN").textContent=takes().length}
-return {init,open,close,resize,startTracks,resetDesk,stopScript,drawRoute,setMovement,isDrawing,armCue,canArmCue,syncCues,syncTransport,replay,takes,takeScene,recToggle,cacheAudio,get sel(){return sel},set sel(v){if(v!==sel)cancelDrawing();sel=v},hit,toScr,fromScr,takeList,dl,norm,SUSTAINED,setView,proj,projV,cart,get view(){return VIEW},get lastNorm(){return lastNorm},get on(){return on},RMAX,GL_K:4.2/RMAX,geom(){return {R:R(),RMAX,pxPorMetro:R()/RMAX,gizmo:GZP,espera:WLAB}},_pt:PT}})();
+return {init,open,close,resize,startTracks,resetDesk,stopScript,drawRoute,setMovement,isDrawing,armCue,canArmCue,syncCues,syncTransport,replay,takes,takeScene,recToggle,cacheAudio,get sel(){return sel},set sel(v){if(v!==sel)cancelDrawing();sel=v},hit,toScr,fromScr,takeList,dl,norm,SUSTAINED,setView,proj,projV,cart,get view(){return VIEW},get lastNorm(){return lastNorm},get on(){return on},_pt:PT}})();
 
 // Mesa independiente de JUGAR sobre el transporte y renderizador espacial de ORBITAL.
 const PLAY_DESK=(()=>{
@@ -9149,7 +9023,7 @@ const PLAY_DESK=(()=>{
     const position=s.live;
     return {deckChannel:s.deckChannel,inst:s.inst,seed:s.seed,speed:s.speed,depth:s.depth,density:s.density,
       cueLevel:s.cuePreset?s.vol_db:undefined,
-      mute:s.mute,waiting:!!s.waiting,waitingAngle:s.waitingAngle,waitingPos:s.waitingPos,waitingRoute:s.waitingRoute,armedCue:s.armedCue,cuePreset:s.cuePreset,
+      mute:s.mute,waiting:!!s.waiting,waitingAngle:s.waitingAngle,waitingRoute:s.waitingRoute,armedCue:s.armedCue,cuePreset:s.cuePreset,
       path:position?{...s.path,type:"still",az0:position.az,el:position.el}:s.path,dist:distanceOf(s)};
   }
 
@@ -9238,7 +9112,7 @@ const PLAY_DESK=(()=>{
   function applyMotion(voice,index){
     const motion=motions[index];
     if(!motion)return;
-    const [,name,speed,closed,sample]=motion,radius=Math.min(2.6*PLAY.RMAX/4,Math.max(.7,distanceOf(voice)));// tope proporcional al campo (antes 2,6 de 4 m)
+    const [,name,speed,closed,sample]=motion,radius=Math.min(2.6,Math.max(.7,distanceOf(voice)));
     const pts=Array.from({length:64},(_,i)=>{
       const u=i/(closed?64:63),[x,front,height]=sample(u,u*Math.PI*2);
       return [x*radius,-front*radius,height];
@@ -10242,7 +10116,7 @@ function planVisualTick(t){if(!S.playing)return;const scene=VIAJES.activeVisual(
   const C=V.changes||[];let ci=-1;for(let i=0;i<C.length;i++)if(t>=C[i].t)ci=i;if(ci!==ST.ch){ST.ch=ci;const e=ci<0?V.env:C[ci].env;vis.env=e;GLV.setEnv(e,{xfade_s:ci<0?2:C[ci].xfade_s,brightness:V.brightness,warmth:V.warmth,couple:V.camera_coupling});const se=$("#selEnv");if(se&&GLV.ENVS[e])se.value=e}}
 
 /* ---------- proveedor para el visor ---------- */
-const sc3=P=>ORB.xyz(P[0],P[1],PLAY.on?P[2]*PLAY.GL_K:Math.min(4.2,P[2]));// Mesa: su campo de 7 m entra entero en la esfera 3D (borde → 4,2)
+const sc3=P=>ORB.xyz(P[0],P[1],Math.min(4.2,P[2]));
 function pathPreview(s){const now=performance.now();const c=ST.paths[s.id];if(c&&now-c.t<250&&!s._dirty)return c.p;
   const per=s.path.type==="tempo"?(s.path.beats||8)*60/(s.path.bpm||96):ORB.revS(s.speed);const mo={ph:(s._mo&&s._mo.ph)||0},t0=ORB.pos(),g={reduce:S.reduce,scale:S.scale,rot:S.rot};const p=[];
   const start=s.path.type==="path"?Math.max(t0,s.cue?.in??0):t0;
