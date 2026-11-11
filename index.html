@@ -4138,11 +4138,18 @@ const lvlOf=d=>Math.min(G_MAX,Math.hypot(D_REF,D_H)/Math.hypot(Math.max(D_MIN,d)
    A «lineal»: meseta +1,5 dB, −7,5 dB/m desde 1 m, último 0,5 m a silencio; sala del motor (crece con la distancia).
    B «física»: 1/r (−6 dB por duplicación, +12 dB pegado), sala constante (DRR real), sin apagado en el borde.
    C «marcada»: −12 dB por duplicación (tope +6 dB), sala casi pegada al directo, −0,5 oct/m de brillo, último metro a silencio.
-   D «8D» (ACTIVA): proximidad +4 dB bajo 1 m, −8 dB por duplicación, mucha sala lejos (lavado), −0,6 oct/m de brillo, 0,7 m finales a silencio.
+   D «8D»: proximidad +4 dB bajo 1 m, −8 dB por duplicación, mucha sala lejos (lavado), −0,6 oct/m de brillo, 0,7 m finales a silencio.
    db = nivel del directo (0 dB = referencia del motor a 1,5 m); rev = fracción de esa pendiente que sigue la sala (revk = ganancia de sala);
    wr = nivel fijo de envío a sala (sustituye la sala que crece con la distancia; null = la del motor); fc = corte de brillo (Hz).
    Todo pasa por las rampas de distApply (sin clics). Mesa fija el borde con setMesaEdge. */
-const MESA_LEY="D";// ← selector: "A" | "B" | "C" | "D"
+// O7 (ACTIVA, pedido de Jorge): de 0 a 4 m (el campo de antes) EXACTAMENTE como en 51ecb14: ley del motor (1/r), sala y aire del motor.
+// De 4 a 7 m (el espacio nuevo) solo una caída pareja de 0 a −50 dB, lineal en dB con las puntas suavizadas (pendiente continua en 4 m) y
+// coseno² a silencio en los últimos 0,15 m, aplicada POR IGUAL al directo y al envío de sala; la sala no sigue creciendo pasado 4 m.
+// O «original»: igual a 51ecb14 en todo el campo (sin caída). La D quitó orbitalidad (sala simétrica lejos, bug histórico de AGENTS.md §2).
+const MESA_LEY="O7";// ← selector: "O7" | "O" | "A" | "B" | "C" | "D"
+const O7_START=4,O7_DROP=50,O7_K=.15,O7_TAIL=.15;
+function o7Gain(d,e){if(d<=O7_START)return 1;const k=O7_K,u=clamp((d-O7_START)/Math.max(.1,e-O7_START),0,1),c=2*k*(1-k);
+  const w=u<k?u*u/c:u>1-k?1-(1-u)*(1-u)/c:(u-k/2)/(1-k),t=clamp((d-(e-O7_TAIL))/O7_TAIL,0,1),z=Math.cos(t*Math.PI/2);return dB(-O7_DROP*w)*z*z}
 const ss01=u=>{u=clamp(u,0,1);return u*u*(3-2*u)};
 const MESA_LEYES={
   A:{db:(d,e)=>d<=1?1.5*ss01((1-d)/.7):-45*Math.min(d-1,e-1)/Math.max(.1,e-1),tail:.5,rev:.6,wr:null,fc:d=>20000*Math.pow(2,-.45*Math.max(0,d-1))},
@@ -4382,12 +4389,12 @@ function elevCue(v,t,P,ramp){if(!v.eHs)return;const u=clamp(P[1]/75,-1,1),up=Mat
   const S_=(p,x)=>{try{ramp?p.linearRampToValueAtTime(x,t):p.setValueAtTime(x,t)}catch(e){}};
   S_(v.eHs.gain,4.5*up-6*dn+x.hs);S_(v.eN.frequency,6800+3400*up-1400*dn);S_(v.eN.gain,-(3+4*Math.abs(u)));S_(v.ePr.gain,2*up-1.5*dn+x.pr);S_(v.eLs.gain,2.5*dn-1.2*up+x.ls)}
 // distancia de una voz: todo sale de distInfo (la misma función que ve la consola/IAH) y se programa con rampas lineales cortas → sin «zipper»
-function distApply(v,t,P,k,ramp){const m=v.m,I=distInfo(P[2],m.space,m.hyper,P[0],P[1],v.ren),iso=m.iso,me=v.edge>0,ML=me?mesaLaw(P[2],v.edge):null,g=ML?ML.g:I.g,rs=ML?ML.rs:1;
+function distApply(v,t,P,k,ramp){const m=v.m,I=distInfo(P[2],m.space,m.hyper,P[0],P[1],v.ren),iso=m.iso,o7=v.edge>0&&MESA_LEY==="O7",me=v.edge>0&&!/^O/.test(MESA_LEY),ML=me?mesaLaw(P[2],v.edge):null,fo=o7?o7Gain(P[2],v.edge):1,g=ML?ML.g:I.g*fo,rs=ML?ML.rs:fo;
   const S_=(p,x)=>{try{ramp?p.linearRampToValueAtTime(x,t):p.setValueAtTime(x,t)}catch(e){}};
   S_(v.dop.delayTime,I.dop);S_(v.dAir.frequency,ML?Math.min(I.air_fc,ML.fc):I.air_fc);S_(v.dG.gain,iso==="wet"?0:g);S_(v.oG.gain,v.ab?1:iso==="wet"?0:g);S_(v.oD.delayTime,v.ab?0:I.dop);v.dx={hs:I.hs_db,ls:I.body_db,pr:I.pres_db};
   const nr=I.lat>=0?1:0;S_(v.ls[nr].gain,I.ild_near);S_(v.ls[1-nr].gain,I.ild_far);S_(v.pd[1-nr].delayTime,Math.min(.0025,I.itd_x));S_(v.pd[nr].delayTime,0);
   S_(v.wg[0].gain,I.width);S_(v.wg[1].gain,I.width);
-  const wet=iso==="dir"?0:1,fW=clamp((P[2]-1.5)/4,0,1),wE=wet*(v.wsE==null?1:v.wsE+(Math.max(v.wsE,.35)-v.wsE)*fW),wR=wet*(v.wsR==null?1:v.wsR+(Math.max(v.wsR,.25)-v.wsR)*fW);// v9/v10: casi seco cerca (≤ 1,5 m); la sala vuelve poco a poco hasta 5,5 m (lejos = más sala)for(let i=0;i<4;i++){const T=I.taps[i]||{dl:.01,g:0};S_(v.tp[i].delayTime,Math.min(.29,T.dl));S_(v.tg[i].gain,T.g*wE*(iso==="late"?0:1))}
+  const wet=iso==="dir"?0:1,fW=clamp(((o7?Math.min(P[2],O7_START):P[2])-1.5)/4,0,1),wE=wet*(v.wsE==null?1:v.wsE+(Math.max(v.wsE,.35)-v.wsE)*fW),wR=wet*(v.wsR==null?1:v.wsR+(Math.max(v.wsR,.25)-v.wsR)*fW);// v9/v10: casi seco cerca (≤ 1,5 m); la sala vuelve poco a poco hasta 5,5 m (lejos = más sala)for(let i=0;i<4;i++){const T=I.taps[i]||{dl:.01,g:0};S_(v.tp[i].delayTime,Math.min(.29,T.dl));S_(v.tg[i].gain,T.g*wE*(iso==="late"?0:1))}
   const back=Math.max(0,-Math.cos(P[0]*D2R)),hyper=/^v10-/.test(v.ren)?m.hyper-1:0;
   S_(v.rpd.delayTime,Math.min(.29,I.rev_pre));S_(v.send.gain,I.rev_amp*(1+(.6+hyper)*back*Math.min(1,k))*(ML&&ML.wr!=null?wet*ML.wr:wR)*v.reverb*rs*(iso==="er"?0:1));v.di=I;v.mesaG=me?g:null}
 // la dirección va a los renderizadores siempre a la distancia de referencia (1,5 m): su nivel/aire internos quedan fijos y la distancia la pone distApply
@@ -4946,7 +4953,7 @@ function meters(){if(!M||!M.anL)return null;M.anL.getFloatTimeDomainData(MB.l);M
   let lev=0;for(let i=2;i<200;i++)lev+=MB.f[i];lev/=198*255;
   return {pl,pr,ild,cor,itd:bl/M.ctx.sampleRate*1e6,lufs,lev,gr:M.lim.reduction||0,l:MB.l,r:MB.r,fft:MB.f}}
 
-return {cueEnded,setMesaEdge,mesaLaw,MESA_LEY,MESA_LEYES,get mesaEdge(){return MESA_EDGE},setDist,setDistPath,getDist,setPos,setRoom,setHyperreal,ROOMS,distInfo,airAlpha,airFc,critDist,lvlOf,ildNF,itdNF,DIST:{MIN:D_MIN,MAX:D_MAX,REF:D_REF,C:C_SND,G_MAX_DB:12},get space(){return S.space},get hyper(){return S.hyper},
+return {cueEnded,setMesaEdge,mesaLaw,o7Gain,MESA_LEY,MESA_LEYES,get mesaEdge(){return MESA_EDGE},setDist,setDistPath,getDist,setPos,setRoom,setHyperreal,ROOMS,distInfo,airAlpha,airFc,critDist,lvlOf,ildNF,itdNF,DIST:{MIN:D_MIN,MAX:D_MAX,REF:D_REF,C:C_SND,G_MAX_DB:12},get space(){return S.space},get hyper(){return S.hyper},
   v9Node,v9Set,V9P,onTransport(f){TRL.push(f);return()=>{const i=TRL.indexOf(f);if(i>=0)TRL.splice(i,1)}},gainOf,hdOf,MAXV,DECK_CHANNELS,BANCO,BANCO_IDS,REN,RENDS,HRK,addRenderer,renOf,LVREN,HR,LIC,atribucion,renderAll,renderRange,setPrefCC0(v){PREF_CC0=!!v},get prefCC0(){return PREF_CC0},genEvents,ac,_master,get M(){return M},S,LIB,LIB_IDS,PATHS,PATH_IDS,PRESET01,BEDS,BANDS,revS,radio,xyz,aer,wrap,rng,newSource,addSource,removeSource,setSources,applyMix,play,pause,stop,seek,pos,render,meters,setLim,setVol,setDeckMaster,
   recStart,recStop,takeAt,breathK,advance,mkMotion,libCargar,libSmp,bedLoad,stopBed,stopBin,binStart,bedStart,loadBenzai,clamp,lerp,dB,onEnd:null,ctl,loop,killVoice,rtVoice,
   startExtras(){const c=ac();startLiveBed(c);if(S.binCfg.on&&!S.bin)S.bin=binStart(c,M,S.binCfg,c.currentTime+.05);loop()}};
