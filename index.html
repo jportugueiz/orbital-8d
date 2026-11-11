@@ -4805,18 +4805,24 @@ const FS_PT=PREC+`varying vec4 vc;void main(){vec2 d=gl_PointCoord-.5;float r=le
 // ser luminoso: HOMBRE 3D real (malla MakeHuman/MPFB2 CC0, hombre adulto, sukhasana; ver visuales/ser/hombre.bin).
 // Piel de energía: fresnel (borde dorado brillante) + interior translúcido + núcleo cálido en la columna; caras delanteras y traseras
 // se suman (cuerpo de luz). Respiración: pecho ≈ 1,2 %, cuerpo ≈ 0,4 %. Brillo ligado al audio con tope ±6 %.
-const VS_MAN=`attribute vec3 p,n;uniform mat4 M;uniform vec3 uEye;uniform float uBr,uT,uRed,uPt,uK,uMx,uDpr;varying float vF,vY,vS,vR;
+const VS_MAN=`attribute vec3 p,n;uniform mat4 M;uniform vec3 uEye;uniform float uBr,uT,uRed,uPt,uK,uMx,uDpr;varying float vF,vY,vS,vR;varying vec3 vP;
 float h1(vec3 x){return fract(sin(dot(x,vec3(12.9898,78.233,37.719)))*43758.5453);}
-void main(){vec3 q=p*2.5;float ch=smoothstep(-1.25,-.95,q.y)*smoothstep(-.3,-.6,q.y);q.xz*=1.+.012*uBr*ch;q.y=-1.83+(q.y+1.83)*(1.+.004*uBr);
+void main(){vec3 q=p*2.68;float ch=smoothstep(-1.25,-.95,q.y)*smoothstep(-.3,-.6,q.y);q.xz*=1.+.014*uBr*ch;q.y=-1.96+(q.y+1.96)*(1.+.005*uBr);
   vR=h1(p);if(uPt>.5){q+=n*(.012+.02*vR+.012*sin(uT*(.8+vR)+vR*40.)*(1.-uRed));}
-  vec4 o=M*vec4(q,1.);gl_Position=o;vec3 v=normalize(uEye-q);vF=1.-abs(dot(normalize(n),v));vY=q.y;vS=length(q.xz-vec2(0.,.03));
+  vec4 o=M*vec4(q,1.);gl_Position=o;vec3 v=normalize(uEye-q);vF=1.-abs(dot(normalize(n),v));vY=q.y;vS=length(q.xz-vec2(0.,.03));vP=q;
   if(uPt>.5){float s=uK*(.6+.8*vR)/max(.3,o.w);gl_PointSize=clamp(s,1.*uDpr,uMx);}}`;
-const FS_MAN=PREC+`varying float vF,vY,vS,vR;uniform vec3 uGold,uRim,uCore;uniform float uBri,uA,uPt,uDark,uCut;
+const FS_MAN=PREC+`varying float vF,vY,vS,vR;varying vec3 vP;uniform vec3 uGold,uRim,uCore;uniform float uBri,uA,uPt,uDark,uCut,uT;
 void main(){float cut=smoothstep(uCut-.14,uCut,vY);if(cut<=0.)discard;float fb=gl_FrontFacing?1.:.32;
   if(uDark>.5){gl_FragColor=vec4(0.,0.,0.,uA*cut*fb);return;}
   if(uPt>.5){vec2 d=gl_PointCoord-.5;float r=dot(d,d)*4.;gl_FragColor=vec4(uGold*exp(-r*3.)*smoothstep(1.,.6,r)*uA*uBri*(.5+.5*vF)*cut,1.);return;}
   float f2=pow(vF,2.4),f6=pow(vF,7.);float core=exp(-vS*vS/.012)*smoothstep(-1.9,-1.6,vY)*smoothstep(.2,-.1,vY);
-  vec3 c=uGold*(.045+.62*f2)+uRim*f6*.55+uCore*core*.07;gl_FragColor=vec4(c*uBri*uA*cut*fb,1.);}`;
+  vec3 violet=vec3(.72,.22,1.),cyan=vec3(.08,.88,1.);float side=.5+.5*sin(vP.x*5.+vP.y*1.8);
+  vec3 plasma=mix(violet,cyan,side);float current=pow(.5+.5*sin(vY*17.-uT*5.2+vP.x*10.+vR*4.),13.);
+  float current2=pow(.5+.5*sin(vY*11.+uT*3.7-vP.z*14.+vR*7.),18.);
+  float axis=exp(-abs(vP.x)*28.)*.45;vec2 hd=vec2(vP.x,(vP.y+.82)*1.18);float heart=exp(-dot(hd,hd)/.018)*(1.15+.35*sin(uT*6.283));
+  float stars=pow(max(0.,sin(vR*430.+uT*2.2)),36.)*(.2+.8*f2);
+  vec3 c=uGold*(.045+.62*f2)+uRim*f6*.68+plasma*(.07+.2*f2+current*.27+current2*.19)+uCore*(core*.12+axis*.14+heart*1.15+stars*.28);
+  gl_FragColor=vec4(c*uBri*uA*cut*fb,1.);}`;
 // post
 const FS_BRIGHT=PREC+`varying vec2 uv;uniform sampler2D uS;uniform float uThr;void main(){vec3 c=texture2D(uS,uv).rgb;float l=max(c.r,max(c.g,c.b));gl_FragColor=vec4(c*smoothstep(uThr,uThr+.7,l),1.);}`;
 const FS_BLUR=PREC+`varying vec2 uv;uniform sampler2D uS;uniform vec2 uD;void main(){vec3 c=texture2D(uS,uv).rgb*.227;c+=(texture2D(uS,uv+uD*1.3846).rgb+texture2D(uS,uv-uD*1.3846).rgb)*.3162;
