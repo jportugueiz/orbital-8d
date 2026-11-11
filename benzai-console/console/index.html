@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BENZAI AUDIO · Consola</title>
+<link rel="stylesheet" href="console.css">
+<link rel="stylesheet" href="orbital-finish.css">
+</head>
+<body class="orbital-benzai lvl-pro">
+<!-- Consola B (P3, docs/P3_CONSOLA_B.md): franja de estado arriba, carril de teclas a la izquierda,
+     pantalla central con columna de estado, cubierta de faders con maestros y bandeja de SEGURIDAD.
+     Todo lo que muestra procede del motor; lo que el motor no tiene se marca «No disponible».
+     Pantallas P3 (docs/P3_PANTALLAS.md): FX 1–4, DCA y grupos de mute, patch de entrada/salida, oscilador.
+     P2 (docs/P2_ESCENAS_NOMBRES_DESHACER.md): escenas, safes, nombres y colores, deshacer/rehacer. -->
+<div class="shell">
+  <header class="top">
+    <div class="brand"><img src="assets/brand/benzai-wordmark.svg" alt="BENZAI Intelligent Audio Systems"><span class="model">AUDIO</span></div>
+    <div class="showinfo">
+      <strong id="show-name" class="fit">Show actual</strong>
+      <span id="show-sub">Conectando con el motor…</span>
+    </div>
+    <div class="status" role="group" aria-label="Estado del sistema según el motor">
+      <div class="cell" id="cell-engine" title="Conexión de esta interfaz con el motor de audio"><i class="led"></i><small>MOTOR</small><span id="engine-state" class="v">Desconectado</span></div>
+      <div class="cell" id="pill-device" title="Dispositivo de audio, según el motor"><i class="led"></i><small>DISPOSITIVO</small><span class="v">—</span></div>
+      <div class="cell rate" id="pill-rate" title="Frecuencia de muestreo informada por el motor"><small>FRECUENCIA</small><span class="v">— kHz</span></div>
+      <div class="cell" id="pill-saved" title="Estado del guardado del show, según el motor"><i class="led"></i><small>SHOW</small><span class="v">—</span></div>
+      <div class="cell scene" id="cell-scene" title="Escena actual"><i class="led"></i><small>ESCENA</small><span class="v">—</span></div>
+      <div class="cell alarm" id="alarm-cell" role="status"><i class="led"></i><span class="v">—</span></div>
+    </div>
+    <div class="level-switch" role="radiogroup" aria-label="Nivel de la interfaz (el motor es el mismo; cambiar de nivel no envía ninguna orden)">
+      <button data-level="facil" role="radio" aria-checked="false" title="Fácil: lo esencial, controles grandes">FÁCIL</button>
+      <button data-level="asistido" role="radio" aria-checked="false" title="Asistido: todos los controles con ayuda">ASISTIDO</button>
+      <button data-level="pro" role="radio" aria-checked="true" class="on" title="Pro: densidad completa y datos técnicos">PRO</button>
+    </div>
+    <div class="undo-group" role="group" aria-label="Deshacer y rehacer (historial del motor)">
+      <button id="btn-undo" class="undo" disabled aria-label="Deshacer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7H4v5"/><path d="M4 12a8 8 0 1 1 3 6.2"/></svg><span>DESHACER</span></button>
+      <button id="btn-redo" class="undo" disabled aria-label="Rehacer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 7h5v5"/><path d="M20 12a8 8 0 1 0-3 6.2"/></svg><span>REHACER</span></button>
+    </div>
+    <div id="clock" class="clock" title="Tiempo de funcionamiento del motor (muestras procesadas)">--:--:--</div>
+  </header>
+
+  <nav class="rail" aria-label="Vistas y bancos de faders">
+    <div class="grp">VISTA</div>
+    <button class="key nav" data-view="consola"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4v16M12 4v16M18 4v16"/><rect x="3.5" y="13" width="5" height="3" rx=".5"/><rect x="9.5" y="7" width="5" height="3" rx=".5"/><rect x="15.5" y="10" width="5" height="3" rx=".5"/></svg><span>CANAL</span></button>
+    <button class="key nav" data-view="buses"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="11" cy="18" r="1.6"/></svg><span>BUSES</span></button>
+    <button class="key nav" data-view="fx" title="Rack de efectos FX 1–4 (conectado al motor)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="17" height="4.5" rx="1"/><rect x="3.5" y="10" width="17" height="4.5" rx="1"/><rect x="3.5" y="16" width="17" height="4" rx="1"/><path d="M6.5 6.2h4M6.5 12.2h4"/></svg><span>FX</span></button>
+    <button class="key nav" data-view="dca" title="DCA y grupos de mute"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M17 4v16"/><rect x="4" y="9" width="6" height="3" rx=".5"/><rect x="14" y="13" width="6" height="3" rx=".5"/><path d="M10 10.5h4M10 14.5h4"/></svg><span>DCA</span></button>
+    <button class="key nav" data-view="routing"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h6l4 10h6M4 17h6l4-10h6"/></svg><span>RUTEO</span></button>
+    <button class="key nav" data-view="escenas" title="Escenas, safes de recuperación, nombres y colores"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><path d="M13 16.5h7M16.5 13v7"/></svg><span>ESCENAS</span></button>
+    <button class="key nav" data-view="sistema"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg><span>SISTEMA</span></button>
+    <div class="spacer"></div>
+    <div class="grp">FADERS</div>
+    <div id="banks" class="banks"></div>
+    <button id="fine-toggle" class="key bank fine" aria-pressed="false" title="Ajuste fino de faders y mandos (también con Mayús)">FINO</button>
+  </nav>
+
+  <section class="screen" aria-label="Pantalla central">
+    <div class="glass">
+      <div id="flag-banner" class="flag-banner" role="alert"></div>
+      <div class="shead">
+        <div class="chid"><div class="no" id="monitor-no">—</div><div class="nm"><strong id="monitor-title">—</strong><span id="monitor-sub"></span></div></div>
+        <div class="tabs" role="tablist" id="tabs" aria-label="Pestañas de la vista"></div>
+        <span class="hint" id="monitor-hint"></span>
+      </div>
+      <div id="monitor-body" class="sbody"></div>
+      <aside class="side" aria-label="Estado y alarmas">
+        <h4>ALARMAS <span id="alarm-count" class="pill">—</span></h4>
+        <div id="alarm-list" class="alarms"></div>
+        <div class="genius-box"><div class="gh">GENIUS <span>explica el estado real · no cambia nada</span></div>
+          <p id="genius" class="genius" role="status" title="GENIUS solo explica el estado que informa el motor; no cambia nada"></p></div>
+        <div class="metrics">
+          <div class="metric"><small>DSP</small><b id="dsp-load" class="dsp" title="Carga DSP: tiempo de proceso de cada bloque respecto a su periodo (media y pico del último segundo). Por encima del 100 % habría cortes con un dispositivo real.">—</b></div>
+          <div class="metric"><small>BLOQUE</small><b id="m-block">—</b></div>
+          <div class="metric"><small>CAMBIOS</small><b id="m-changes" title="Revisión del show validada por el motor frente a la que ya aplica el hilo de audio">—</b></div>
+          <div class="metric"><small>SOBRECARGAS</small><b id="m-overloads" title="Bloques de audio que no cupieron en su periodo desde el arranque del motor">—</b></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="deck" aria-label="Superficie de mezcla">
+    <div id="sof-banner" class="sof-banner" hidden></div>
+    <div id="strips" class="strips"></div>
+    <div id="masters" class="masters"></div>
+    <div class="safety" aria-label="Seguridad">
+      <div class="lbl">SEGURIDAD</div>
+      <button id="btn-panic" class="panic" title="PANIC: todas las salidas a cero (tecla F9 o Pausa)"><b>PANIC</b><span>Todas las salidas a cero<br>Tecla F9</span></button>
+      <button id="btn-stop" class="stop"><b>STOP</b><span>Rampa y detención</span></button>
+      <button id="btn-resume" class="resume" hidden>Reanudar salidas</button>
+      <div class="outstate">SALIDAS<b><i class="led" id="out-led"></i><span id="out-state">—</span></b>
+        <span class="eff2"><span data-eff="main_l">L</span><span data-eff="main_r">R</span></span></div>
+    </div>
+  </section>
+</div>
+
+<div id="disc-overlay" class="disc-overlay" role="alert">
+  <div><b>MOTOR DESCONECTADO</b><span>Los controles están bloqueados. El audio no depende de esta interfaz. Reintentando…</span><small id="disc-why"></small></div>
+</div>
+<div id="modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="box"><h2 id="modal-title"></h2><p id="modal-text"></p><ul id="modal-list" class="mlist" hidden></ul>
+    <div class="actions"><button id="modal-cancel">Cancelar</button><button id="modal-ok" class="danger">Aceptar</button></div></div>
+</div>
+<!-- Revision 03-11: avisos grandes sobre la cabecera de la pantalla central (fuera de la maqueta: no la desplazan).
+     Nunca tapan faders, PANIC ni STOP. -->
+<div id="alerts" class="alerts">
+  <div id="panic-fail" class="ops-alert bad" role="alert" hidden><b id="panic-fail-text"></b></div>
+  <div id="ops-alert" class="ops-alert" role="alert" hidden><b id="ops-alert-text"></b><button id="ops-alert-ok" class="sk">ENTENDIDO</button></div>
+</div>
+<div id="toast" class="toast" role="status"></div>
+<script type="module" src="../host.js"></script>
+<script type="module" src="../dist/src/console/app.js"></script>
+</body>
+</html>
