@@ -1,0 +1,27 @@
+{
+ "luna": {
+  "source": "fuentes/lroc_color_2k.jpg",
+  "credit": "NASA's Scientific Visualization Studio (CGI Moon Kit; Ernie Wright, Noah Petro; LRO)",
+  "url": "https://svs.gsfc.nasa.gov/4720",
+  "files": [
+   "luna_1k.webp",
+   "luna_512.webp"
+  ]
+ },
+ "sol": {
+  "source": "fuentes/sdo_aia171_2026-11-11.jpg",
+  "observed": "2026-11-11 10:26:46 UT",
+  "channel": "SDO/AIA 171 Å",
+  "credit": "Courtesy of NASA/SDO and the AIA, EVE, and HMI science teams.",
+  "url": "https://sdo.gsfc.nasa.gov/data/rules.php",
+  "crop_radius_R": 1.2,
+  "fade_R": [
+   1.02,
+   1.14
+  ],
+  "files": [
+   "sol_512.webp",
+   "sol_256.webp"
+  ]
+ }
+}

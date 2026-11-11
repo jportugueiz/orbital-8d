@@ -167,8 +167,8 @@ input[type=text]{width:100%;border:0;border-radius:7px;padding:8px 10px;backgrou
   box-shadow:0 0 0 1px #000,0 0 0 6px #1b1f24,0 0 0 7px #2f353c,0 0 0 9px #0b0d0f,0 18px 50px rgba(0,0,0,.7)}
 .viewport canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .orbital-ser-identidad{position:absolute;z-index:2;left:50%;bottom:17.5%;height:52%;width:auto;transform:translateX(-50%);pointer-events:none;user-select:none;mix-blend-mode:screen;
-  filter:drop-shadow(0 0 5px rgba(255,204,132,.9)) drop-shadow(0 0 13px rgba(130,82,255,.75)) drop-shadow(0 0 22px rgba(42,225,255,.5));animation:orbitalSerEnergia 3.6s ease-in-out infinite alternate}
-@keyframes orbitalSerEnergia{0%{opacity:.82;filter:drop-shadow(0 0 4px rgba(255,204,132,.8)) drop-shadow(0 0 10px rgba(130,82,255,.65)) drop-shadow(0 0 18px rgba(42,225,255,.42)) brightness(.96)}55%{opacity:.95;filter:drop-shadow(0 0 7px rgba(255,222,158,1)) drop-shadow(0 0 17px rgba(161,92,255,.86)) drop-shadow(0 0 28px rgba(42,225,255,.62)) brightness(1.14)}100%{opacity:.88;filter:drop-shadow(0 0 5px rgba(255,204,132,.9)) drop-shadow(0 0 15px rgba(91,124,255,.78)) drop-shadow(0 0 24px rgba(60,237,255,.55)) brightness(1.04)}}
+  filter:drop-shadow(0 0 5px rgba(255,214,150,.9)) drop-shadow(0 0 13px rgba(92,104,255,.75)) drop-shadow(0 0 22px rgba(70,190,255,.5));animation:orbitalSerEnergia 3.6s ease-in-out infinite alternate}
+@keyframes orbitalSerEnergia{0%{opacity:.82;filter:drop-shadow(0 0 4px rgba(255,214,150,.8)) drop-shadow(0 0 10px rgba(92,104,255,.65)) drop-shadow(0 0 18px rgba(70,190,255,.42)) brightness(.96)}55%{opacity:.95;filter:drop-shadow(0 0 7px rgba(255,222,158,1)) drop-shadow(0 0 17px rgba(118,110,255,.86)) drop-shadow(0 0 28px rgba(70,190,255,.62)) brightness(1.14)}100%{opacity:.88;filter:drop-shadow(0 0 5px rgba(255,214,150,.9)) drop-shadow(0 0 15px rgba(91,124,255,.78)) drop-shadow(0 0 24px rgba(90,200,255,.55)) brightness(1.04)}}
 @media(max-width:760px){.orbital-ser-identidad{height:47%;bottom:20%}}
 #radar{cursor:grab;touch-action:none}#radar.grab{cursor:grabbing}
 .glass{position:absolute;inset:0;pointer-events:none;background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,0) 30%,rgba(255,255,255,0) 70%,rgba(63,230,238,.04)),radial-gradient(120% 90% at 50% 50%,transparent 60%,rgba(0,0,0,.55));border-radius:16px}
@@ -1308,20 +1308,16 @@ body.vp #ship>header.topbar{display:none}
 #ship #modes>button[hidden]{display:none}
 #ship #modes>button:focus-visible{outline:2px solid #7fe3ff;outline-offset:2px}
 #ship #modes>button:active{transform:translateY(1px)}
-#ship #modes>[data-m]{grid-row:1;color:#94a3b6;background:transparent;border:1px solid transparent;box-shadow:none;text-shadow:0 1px 1px #000}
+#ship #modes>[data-m]{grid-row:1}
+/* los 8 botones en la misma familia cian: inactivos cian-petróleo con relieve; activo, cian luminoso */
+#ship #modes>button{--x:#5fd0dc;color:#a3dce2;background:linear-gradient(180deg,#21474f,#0f2429);border:1px solid #2f6670;border-bottom-color:#081215;box-shadow:0 2px 5px #0009,inset 0 1px 0 #bff6ff21;text-shadow:0 1px 1px #000}
 #ship #modes>[data-m]:nth-child(1){grid-column:1}
 #ship #modes>[data-m]:nth-child(2){grid-column:2}
 #ship #modes>[data-m]:nth-child(3){grid-column:3}
 #ship #modes>[data-m]:nth-child(4){grid-column:4}
-#ship #modes>[data-m]:hover{color:#e2ebf3;background:linear-gradient(#ffffff10,#ffffff04)}
-#ship #modes>[data-m].on{color:#c4faff;background:linear-gradient(#2c8393d9,#12333ce6);border-color:#65aebb;box-shadow:inset 0 1px 0 #d9fbff33,0 0 12px #5bb7c347;text-shadow:0 0 7px #5bd8e680}
-#ship #modes>button:not([data-m]){--x:#9fb4c9;color:color-mix(in srgb,var(--x) 82%,#fff);background:linear-gradient(180deg,color-mix(in srgb,var(--x) 13%,#29323c),color-mix(in srgb,var(--x) 5%,#131920));border:1px solid color-mix(in srgb,var(--x) 40%,#3a444e);border-bottom-color:#0a0e12;box-shadow:0 2px 5px #0009,inset 0 1px 0 #ffffff1f;text-shadow:0 1px 1px #000}
-#ship #modes>button:not([data-m]):hover{border-color:color-mix(in srgb,var(--x) 75%,#3a444e);box-shadow:0 2px 5px #0009,inset 0 1px 0 #ffffff26,0 0 14px color-mix(in srgb,var(--x) 28%,transparent)}
+#ship #modes>button:hover{color:#d6fbff;border-color:#4fa3ae;box-shadow:0 2px 5px #0009,inset 0 1px 0 #bff6ff2e,0 0 12px #5bd8e62e}
+#ship #modes>button.on{color:#c4faff;background:linear-gradient(#2c8393d9,#12333ce6);border-color:#65aebb;box-shadow:inset 0 1px 0 #d9fbff33,0 0 14px #5bb7c359;text-shadow:0 0 7px #5bd8e680}
 #ship #modes>button:not([data-m]):not(#bPlayScr)::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;background:var(--x);box-shadow:0 0 6px var(--x)}
-#ship #modes>#bPlayScr{--x:#6fd8ff;color:#effcff;background:linear-gradient(180deg,#2b93ad,#1b5a8c 55%,#23297a);border-color:#79d9f0;border-bottom-color:#0a1020;box-shadow:0 2px 6px #000a,inset 0 1px 0 #ffffff40,0 0 16px #3fb7ff40;text-shadow:0 0 6px #9be9ff99,0 1px 1px #000}
-#ship #modes>#bDemoLive{--x:#bdb3ff}
-#ship #modes>#bFrequencyBath{--x:#9be2c9}
-#ship #modes>#bListeningAB{--x:#ffc574}
 /* franja de estado: LEDs en un carril empotrado; audífonos y reloj debajo */
 #ship>header.topbar>#leds{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 10px;max-width:none;min-height:32px;margin:0;padding:6px 12px;border-radius:8px;border:1px solid #2f3842;background:var(--rack-well);box-shadow:var(--rack-recess)}
 #ship>header.topbar>.clock{display:flex;align-items:center;justify-content:flex-end;gap:10px;width:auto;margin:0}
@@ -1599,14 +1595,10 @@ body[data-mode="ses"] #ship .left{grid-area:library}
   --ctl-shadow:0 2px 4px #0009,inset 0 1px 0 #e2ecf329;
   --ctl-shadow-press:inset 0 2px 4px #000b;
   --ctl-hover:brightness(1.12) drop-shadow(0 0 5px #3fe6ee38);
-  --ctl-glaze-primary:linear-gradient(#277d85c7,#103c46d9);
-  --ctl-primary-edge:#5fc4cc;--ctl-primary-tx:#e6feff;
-  --ctl-primary-shadow:0 2px 4px #0009,inset 0 1px 0 #d9fbff33,0 0 9px #3fe6ee2e;
   --ctl-glaze-on:linear-gradient(#2c8393c9,#12333cdd);
   --ctl-on-edge:#6fdfe9;--ctl-on-tx:#c9fbff;
   --ctl-on-shadow:inset 0 2px 4px #0009,0 0 8px #3fe6ee45;
-  --ctl-glaze-danger:linear-gradient(#834444c7,#421d22d9);
-  --ctl-danger-edge:#b9705f;--ctl-danger-tx:#ffd6cc;
+  --ctl-danger-tx:#ffb4a8;
   --ctl-pad-low:#090b10;--ctl-pad-on-low:#06222a;
   --ctl-disabled:.45;
   --ctl-focus:#8df2ef;
@@ -1666,20 +1658,29 @@ body[data-mode="ses"] #ship .left{grid-area:library}
 #ship>:not(.topbar) :is(.seg button,.vbtn),#play :is(.play-gem,.play-library-tabs .pbtn),
 .play-library-dialog .play-library-tabs .pbtn,.demo-live :is(.vbtn,.demo-jump){border-radius:var(--ctl-r-sm)}
 #ship .ms button{border-radius:var(--ctl-r-sm)}
-
-/* --- 3. Primaria --- */
-#ship>:not(.topbar) .btn.go,.freq-dialog .freq-play,.demo-live .demo-start,
-#play :is(#pOpenSounds,.play-monitor-transport #pPlayB),#manualLibrary .pbtn:first-child{
-  --key-glaze:var(--ctl-glaze-primary);
-  color:var(--ctl-primary-tx);border-color:var(--ctl-primary-edge);border-bottom-color:var(--ctl-edge-low);
-  box-shadow:var(--ctl-primary-shadow);
+#ship .ms button:not(.on){
+  background:var(--ctl-face);background-size:100% 100%;color:var(--ctl-tx);
+  border:1px solid var(--ctl-edge);border-bottom-color:var(--ctl-edge-low);box-shadow:var(--ctl-shadow);
 }
-.demo-live .demo-start:is(:hover,:focus-visible){background:var(--key-glaze),var(--ctl-face);background-size:100% 100%;color:var(--ctl-primary-tx)}
 
-/* --- 4. Peligro --- */
+/* --- 3. Sin variante primaria: los botones de acción usan la misma tecla base.
+   El cian queda solo para el estado activo o seleccionado de los botones que se alternan. --- */
+#ship>:not(.topbar) :is(.btn.go:not(.on),.btn.create),.freq-dialog .freq-play,.demo-live .demo-start,
+#play :is(#pOpenSounds,#pPlayB:not(.on,[aria-pressed="true"])),#manualLibrary :is(.pbtn,#mOpenSounds){
+  --key-glaze:none;
+  background:var(--ctl-face);background-size:100% 100%;
+  color:var(--ctl-tx);border-color:var(--ctl-edge);border-bottom-color:var(--ctl-edge-low);
+  box-shadow:var(--ctl-shadow);animation:none;
+}
+#ship>:not(.topbar) .btn.create,.demo-live .demo-start,.freq-dialog .freq-play,#manualLibrary :is(.pbtn,#mOpenSounds){
+  min-height:var(--ctl-h);padding:6px var(--ctl-px);font:var(--ctl-font);letter-spacing:var(--ctl-ls);text-transform:none;
+}
+#ship>:not(.topbar) .btn.create{width:100%}
+
+/* --- 4. Peligro: la misma tecla base; solo el texto en rojo suave --- */
 #ship>:not(.topbar) .btn.stop,#play :is(.pbtn.del,#pDeskClearAll,#pDeskDelete),.freq-dialog .freq-stop:not([id]){
-  --key-glaze:var(--ctl-glaze-danger);
-  color:var(--ctl-danger-tx);border-color:var(--ctl-danger-edge);border-bottom-color:var(--ctl-edge-low);
+  --key-glaze:none;
+  color:var(--ctl-danger-tx);border-color:var(--ctl-edge);border-bottom-color:var(--ctl-edge-low);
 }
 .freq-dialog .freq-stop[id]{--key-glaze:none}
 
@@ -2126,7 +2127,7 @@ body[data-mode="ses"] #ship .left{grid-area:library}
   <main class="view col">
     <div class="viewport" id="vp">
       <canvas id="gl" aria-label="Esfera orbital 3D: tus instrumentos alrededor de la cabeza"></canvas>
-      <img class="orbital-ser-identidad" src="visuales/ser/orbital_ser_identidad.png" alt="Ser luminoso Orbital sentado en posición de loto">
+      <img class="orbital-ser-identidad" src="visuales/ser/orbital_ser_identidad_v4.png" alt="Ser luminoso Orbital sentado en posición de loto">
       <div class="ovl" id="ovl"></div>
       <svg class="draw" id="drawSvg" aria-hidden="true"><path id="drawPath"/></svg>
       <div class="vhud tl"><button class="vbtn on" data-cam="3d">3D</button><button class="vbtn" data-cam="top">CENITAL</button><button class="vbtn" data-cam="front">FRONTAL</button><button class="vbtn" data-cam="in" title="La cámara en tu cabeza sigue los sonidos">INMERSIVO</button></div>
@@ -2260,6 +2261,7 @@ body[data-mode="ses"] #ship .left{grid-area:library}
       <p><b>Audio espacial:</b> HRTF medido MIT KEMAR (Gardner &amp; Martin, MIT Media Lab, 1994), extraído con libmysofa/ffmpeg; alternativa: HRTF del navegador (PannerNode). Pistas perceptivas del motor v8 de IAH. Salida binaural estéreo para audífonos; no es Dolby Atmos ni ningún formato propietario.</p>
       <p><b>Grabaciones:</b> reales, de IAH, con licencia libre. Las CC BY-SA exigen atribución y que las obras derivadas (tus exportaciones que las usen) se compartan con la misma licencia; cada exportación indica qué atribución necesita. El tambor oceánico fue generado con IA (Runway · ElevenLabs) para IAH.</p>
       <p><b>Cielo del visor («Cielo Gaia»):</b> «The colour of the sky from Gaia’s Early Data Release 3», ESA/Gaia/DPAC; CC BY-SA 3.0 IGO. Acknowledgement: A. Moitinho. <a href="https://sci.esa.int/web/gaia/-/the-colour-of-the-sky-from-gaia-s-early-data-release-3-equirectangular-projection" target="_blank" rel="noopener">Fuente (ESA)</a> · <a href="https://creativecommons.org/licenses/by-sa/3.0/igo/" target="_blank" rel="noopener">licencia</a>. ORBITAL ajustó el punto negro y la resolución; esa versión se comparte con la misma licencia.</p>
+      <p><b>Luna y Sol del visor:</b> Luna: mapa de color LRO, NASA's Scientific Visualization Studio (<a href="https://svs.gsfc.nasa.gov/4720" target="_blank" rel="noopener">CGI Moon Kit</a>). Sol: SDO/AIA 171 Å, 11 nov 2026, Courtesy of NASA/SDO and the AIA, EVE, and HMI science teams (<a href="https://sdo.gsfc.nasa.gov/data/rules.php" target="_blank" rel="noopener">uso</a>). La fase, el halo y la corona animada son efectos de ORBITAL.</p>
       <ul id="credList" class="credl"></ul>
       <p><b>Música de fondo:</b> 23 pistas de <b>música original IAH · Runway</b> (generadas desde la cuenta de Jorge el 5–6 nov 2026; uso personal y no comercial; ver musica/iah/CREDITOS.md) y 3 composiciones procedurales propias de ORBITAL (CC0).</p>
     </details>
@@ -5171,6 +5173,7 @@ const FS_SKY=PREC+`varying vec2 uv;uniform sampler2D uA,uB;uniform mat4 IVP;unif
 uniform vec4 uHorizon; // color lineal y altura angular de la bruma
 uniform vec4 uStrike; // azimut, elevación, intensidad y semilla
 uniform vec4 uAura; // aura del entorno: intensidad, radio (unidades de escena), pulso (0..1), altura del centro
+uniform sampler2D uMoonT,uSunT;uniform vec4 uMoon,uMoonL,uSun,uSunP;uniform vec2 uMoonG; // Luna: dirección+radio, dirección al Sol+visibilidad, brillo/halo; Sol: dirección+radio, brillo/respira/vida/visibilidad
 uniform float wA,wB,mAB,uPx,uOct,uFil,uDust,uMid,uMidRot,uSkyRot,lev,bri,warm,tm,uSphOn;const float PI=3.14159265;
 ${NOISE_GLSL}
 vec2 equi(vec3 d){return vec2(.5+atan(d.x,-d.z)/(2.*PI),.5-asin(clamp(d.y,-1.,1.))/PI);}
@@ -5210,6 +5213,25 @@ void main(){vec4 q=IVP*vec4(uv*2.-1.,1.,1.);vec3 d=normalize(q.xyz/q.w-eye);
     float wisp=ridged(hw*1.8,uPx*t/6.*3.06,uOct-1.)*cloud;col+=mix(uP0,uP1,smoothstep(.3,.7,n3(hw*.7)))*pow(wisp,1.8)*uMid*(.88+.24*lev);}
   if(uSphOn>.5){float tc=-dot(eye,d);if(tc>0.){float dm=length(eye+d*tc);float r=uSph.x;float x=(dm-r)/(r*.035);
     col+=c1*(exp(-x*x)*.10+exp(-abs(x)*.25)*.018)*uSph.y+c1*smoothstep(r,r*.15,dm)*.014*uSph.y;}}
+  // SOL real (SDO/AIA 171 Å) con vida leve: corona que respira (~8 s), filamentos tenues con ruido lento, rotación muy lenta y brillo sutil en los arcos.
+  // tm=0 en movimiento reducido: queda quieto.
+  if(uSunP.w>.001){vec3 sd=uSun.xyz;if(dot(ds,sd)>cos(uSun.w*7.)){
+    vec3 sr=normalize(cross(sd,vec3(0.,1.,0.))),su=cross(sr,sd);vec2 sp=vec2(dot(ds,sr),dot(ds,su))/sin(uSun.w);float sR=length(sp);
+    float ra=tm*.006;vec2 sq=vec2(cos(ra)*sp.x-sin(ra)*sp.y,sin(ra)*sp.x+cos(ra)*sp.y);
+    vec3 S=vec3(0.);if(sR<1.2){S=texture2D(uSunT,.5+sq*(.5/1.2)).rgb;S*=S;}float slu=dot(S,vec3(.3,.6,.1));
+    float sbr=1.+uSunP.y*sin(tm*.785);float ssh=1.+uSunP.z*.08*sin(tm*1.1+6.283*n3(vec3(sq*5.,tm*.04)))*smoothstep(.12,.45,slu);
+    vec2 sdn=sp/max(sR,1e-3);float sfil=n3(vec3(sdn*3.5,sR*.35-tm*.02))*.65+n3(vec3(sdn*9.,sR*.6+tm*.015))*.35;
+    float scor=(exp(-max(sR-1.,0.)*3.2)*.55+exp(-max(sR-1.,0.)*1.1)*.1)*smoothstep(.85,1.02,sR)*sbr*(.6+uSunP.z*.9*sfil*sfil);
+    col+=uSunP.x*uSunP.w*(S*ssh*1.5+vec3(1.,.72,.25)*scor*.45);}}
+  // LUNA real (NASA SVS, LRO): esfera con su textura, iluminada desde la dirección del Sol (fase y terminador suaves), luz cenicienta mínima y halo muy leve.
+  if(uMoonL.w>.001){vec3 md=uMoon.xyz;if(dot(ds,md)>cos(uMoon.w*5.)){
+    vec3 mr=normalize(cross(md,vec3(0.,1.,0.))),mu=cross(mr,md);vec2 mp=vec2(dot(ds,mr),dot(ds,mu))/sin(uMoon.w);float mr2=dot(mp,mp),mR=sqrt(mr2);
+    float me=uPx/sin(uMoon.w);float ma=(1.-smoothstep(1.-me,1.+me,mR))*uMoonL.w;vec3 L=uMoonL.xyz;
+    if(ma>0.){float mz=sqrt(max(1.-mr2,0.));vec3 nW=mp.x*mr+mp.y*mu-mz*md;
+      vec3 T=texture2D(uMoonT,vec2(.5+atan(mp.x,mz)/6.2832,.5-asin(clamp(mp.y,-1.,1.))/3.14159)).rgb;T*=T;
+      float nl=dot(nW,L);float lit=smoothstep(-.08,.12,nl)*(.25+.75*max(nl,0.));
+      col=col*(1.-ma)+T*(lit*1.3+.035)*uMoonG.x*ma;}
+    float mfr=.5+.5*dot(L,-md);col+=vec3(.72,.78,.95)*exp(-max(mR-1.,0.)*2.4)*step(1.,mR)*.045*mfr*uMoonG.y*uMoonL.w;}}
   // aura: resplandor radial suave alrededor del ser (centro en y=uAura.w), cian-azul al centro y violeta hacia el borde;
   // se apaga con la distancia (no tapa las estrellas de la periferia) y cuando la cámara está dentro (INMERSIVO); respiración lenta opcional
   if(uAura.x>0.){vec3 ac0=vec3(0.,uAura.w,0.);float atc=max(dot(ac0-eye,d),0.);float adm=length(eye+d*atc-ac0)/uAura.y;
@@ -5272,7 +5294,7 @@ void main(){float cut=smoothstep(uCut-.14,uCut,vY);if(cut<=0.)discard;float fb=g
   if(uDark>.5){gl_FragColor=vec4(0.,0.,0.,uA*cut*fb);return;}
   if(uPt>.5){vec2 d=gl_PointCoord-.5;float r=dot(d,d)*4.;gl_FragColor=vec4(uGold*exp(-r*3.)*smoothstep(1.,.6,r)*uA*uBri*(.5+.5*vF)*cut,1.);return;}
   float f2=pow(vF,2.4),f6=pow(vF,7.);float core=exp(-vS*vS/.012)*smoothstep(-1.9,-1.6,vY)*smoothstep(.2,-.1,vY);
-  vec3 violet=vec3(.72,.22,1.),cyan=vec3(.08,.88,1.);float side=.5+.5*sin(vP.x*5.+vP.y*1.8);
+  vec3 violet=vec3(.42,.36,1.),cyan=vec3(.25,.72,1.);float side=.5+.5*sin(vP.x*5.+vP.y*1.8);
   vec3 plasma=mix(violet,cyan,side);float current=pow(.5+.5*sin(vY*17.-uT*5.2+vP.x*10.+vR*4.),13.);
   float current2=pow(.5+.5*sin(vY*11.+uT*3.7-vP.z*14.+vR*7.),18.);
   float axis=exp(-abs(vP.x)*28.)*.45;vec2 hd=vec2(vP.x,(vP.y+.82)*1.18);float heart=exp(-dot(hd,hd)/.018)*(1.15+.35*sin(uT*6.283));
@@ -5380,7 +5402,7 @@ function manBuffers(g,d){const b={p:g.createBuffer(),n:g.createBuffer(),i:g.crea
 function manUpload(){if(!gl||gl.isContextLost()||!MAN.data)return;MAN.gl=manBuffers(gl,MAN.data)}
 // dibuja el hombre con el programa Pr en el contexto g: oscurece un poco el fondo (volumen), suma la piel de luz y las partículas
 function manDraw(g,Pr,b,o){const u=Pr.u;g.useProgram(Pr.p);g.uniformMatrix4fv(u.M,false,o.M);g.uniform3fv(u.uEye,o.eye);g.uniform1f(u.uBr,o.br);g.uniform1f(u.uT,o.t);g.uniform1f(u.uRed,o.red?1:0);
-  g.uniform3fv(u.uGold,[1,.66,.3]);g.uniform3fv(u.uRim,[1,.9,.72]);g.uniform3fv(u.uCore,[1,.78,.45]);g.uniform1f(u.uBri,o.bri);g.uniform1f(u.uDpr,o.dpr);g.uniform1f(u.uCut,o.cut==null?-9:o.cut);g.uniform1f(u.uK,o.k);g.uniform1f(u.uMx,o.mx);
+  g.uniform3fv(u.uGold,[1,.8,.5]);g.uniform3fv(u.uRim,[1,.92,.78]);g.uniform3fv(u.uCore,[1,.86,.6]);g.uniform1f(u.uBri,o.bri);g.uniform1f(u.uDpr,o.dpr);g.uniform1f(u.uCut,o.cut==null?-9:o.cut);g.uniform1f(u.uK,o.k);g.uniform1f(u.uMx,o.mx);
   const lp=Pr.a.p,ln=Pr.a.n;g.bindBuffer(g.ARRAY_BUFFER,b.p);g.enableVertexAttribArray(lp);g.vertexAttribPointer(lp,3,g.SHORT,true,0,0);
   if(ln!=null&&ln>=0){g.bindBuffer(g.ARRAY_BUFFER,b.n);g.enableVertexAttribArray(ln);g.vertexAttribPointer(ln,3,g.BYTE,true,0,0)}
   g.enable(g.BLEND);g.bindBuffer(g.ELEMENT_ARRAY_BUFFER,b.i);g.uniform1f(u.uPt,0);
@@ -5424,7 +5446,13 @@ function fftRings(fft,lev,red){if(!fft||!fft.length)return;const n=128,R0=3.4,T=
    Fiel y sutil: sin filamentos, polvo ni capa media procedurales; estrellas procedurales tenues; giro muy lento (drift, °/s). */
 const ENV_DEF="cielo_gaia";
 const ENVS={
-  cielo_gaia:{n:"Cielo Gaia",c1:[.2,.32,.95],c2:[.45,.22,.9],bri:.62,warm:0,emo:[],img:"visuales/pano/cielo_gaia_2k.webp",maxRes:"4k",maxResMobile:"2k",bank:true,humo:0,aura:{a:.3,r:2.8,pulso:.12,y:-.7},stars:.3,drift:.12,
+  cielo_gaia:{n:"Cielo Gaia",c1:[.2,.32,.95],c2:[.45,.22,.9],bri:.62,warm:0,emo:[],img:"visuales/pano/cielo_gaia_2k.webp",maxRes:"4k",maxResMobile:"2k",bank:true,humo:0,aura:{a:.3,r:2.8,pulso:.12,y:-.7},stars:.3,drift:.12,grainK:.3,
+    /* Luna real (NASA SVS CGI Moon Kit, LRO) y Sol real (NASA/SDO AIA 171 Å). az/el en grados en el marco del cielo (az 0 = frente, + = derecha; giran con el cielo);
+       tam = múltiplo del tamaño angular real (~0,53°). La fase de la Luna sale de la posición del Sol; «fase» (elongación en grados) solo se usa si el Sol está apagado. «ilum» (0..1) fuerza la fracción iluminada, con la luz del lado del Sol.
+       Por defecto Sol y Luna están en oposición (az +180°, elevación espejada): Luna llena; en 3D se ve el Sol y la Luna al girar o mirar atrás.
+       Sol: brillo, respira (amplitud de la corona, ciclo ~8 s), vida (filamentos y brillo en los arcos). off:true desactiva cada uno. */
+    luna:{az:188,el:14,tam:3.2,fase:120,ilum:.98,brillo:1.5,halo:1,img:"visuales/pano/luna_1k.webp",imgMovil:"visuales/pano/luna_512.webp"},
+    sol:{az:8,el:-14,tam:3,brillo:1.8,respira:.12,vida:1,img:"visuales/pano/sol_512.webp",imgMovil:"visuales/pano/sol_256.webp"},
     credit:"ESA/Gaia/DPAC; CC BY-SA 3.0 IGO. Acknowledgement: A. Moitinho."},
   nebulosa_profunda:{n:"Nebulosa profunda",c1:[.2,.32,.95],c2:[.45,.22,.9],bri:.9,warm:-.2,emo:["tristeza","melancolia","misterio"]},
   aurora_cian:{n:"Aurora cian",c1:[.15,.75,.85],c2:[.2,.35,.9],bri:1,warm:-.1,emo:["paz","relajacion","concentracion","aceptacion"]},
@@ -5445,6 +5473,10 @@ for(const b of BANK){if(!b||!b.id||!b.file)continue;ENVS[b.id]=Object.assign({n:
 const panoRes=()=>{if(MOBILE||V.q<=0)return MAXTEX>=4096&&V.q>=1?"4k":"2k";return MAXTEX>=8192&&V.q>=2?"8k":MAXTEX>=4096?"4k":"2k"};
 function loadTex(url,cb){if(TXC[url]!==undefined)return TXC[url];TXC[url]=null;const im=new Image();
   im.onload=()=>{try{const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,im);texP(gl.LINEAR,gl.LINEAR,gl.CLAMP_TO_EDGE);TXC[url]=t;cb&&cb(t)}catch(e){TXC[url]=false}};
+  im.onerror=()=>{TXC[url]=false};im.src=url;return null}
+// texturas pequeñas de astros (Luna, Sol; potencia de 2) con mipmaps: se ven a pocos píxeles y sin mipmaps forman una trama
+function loadTexMip(url){if(TXC[url]!==undefined)return TXC[url];TXC[url]=null;const im=new Image();
+  im.onload=()=>{try{const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,im);gl.generateMipmap(gl.TEXTURE_2D);texP(gl.LINEAR_MIPMAP_LINEAR,gl.LINEAR,gl.CLAMP_TO_EDGE);TXC[url]=t}catch(e){TXC[url]=false}};
   im.onerror=()=>{TXC[url]=false};im.src=url;return null}
 // telón: primero 2K (rápido); en cuanto llega la resolución objetivo (8K/4K) la sustituye
 function envTex(env){if(!env||!env.img)return null;const RS=["2k","4k","8k"];let rs=panoRes();const mx=MOBILE&&env.maxResMobile||env.maxRes;if(mx&&RS.indexOf(rs)>RS.indexOf(mx))rs=mx;const want=env.img.replace(/_(2k|4k|8k)\.webp$/,"_"+rs+".webp");
@@ -5590,7 +5622,13 @@ function render(t,dt,D,A,red,qt,sphOn){const W=cv.width,H=cv.height,FB=V.FB,post
     if(horizonA||horizonB)gl.uniform4fv(u.uHorizon,[0,1,2,3].map(i=>(horizonA?.[i]??0)*(1-V.mAB)+(horizonB?.[i]??0)*V.mAB));
     else gl.uniform4f(u.uHorizon,0,0,0,0);
     const cs=V.cam==="in"?.4:.06;gl.uniform3f(u.uCam,eye[0]*cs,eye[1]*cs,eye[2]*cs);gl.uniform3fv(u.c1,V.tint);gl.uniform3fv(u.c2,V.tint2);gl.uniform3fv(u.uP0,pal[0]);gl.uniform3fv(u.uP1,pal[1]);gl.uniform3fv(u.uP2,pal[2]);
-    gl.uniform3f(u.uSph,SR,.8+.25*V.envS+.35*V.pulse,0);gl.uniform1f(u.uSphOn,sphOn);{const aA=V.envPrev?.aura,aB=ev.aura,am=V.envPrev?V.mAB:1,aR=aB||aA||{};gl.uniform4f(u.uAura,(aA?.a||0)*(1-am)+(aB?.a||0)*am,aR.r||2.4,red?0:(aR.pulso||0),aR.y??-.7)}gl.uniform1f(u.wA,pA?1:0);gl.uniform1f(u.wB,pB?1:0);gl.uniform1f(u.mAB,V.envPrev?V.mAB:1);
+    gl.uniform3f(u.uSph,SR,.8+.25*V.envS+.35*V.pulse,0);gl.uniform1f(u.uSphOn,sphOn);{const aA=V.envPrev?.aura,aB=ev.aura,am=V.envPrev?V.mAB:1,aR=aB||aA||{};gl.uniform4f(u.uAura,(aA?.a||0)*(1-am)+(aB?.a||0)*am,aR.r||2.4,red?0:(aR.pulso||0),aR.y??-.7)}
+    {const P=V.envPrev,am=P?V.mAB:1,on=o=>o&&!o.off?o:null,lu=on(ev.luna),lp=on(P&&P.luna),LU=lu||lp,so=on(ev.sol),sP=on(P&&P.sol),SO=so||sP;
+     const dirOf=(az,el)=>{const a=az*D2R,e=el*D2R;return [Math.cos(e)*Math.sin(a),Math.sin(e),-Math.cos(e)*Math.cos(a)]},R0=.2635*D2R,tx=o=>{const url=MOBILE&&o.imgMovil||o.img;return TXC[url]||loadTexMip(url)};
+     if(LU){const t=tx(LU),md=dirOf(LU.az,LU.el),L0=SO?dirOf(SO.az,SO.el):dirOf(LU.az-(LU.fase??120),LU.el),L=LU.ilum!=null?(()=>{/* ilum: fracción iluminada forzada (0..1); la luz viene del lado del Sol */const k=L0[0]*md[0]+L0[1]*md[1]+L0[2]*md[2];let t=[L0[0]-md[0]*k,L0[1]-md[1]*k,L0[2]-md[2]*k];const n=Math.hypot(...t)||1;t=t.map(x=>x/n);const c=2*clamp(LU.ilum,0,1)-1,sn=Math.sqrt(1-c*c);return [-md[0]*c+t[0]*sn,-md[1]*c+t[1]*sn,-md[2]*c+t[2]*sn]})():L0;gl.uniform1i(u.uMoonT,bindT(3,t));gl.uniform4f(u.uMoon,md[0],md[1],md[2],R0*(LU.tam||2));
+       gl.uniform4f(u.uMoonL,L[0],L[1],L[2],t?(lu?1:0)*am+(lp?1:0)*(1-am):0);gl.uniform2f(u.uMoonG,LU.brillo??1,LU.halo??1)}else gl.uniform4f(u.uMoonL,0,0,0,0);
+     if(SO){const t=tx(SO),sd=dirOf(SO.az,SO.el);gl.uniform1i(u.uSunT,bindT(4,t));gl.uniform4f(u.uSun,sd[0],sd[1],sd[2],R0*(SO.tam||2));
+       gl.uniform4f(u.uSunP,SO.brillo??.8,SO.respira??.12,SO.vida??1,t?(so?1:0)*am+(sP?1:0)*(1-am):0)}else gl.uniform4f(u.uSunP,0,0,0,0)}gl.uniform1f(u.wA,pA?1:0);gl.uniform1f(u.wB,pB?1:0);gl.uniform1f(u.mAB,V.envPrev?V.mAB:1);
     gl.uniform1f(u.uPx,pxAng);gl.uniform1f(u.uOct,octs);gl.uniform1f(u.uFil,ev.fil==null?.7:ev.fil);gl.uniform1f(u.uDust,ev.dust==null?.25:ev.dust);gl.uniform1f(u.uMid,ev.mid==null?.45:ev.mid);
     gl.uniform1f(u.uMidRot,red?V.tA*.01:V.tA*.035);const sdr=(ev.drift||0)*(V.envPrev?V.mAB:1)+(V.envPrev?(V.envPrev.drift||0)*(1-V.mAB):0);V.skyD=((V.skyD||0)+(red?0:dt*sdr))%360;gl.uniform1f(u.uSkyRot,((D.rot||0)*-1+V.skyD)*D2R);gl.uniform1f(u.lev,V.envS);gl.uniform1f(u.bri,V.bri);gl.uniform1f(u.warm,V.warm);gl.uniform1f(u.tm,red?0:V.tA)});
   if(tgt){gl.bindFramebuffer(gl.FRAMEBUFFER,tgt.f)}gl.viewport(0,0,W,H);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);
@@ -5653,7 +5691,7 @@ function render(t,dt,D,A,red,qt,sphOn){const W=cv.width,H=cv.height,FB=V.FB,post
     gl.uniform2f(u.uRes,W,H);gl.uniform2f(u.uKey,K.x,K.y);gl.uniform1f(u.uKeyOn,K.on*(.85+.3*V.envS));gl.uniform1f(u.uGR,(.35+G.bloom*.9)*1.6);gl.uniform1f(u.uGRn,qt.gr);gl.uniform1f(u.uCas,qt.cas);gl.uniform1f(u.uPost,1);
     gl.uniform2f(u.uBNo,red?0:(fr*.6180339)%1,red?0:(fr*.7548776)%1);gl.uniform1f(u.uHue,G.hue*D2R);gl.uniform3fv(u.uTint,V.tintC||[1,1,1]);gl.uniform1f(u.uTA,clamp(G.tint_amt,0,1));
     gl.uniform1f(u.uSat,G.sat);gl.uniform1f(u.uVib,G.vib);gl.uniform1f(u.uExp,G.exposure);gl.uniform1f(u.uCon,G.contrast);gl.uniform1f(u.uWarm,G.warmth);gl.uniform1f(u.uBloom,G.bloom*1.4*(.85+.3*V.envS));
-    gl.uniform1f(u.uVig,G.vignette);gl.uniform1f(u.uHaze,G.haze);gl.uniform3fv(u.uHazeC,hz);gl.uniform1f(u.uGrain,G.grain);gl.uniform1f(u.uGain,gain)})}
+    gl.uniform1f(u.uVig,G.vignette);gl.uniform1f(u.uHaze,G.haze);gl.uniform3fv(u.uHazeC,hz);gl.uniform1f(u.uGrain,G.grain*(V.env&&V.env.grainK!=null?V.env.grainK:1));/* grainK: el grano de película se reduce en cielos fotográficos (Gaia) para no ensuciar las estrellas */gl.uniform1f(u.uGain,gain)})}
 function humanN(){return _hn}
 /* ---------- render determinista (vídeo) ---------- */
 function capture(o={}){V.offline=true;V.lockQ=true;if(o.q!=null)V.q=o.q;if(o.w)V.fixed={w:o.w,h:o.h,dpr:o.dpr||2};resize(true);return {w:cv.width,h:cv.height,q:V.q,hdr:FBT!==gl.UNSIGNED_BYTE,maxtex:MAXTEX}}
@@ -8250,7 +8288,7 @@ function bgDraw(g,v,x0,y0,RR,lev,m){
   else{lab("ARRIBA",x0,y0-RR-14,CY);lab("ABAJO",x0,y0+RR+22,DIM);lab("IZQ",x0-RR-14,y0,DIM,-Math.PI/2);lab("DER",x0+RR+14,y0,DIM,Math.PI/2)}
   // el mismo ser luminoso de la portada (visuales/ser): halo cálido en la cabeza y la figura completa, sin deformar
   const hr=RR*.1;const hg=g.createRadialGradient(x0,y0,0,x0,y0,hr*3);
-  hg.addColorStop(0,`rgba(255,196,120,${(.2+.1*lev).toFixed(3)})`);hg.addColorStop(.45,`rgba(150,100,255,${(.08+.05*lev).toFixed(3)})`);hg.addColorStop(1,"rgba(120,80,255,0)");g.fillStyle=hg;g.beginPath();g.arc(x0,y0,hr*3,0,7);g.fill();
+  hg.addColorStop(0,`rgba(255,214,150,${(.2+.1*lev).toFixed(3)})`);hg.addColorStop(.45,`rgba(92,104,255,${(.08+.05*lev).toFixed(3)})`);hg.addColorStop(1,"rgba(92,104,255,0)");g.fillStyle=hg;g.beginPath();g.arc(x0,y0,hr*3,0,7);g.fill();
   if(!drawSer(g,v,x0,y0,RR)){g.strokeStyle="rgba(255,214,160,.7)";g.lineWidth=1.5;g.beginPath();g.ellipse(x0,y0,hr*.92,hr*1.05,0,0,7);g.stroke()}}
 // Ser de la portada en los planos, a la misma altura relativa que en la portada. Allí (cámara 3D por defecto) la cabeza queda
 // 0,272 radios de la esfera por encima del centro y la figura mide 1,117 radios (0,228 y 1,009 hasta 760 px). La esfera (3,2 m)
@@ -8258,10 +8296,10 @@ function bgDraw(g,v,x0,y0,RR,lev,m){
 // Z (frontal): la imagen de la portada. X (planta): la vista cenital del mismo ser (WebP con alfa, coronilla en el centro exacto
 // del lienzo, piernas hacia FRENTE = arriba), con la coronilla en el oyente y el cuerpo a ~0,8 del radio del plano.
 // box = recorte en la imagen (px), head = centro de la cabeza; w = ancho en radios del plano (si no, alto según la portada).
-// Se pinta con el brillo y la respiración de .orbital-ser-identidad (sombras doradas/violetas/cian, opacidad .82–.95 en 3,6 s).
-const SER_ID="visuales/ser/orbital_ser_identidad.png",SER_CENITAL="visuales/ser/orbital_ser_cenital.webp",SER_K=.8,SER_MQ=matchMedia("(max-width:760px)");
+// Se pinta con el brillo y la respiración de .orbital-ser-identidad (paleta v4: sombras doradas/índigo/cian, opacidad .82–.95 en 3,6 s).
+const SER_ID="visuales/ser/orbital_ser_identidad_v4.png",SER_CENITAL="visuales/ser/orbital_ser_cenital.webp",SER_K=.8,SER_MQ=matchMedia("(max-width:760px)");
 const SER_REL=[{dy:-.272,h:1.117},{dy:-.228,h:1.009}];
-const SER={Y:{src:"visuales/ser/orbital_ser_perfil.webp",box:[47,38,621,1073],head:[240,140]},
+const SER={Y:{src:"visuales/ser/orbital_ser_perfil_v4.webp",box:[47,38,621,1073],head:[240,140]},
   Z:{src:SER_ID,box:[222,55,1089,1102],head:[655,170]},
   X:{cen:SER_CENITAL,w:.8}};
 const SERI={},SERC={};
@@ -8270,7 +8308,7 @@ function serSprite(d,im,k,f){const id=d.src+d.box,c0=SERC[id];if(c0&&Math.abs(c0
   const [bx0,by0,bx1,by1]=d.box,dw=Math.max(2,Math.round((bx1-bx0)*k)),dh=Math.max(2,Math.round((by1-by0)*k)),pad=Math.ceil(26*f)+2;
   let src=im,sx=bx0,sy=by0,sw=bx1-bx0,sh=by1-by0;
   const cv2=document.createElement("canvas");cv2.width=dw+2*pad;cv2.height=dh+2*pad;const q=cv2.getContext("2d");
-  if("filter" in q)q.filter=`drop-shadow(0 0 ${(5*f).toFixed(1)}px rgba(255,204,132,.9)) drop-shadow(0 0 ${(13*f).toFixed(1)}px rgba(130,82,255,.75)) drop-shadow(0 0 ${(22*f).toFixed(1)}px rgba(42,225,255,.5))`;
+  if("filter" in q)q.filter=`drop-shadow(0 0 ${(5*f).toFixed(1)}px rgba(255,214,150,.9)) drop-shadow(0 0 ${(13*f).toFixed(1)}px rgba(92,104,255,.75)) drop-shadow(0 0 ${(22*f).toFixed(1)}px rgba(70,190,255,.5))`;
   q.drawImage(src,sx,sy,sw,sh,pad,pad,dw,dh);
   return SERC[id]={k,f,cv:cv2,ox:pad+(d.head[0]-bx0)*k,oy:pad+(d.head[1]-by0)*k}}
 function drawSer(g,v,x0,y0,RR){let d=SER[v]||SER.Z;

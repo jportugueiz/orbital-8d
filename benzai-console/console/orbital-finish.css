@@ -248,14 +248,10 @@ body[data-mode="ses"] #ship .left{grid-area:library}
   --ctl-shadow:0 2px 4px #0009,inset 0 1px 0 #e2ecf329;
   --ctl-shadow-press:inset 0 2px 4px #000b;
   --ctl-hover:brightness(1.12) drop-shadow(0 0 5px #3fe6ee38);
-  --ctl-glaze-primary:linear-gradient(#277d85c7,#103c46d9);
-  --ctl-primary-edge:#5fc4cc;--ctl-primary-tx:#e6feff;
-  --ctl-primary-shadow:0 2px 4px #0009,inset 0 1px 0 #d9fbff33,0 0 9px #3fe6ee2e;
   --ctl-glaze-on:linear-gradient(#2c8393c9,#12333cdd);
   --ctl-on-edge:#6fdfe9;--ctl-on-tx:#c9fbff;
   --ctl-on-shadow:inset 0 2px 4px #0009,0 0 8px #3fe6ee45;
-  --ctl-glaze-danger:linear-gradient(#834444c7,#421d22d9);
-  --ctl-danger-edge:#b9705f;--ctl-danger-tx:#ffd6cc;
+  --ctl-danger-tx:#ffb4a8;
   --ctl-pad-low:#090b10;--ctl-pad-on-low:#06222a;
   --ctl-disabled:.45;
   --ctl-focus:#8df2ef;
@@ -315,20 +311,29 @@ body[data-mode="ses"] #ship .left{grid-area:library}
 #ship>:not(.topbar) :is(.seg button,.vbtn),#play :is(.play-gem,.play-library-tabs .pbtn),
 .play-library-dialog .play-library-tabs .pbtn,.demo-live :is(.vbtn,.demo-jump){border-radius:var(--ctl-r-sm)}
 #ship .ms button{border-radius:var(--ctl-r-sm)}
-
-/* --- 3. Primaria --- */
-#ship>:not(.topbar) .btn.go,.freq-dialog .freq-play,.demo-live .demo-start,
-#play :is(#pOpenSounds,.play-monitor-transport #pPlayB),#manualLibrary .pbtn:first-child{
-  --key-glaze:var(--ctl-glaze-primary);
-  color:var(--ctl-primary-tx);border-color:var(--ctl-primary-edge);border-bottom-color:var(--ctl-edge-low);
-  box-shadow:var(--ctl-primary-shadow);
+#ship .ms button:not(.on){
+  background:var(--ctl-face);background-size:100% 100%;color:var(--ctl-tx);
+  border:1px solid var(--ctl-edge);border-bottom-color:var(--ctl-edge-low);box-shadow:var(--ctl-shadow);
 }
-.demo-live .demo-start:is(:hover,:focus-visible){background:var(--key-glaze),var(--ctl-face);background-size:100% 100%;color:var(--ctl-primary-tx)}
 
-/* --- 4. Peligro --- */
+/* --- 3. Sin variante primaria: los botones de acción usan la misma tecla base.
+   El cian queda solo para el estado activo o seleccionado de los botones que se alternan. --- */
+#ship>:not(.topbar) :is(.btn.go:not(.on),.btn.create),.freq-dialog .freq-play,.demo-live .demo-start,
+#play :is(#pOpenSounds,#pPlayB:not(.on,[aria-pressed="true"])),#manualLibrary :is(.pbtn,#mOpenSounds){
+  --key-glaze:none;
+  background:var(--ctl-face);background-size:100% 100%;
+  color:var(--ctl-tx);border-color:var(--ctl-edge);border-bottom-color:var(--ctl-edge-low);
+  box-shadow:var(--ctl-shadow);animation:none;
+}
+#ship>:not(.topbar) .btn.create,.demo-live .demo-start,.freq-dialog .freq-play,#manualLibrary :is(.pbtn,#mOpenSounds){
+  min-height:var(--ctl-h);padding:6px var(--ctl-px);font:var(--ctl-font);letter-spacing:var(--ctl-ls);text-transform:none;
+}
+#ship>:not(.topbar) .btn.create{width:100%}
+
+/* --- 4. Peligro: la misma tecla base; solo el texto en rojo suave --- */
 #ship>:not(.topbar) .btn.stop,#play :is(.pbtn.del,#pDeskClearAll,#pDeskDelete),.freq-dialog .freq-stop:not([id]){
-  --key-glaze:var(--ctl-glaze-danger);
-  color:var(--ctl-danger-tx);border-color:var(--ctl-danger-edge);border-bottom-color:var(--ctl-edge-low);
+  --key-glaze:none;
+  color:var(--ctl-danger-tx);border-color:var(--ctl-edge);border-bottom-color:var(--ctl-edge-low);
 }
 .freq-dialog .freq-stop[id]{--key-glaze:none}
 

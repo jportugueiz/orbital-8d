@@ -8,39 +8,49 @@
  "license": "CC BY-SA 3.0 IGO",
  "url": "https://sci.esa.int/web/gaia/-/the-colour-of-the-sky-from-gaia-s-early-data-release-3-equirectangular-projection",
  "process": {
-  "yaw_deg": -159.0,
-  "tilt_deg": 35.0,
-  "black_point": 18.0,
-  "gamma": 1.2,
-  "blur_sigma_px": 0.6,
+  "version": 2,
+  "yaw_deg": -159,
+  "tilt_deg": 35,
+  "black_point": 30.0,
+  "gamma": 1.25,
+  "star_k": 3.2,
+  "star_gain": 1.6,
+  "star_glow": 1.0,
+  "star_px": 0.7,
+  "bg_sigma_px": 1.6,
+  "stars": 118513,
+  "webp_q": [
+   92,
+   92
+  ],
   "tool": "visuales/tools/procesar_gaia.py"
  },
  "palette": [
   [
-   0.056,
-   0.083,
-   0.099
+   0.022,
+   0.044,
+   0.058
   ],
   [
-   0.189,
-   0.213,
-   0.229
+   0.153,
+   0.176,
+   0.192
   ],
   [
-   0.398,
-   0.38,
-   0.384
+   0.371,
+   0.344,
+   0.345
   ],
   [
-   0.742,
-   0.621,
-   0.57
+   0.744,
+   0.601,
+   0.54
   ]
  ],
  "palette_weight": [
-  0.504,
-  0.281,
-  0.161,
-  0.054
+  0.558,
+  0.249,
+  0.144,
+  0.048
  ]
 }
