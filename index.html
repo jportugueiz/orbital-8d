@@ -4132,14 +4132,20 @@ function airAlpha(f,TC=20,hr=50,pa=101.325){const pr=101.325,T=TC+273.15,T0=293.
 const AIRF=[],AIRA=[];for(let i=0;i<=240;i++){const f=100*Math.pow(240,i/240);AIRF.push(f);AIRA.push(airAlpha(f))}
 // frecuencia donde el aire quita 3 dB en d metros (×k hiperreal) → corte del pasa-bajos Butterworth (pendiente f² ≈ 12 dB/oct cerca del codo)
 function airFc(d,k=1){const A=3/(Math.max(1e-3,d)*k);if(AIRA[AIRA.length-1]<A)return 20000;let i=0;while(AIRA[i+1]<A)i++;const u=(A-AIRA[i])/(AIRA[i+1]-AIRA[i]);return Math.min(20000,AIRF[i]*Math.pow(AIRF[i+1]/AIRF[i],u))}
-const lvlOf=d=>Math.min(G_MAX,Math.hypot(D_REF,D_H)/Math.hypot(Math.max(D_MIN,d),D_H));
-/* FUNDIDO DE BORDE de Mesa en vivo (11 nov 2026). Solo para fuentes de Mesa (pista de la mesa o control en vivo, o «edge» explícito en
-   las tomas): con el borde del campo en e metros, ganancia 1 hasta el 60 % de e y caída coseno² hasta −40 dB en el borde, encima de la
-   ley 1/r. Multiplica el directo, el ancla y el envío a la sala. El resto de ORBITAL (sin borde) no cambia. Mesa fija e con setMesaEdge. */
-const EDGE_IN=.6,EDGE_FLOOR=.01;let MESA_EDGE=0;
+const lvlOf=d=>Math.min(G_MAX,Math.hypot(D_REF,D_H)/Math.hypot(Math.max(D_MIN,d),D_H));// 1/r con rodilla a 0,3 m y tope +12 dB (re 1,5 m)
+/* LEY DE NIVEL DE MESA EN VIVO (11 nov 2026, por oído de Jorge). Solo para fuentes de Mesa (pista de la mesa o control en vivo, o «edge»
+   explícito en las tomas); sustituye la ley 1/r (que sube +12 dB al acercarse y cambia poco lejos) por una curva pareja en todo el radio:
+   meseta cerca (+1,5 dB suaves de 1 m a 0,3 m, nunca más), caída LINEAL en dB desde 1 m (0 dB = nivel de antes a 1,5 m) hasta −45 dB en el
+   borde (7 m → 7,5 dB por metro, igual al acercarse que al alejarse) y, en el último 0,5 m, coseno² hasta el silencio, sin corte.
+   Pistas de lejanía graduales: la sala baja al 60 % de esa pendiente (más sala relativa lejos) y el brillo se cierra ~0,45 oct/m desde 1 m.
+   Todo pasa por las rampas de distApply (sin clics). El resto de ORBITAL (sin borde) sigue con 1/r. Mesa fija el borde con setMesaEdge. */
+const MESA_NEAR=1,MESA_TOP_DB=1.5,MESA_EDGE_DB=-45,MESA_TAIL=.5,MESA_REV=.6,MESA_OCT=.45;let MESA_EDGE=0;
 function setMesaEdge(m){MESA_EDGE=m>0?+m:0;return MESA_EDGE}
 const edgeOf=s=>s.edge>0?+s.edge:(s.deckChannel!=null||s.live)&&MESA_EDGE>0?MESA_EDGE:0;
-function edgeGain(d,e){if(!(e>0))return 1;const u=clamp((d/e-EDGE_IN)/(1-EDGE_IN),0,1),c=Math.cos(u*Math.PI/2);return EDGE_FLOOR+(1-EDGE_FLOOR)*c*c}// 1/r con rodilla a 0,3 m y tope +12 dB (re 1,5 m)
+function mesaDb(d,e){if(d<=MESA_NEAR){const u=clamp((MESA_NEAR-d)/(MESA_NEAR-.3),0,1);return MESA_TOP_DB*u*u*(3-2*u)}return MESA_EDGE_DB*Math.min(d-MESA_NEAR,e-MESA_NEAR)/Math.max(.1,e-MESA_NEAR)}
+function mesaTail(d,e){const u=clamp((d-(e-MESA_TAIL))/MESA_TAIL,0,1),c=Math.cos(u*Math.PI/2);return c*c}
+const mesaLevel=(d,e)=>dB(mesaDb(d,e))*mesaTail(d,e);
+const mesaFc=d=>20000*Math.pow(2,-MESA_OCT*Math.max(0,d-MESA_NEAR));
 const ildNF=d=>clamp(2*Math.pow(Math.max(D_MIN,d),-1.17)-2*Math.pow(1.4,-1.17),0,20);// ILD extra de graves (lateral) re 1,4 m (KEMAR): Brungart ≈ 2 dB a 1 m → ≈ 23 dB a 0,125 m
 function itdNF(d,lat){const a=HEAD_A,L=Math.min(1,Math.abs(lat)),bn=Math.acos(L),bf=Math.PI-bn,a0=Math.acos(Math.min(1,a/d));
   const pe=b=>b<=a0?Math.sqrt(d*d+a*a-2*a*d*Math.cos(b)):Math.sqrt(Math.max(0,d*d-a*a))+a*(b-a0);const th=Math.asin(L);return Math.max(0,(pe(bf)-pe(bn))-a*(th+Math.sin(th)))/C_SND}
@@ -4367,14 +4373,14 @@ function elevCue(v,t,P,ramp){if(!v.eHs)return;const u=clamp(P[1]/75,-1,1),up=Mat
   const S_=(p,x)=>{try{ramp?p.linearRampToValueAtTime(x,t):p.setValueAtTime(x,t)}catch(e){}};
   S_(v.eHs.gain,4.5*up-6*dn+x.hs);S_(v.eN.frequency,6800+3400*up-1400*dn);S_(v.eN.gain,-(3+4*Math.abs(u)));S_(v.ePr.gain,2*up-1.5*dn+x.pr);S_(v.eLs.gain,2.5*dn-1.2*up+x.ls)}
 // distancia de una voz: todo sale de distInfo (la misma función que ve la consola/IAH) y se programa con rampas lineales cortas → sin «zipper»
-function distApply(v,t,P,k,ramp){const m=v.m,I=distInfo(P[2],m.space,m.hyper,P[0],P[1],v.ren),iso=m.iso,eg=edgeGain(P[2],v.edge);
+function distApply(v,t,P,k,ramp){const m=v.m,I=distInfo(P[2],m.space,m.hyper,P[0],P[1],v.ren),iso=m.iso,me=v.edge>0,g=me?mesaLevel(P[2],v.edge):I.g,rs=me?dB(MESA_REV*mesaDb(P[2],v.edge))*mesaTail(P[2],v.edge):1;
   const S_=(p,x)=>{try{ramp?p.linearRampToValueAtTime(x,t):p.setValueAtTime(x,t)}catch(e){}};
-  S_(v.dop.delayTime,I.dop);S_(v.dAir.frequency,I.air_fc);S_(v.dG.gain,iso==="wet"?0:I.g*eg);S_(v.oG.gain,v.ab?1:iso==="wet"?0:I.g*eg);S_(v.oD.delayTime,v.ab?0:I.dop);v.dx={hs:I.hs_db,ls:I.body_db,pr:I.pres_db};
+  S_(v.dop.delayTime,I.dop);S_(v.dAir.frequency,me?Math.min(I.air_fc,mesaFc(P[2])):I.air_fc);S_(v.dG.gain,iso==="wet"?0:g);S_(v.oG.gain,v.ab?1:iso==="wet"?0:g);S_(v.oD.delayTime,v.ab?0:I.dop);v.dx={hs:I.hs_db,ls:I.body_db,pr:I.pres_db};
   const nr=I.lat>=0?1:0;S_(v.ls[nr].gain,I.ild_near);S_(v.ls[1-nr].gain,I.ild_far);S_(v.pd[1-nr].delayTime,Math.min(.0025,I.itd_x));S_(v.pd[nr].delayTime,0);
   S_(v.wg[0].gain,I.width);S_(v.wg[1].gain,I.width);
   const wet=iso==="dir"?0:1,fW=clamp((P[2]-1.5)/4,0,1),wE=wet*(v.wsE==null?1:v.wsE+(Math.max(v.wsE,.35)-v.wsE)*fW),wR=wet*(v.wsR==null?1:v.wsR+(Math.max(v.wsR,.25)-v.wsR)*fW);// v9/v10: casi seco cerca (≤ 1,5 m); la sala vuelve poco a poco hasta 5,5 m (lejos = más sala)for(let i=0;i<4;i++){const T=I.taps[i]||{dl:.01,g:0};S_(v.tp[i].delayTime,Math.min(.29,T.dl));S_(v.tg[i].gain,T.g*wE*(iso==="late"?0:1))}
   const back=Math.max(0,-Math.cos(P[0]*D2R)),hyper=/^v10-/.test(v.ren)?m.hyper-1:0;
-  S_(v.rpd.delayTime,Math.min(.29,I.rev_pre));S_(v.send.gain,I.rev_amp*(1+(.6+hyper)*back*Math.min(1,k))*wR*v.reverb*eg*(iso==="er"?0:1));v.di=I;v.eg=eg}
+  S_(v.rpd.delayTime,Math.min(.29,I.rev_pre));S_(v.send.gain,I.rev_amp*(1+(.6+hyper)*back*Math.min(1,k))*wR*v.reverb*rs*(iso==="er"?0:1));v.di=I;v.mesaG=me?g:null}
 // la dirección va a los renderizadores siempre a la distancia de referencia (1,5 m): su nivel/aire internos quedan fijos y la distancia la pone distApply
 function voicePos(v,t,P,k,ramp){
   // At the listener there is no stable direction. Blend to the centered signal before the azimuth flips.
@@ -4931,7 +4937,7 @@ function meters(){if(!M||!M.anL)return null;M.anL.getFloatTimeDomainData(MB.l);M
   let lev=0;for(let i=2;i<200;i++)lev+=MB.f[i];lev/=198*255;
   return {pl,pr,ild,cor,itd:bl/M.ctx.sampleRate*1e6,lufs,lev,gr:M.lim.reduction||0,l:MB.l,r:MB.r,fft:MB.f}}
 
-return {cueEnded,setMesaEdge,edgeGain,get mesaEdge(){return MESA_EDGE},setDist,setDistPath,getDist,setPos,setRoom,setHyperreal,ROOMS,distInfo,airAlpha,airFc,critDist,lvlOf,ildNF,itdNF,DIST:{MIN:D_MIN,MAX:D_MAX,REF:D_REF,C:C_SND,G_MAX_DB:12},get space(){return S.space},get hyper(){return S.hyper},
+return {cueEnded,setMesaEdge,mesaDb,mesaLevel,mesaFc,get mesaEdge(){return MESA_EDGE},setDist,setDistPath,getDist,setPos,setRoom,setHyperreal,ROOMS,distInfo,airAlpha,airFc,critDist,lvlOf,ildNF,itdNF,DIST:{MIN:D_MIN,MAX:D_MAX,REF:D_REF,C:C_SND,G_MAX_DB:12},get space(){return S.space},get hyper(){return S.hyper},
   v9Node,v9Set,V9P,onTransport(f){TRL.push(f);return()=>{const i=TRL.indexOf(f);if(i>=0)TRL.splice(i,1)}},gainOf,hdOf,MAXV,DECK_CHANNELS,BANCO,BANCO_IDS,REN,RENDS,HRK,addRenderer,renOf,LVREN,HR,LIC,atribucion,renderAll,renderRange,setPrefCC0(v){PREF_CC0=!!v},get prefCC0(){return PREF_CC0},genEvents,ac,_master,get M(){return M},S,LIB,LIB_IDS,PATHS,PATH_IDS,PRESET01,BEDS,BANDS,revS,radio,xyz,aer,wrap,rng,newSource,addSource,removeSource,setSources,applyMix,play,pause,stop,seek,pos,render,meters,setLim,setVol,setDeckMaster,
   recStart,recStop,takeAt,breathK,advance,mkMotion,libCargar,libSmp,bedLoad,stopBed,stopBin,binStart,bedStart,loadBenzai,clamp,lerp,dB,onEnd:null,ctl,loop,killVoice,rtVoice,
   startExtras(){const c=ac();startLiveBed(c);if(S.binCfg.on&&!S.bin)S.bin=binStart(c,M,S.binCfg,c.currentTime+.05);loop()}};
