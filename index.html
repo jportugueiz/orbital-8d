@@ -5,6 +5,17 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#05060a">
 <title>ORBITAL 8D AI STUDIO · Jorge</title>
+<style>
+/* Resguardo móvil: ninguna columna de la consola debe quedar anclada ni
+   obligar al usuario a desplazar la página horizontalmente. */
+@media (max-width:760px){
+  html,body{width:100%;max-width:100%;overflow-x:hidden;overflow-y:auto}
+  #ship{width:100%;max-width:100%;min-width:0}
+  #ship :is(.top,.left,.view,.right,.bot,.foot){position:static!important;width:100%;max-width:100%;min-width:0;inset:auto!important}
+  #ship :is(.panel,.viewport,.readout){max-width:100%;min-width:0}
+  #ship .left,#ship .right{height:auto!important;max-height:none!important;overflow:visible!important}
+}
+</style>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%2305060a' stroke='%233fe6ee' stroke-width='2'/%3E%3Cellipse cx='16' cy='16' rx='13' ry='5' fill='none' stroke='%238a6bff' stroke-width='1.5'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%23ffb347'/%3E%3C/svg%3E">
 <style>@font-face{font-family:"UI";src:url(fonts/inter.woff) format("woff");font-weight:400;font-display:swap}
 @font-face{font-family:"UI";src:url(fonts/inter-medium.woff) format("woff");font-weight:500 700;font-display:swap}
