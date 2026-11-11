@@ -89,6 +89,9 @@ button,select,input{font:inherit;color:inherit}
 .brand{display:flex;flex-direction:column;line-height:1.05}
 .brand b{font:400 19px Brand,UI;letter-spacing:.32em;color:#e8eef3;text-shadow:0 1px 0 rgba(0,0,0,.6)}
 .brand span{font-size:9.5px;letter-spacing:.3em;color:#9aa6b2;text-transform:uppercase}
+.brand-logo{display:block;width:180px;max-width:100%;height:auto;aspect-ratio:3/2;object-fit:contain;border-radius:5px}
+.brand--console{align-items:center;flex-shrink:0;padding:5px;border:1px solid var(--play-edge);border-radius:7px;background:#000}
+.brand--console .brand-logo{width:210px}
 .leds{display:flex;gap:12px;flex-wrap:wrap}
 .led{display:flex;align-items:center;gap:5px;font:500 9px UI;letter-spacing:.14em;color:#aeb7c1}
 .led i{width:7px;height:7px;border-radius:50%;background:#2a2f35;box-shadow:inset 0 1px 1px rgba(0,0,0,.7),0 0 0 1px rgba(0,0,0,.5)}
@@ -1543,7 +1546,7 @@ body[data-mode="ses"] #ship .left{grid-area:library}
 <body data-mode="manual">
 <div class="ship" id="ship">
   <header class="top topbar">
-    <div class="brand"><b>ORBITAL·8D</b><span>AI Studio · 2030 · Jorge</span></div>
+    <div class="brand"><img class="brand-logo" src="visuales/marca/orbital-logo.png" alt="ORBITAL · 8D Audio Studio" width="1536" height="1024"></div>
     <nav class="modes" id="modes" role="tablist" aria-label="Modos">
       <button role="tab" data-m="manual" class="on" aria-selected="true">Manual Studio</button>
       <button role="tab" data-m="ai" aria-selected="false">AI Creator</button>
@@ -1861,6 +1864,7 @@ body[data-mode="ses"] #ship .left{grid-area:library}
     </section>
   </div>
   <aside class="play-controls" aria-label="Comandos de JUGAR">
+    <div class="brand brand--console"><img class="brand-logo" src="visuales/marca/orbital-logo.png" alt="ORBITAL · 8D Audio Studio" width="1536" height="1024"></div>
     <div class="play-transport">
       <button class="pbtn" id="pDeskSession" type="button">Guardar sesión</button>
       <button class="pbtn" id="pDeskScript" type="button">Guion</button>
