@@ -2359,7 +2359,7 @@ body[data-mode="ses"] #ship .left{grid-area:library}
       <button role="tab" data-m="sh" aria-selected="false">Sound Healing</button>
       <button role="tab" data-m="ses" aria-selected="false">Mis sesiones</button>
       <button id="bPlayScr" class="playtab" aria-label="Abrir Mesa en vivo">▶ MESA EN VIVO</button>
-      <button id="bOrbitalDJ" class="djtab" aria-label="Abrir Orbital DJ" onclick="try{if(typeof LAB_DJ_UI!=='undefined'&&LAB_DJ_UI&&LAB_DJ_UI.on){LAB_DJ_UI.open();return}}catch(e){}var u=new URL(location.href);u.searchParams.set('dj','1');location.href=u.href">ORBITAL DJ</button>
+      <button id="bOrbitalDJ" class="djtab" aria-label="Abrir Orbital DJ" onclick="try{if(typeof LAB_DJ_UI!=='undefined'&&LAB_DJ_UI&&LAB_DJ_UI.on){LAB_DJ_UI.open();return}}catch(e){}var s=window.location.search;window.location.search=(s&&s.length>1?s+'&':'?')+'dj=1'">ORBITAL DJ</button>
       <button id="bFrequencyBath">Baño de frecuencias</button>
       <button id="bListeningAB">Escucha A/B</button>
     </nav>
