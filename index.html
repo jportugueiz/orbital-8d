@@ -852,6 +852,10 @@ body.playing{overflow:hidden}
   grid-column:2;grid-row:1/span 2;flex-direction:column;gap:3px;align-self:center;
 }
 #play .play-mixer-body .fd-horizontal .fader .th::after{height:12px}
+/* Máximo 8D, A/B, Deshacer, Doppler e Hiperreal: fila propia bajo el fader, sin tapar M y S */
+#play .play-mixer-body .play-track-mix.play-track-fx-row{grid-column:1/-1;grid-row:3;flex-direction:row;flex-wrap:wrap;gap:6px;align-self:stretch;margin-top:8px;padding-top:8px;border-top:1px solid #ffffff14}
+#play .play-mixer-body .play-track-mix.play-track-fx-row .pbtn{flex:1 1 calc(50% - 6px);min-width:0;min-height:36px;padding:4px 8px;font-size:12px;white-space:nowrap}
+#play .play-mixer-body .play-track-mix.play-track-fx-row .pbtn:first-child{flex-basis:100%}
 #play .fd-horizontal .fader .fill{left:0;top:calc(50% - 1px);bottom:auto;height:2px;max-width:100%;margin:0;background:linear-gradient(90deg,var(--cy2),var(--cy))}
 #play .play-master>strong{display:block;min-height:0}
 #play .fd-horizontal .fader .ticks{display:none}
@@ -1472,8 +1476,11 @@ body.ldj-open .ldj-fab{display:none}
    Distribución diestra: transporte, MASTER y BEAT FX a la izquierda; rejilla y tiras al centro; plato (vista espacial de la Mesa) y ESCENA 8D a la derecha.
    .zurdo espeja solo la distribución (no el audio ni la vista). Rejilla de 8 px. Letra mínima 11 px. */
 body.ldjx-open{overflow:hidden}
-body.ldjx-open #ldj{display:none!important}
-.ldjx{--c:#3fe6ee;--blink:1;--pulse:0;--plat:min(39vw,calc(100vh - 340px));position:fixed;inset:0;z-index:9000;display:flex;flex-direction:column;gap:8px;padding:8px;
+/* la consola vieja queda invisible, pero sus diálogos (SESIONES, IAH DJ, Guion, tu audio) se ven encima */
+body.ldjx-open #ldj{display:block!important;position:fixed!important;left:0!important;top:0!important;right:auto!important;bottom:auto!important;width:0!important;height:0!important;min-height:0!important;padding:0!important;border:0!important;overflow:hidden!important;visibility:hidden!important;pointer-events:none!important}
+body.ldjx-open #ldj dialog{visibility:visible!important;pointer-events:auto!important}
+body.ldjx-open .ldj-fab{display:none!important}
+.ldjx{--c:#3fe6ee;--blink:1;--pulse:0;--m:640px;--rc:290px;--vw:44px;--pd:668px;--rin:86%;position:fixed;inset:0;z-index:9000;display:flex;flex-direction:column;gap:8px;padding:8px;
   color:#c9d1d9;font:600 11px/1.2 UI,system-ui,sans-serif;letter-spacing:.04em;overflow:hidden;
   background:radial-gradient(120% 80% at 50% 0%,#151a20 0%,#0a0c0f 60%,#050607 100%)}
 .ldjx[hidden]{display:none}
@@ -1509,31 +1516,31 @@ body.ldjx-open #ldj{display:none!important}
 .ldx-kit{display:flex;flex-direction:column;gap:2px}
 .ldx-kit-sel,.ldx-qsel{min-height:28px;max-width:200px;border-radius:8px;border:1px solid #3c4650;background:#0b0e11;color:#e6fbff;font:600 12px UI;padding:2px 6px}
 /* ---------- cuerpo: L | centro | plato ---------- */
-.ldx-body{flex:1;display:grid;grid-template-columns:248px minmax(0,1fr) var(--plat);grid-template-areas:"L B R";gap:8px;min-height:0}
-.ldjx.zurdo .ldx-body{grid-template-columns:var(--plat) minmax(0,1fr) 248px;grid-template-areas:"R B L"}
-.ldx-colL{grid-area:L}.ldx-colB{grid-area:B}.ldx-colR{grid-area:R}
-.ldx-colL,.ldx-colB,.ldx-colR{display:flex;flex-direction:column;gap:8px;min-width:0;min-height:0}
+.ldx-body{flex:1;display:grid;grid-template-columns:minmax(0,1fr) calc(var(--pd) + 8px);grid-template-areas:"B R";gap:8px;min-height:0}
+.ldjx.zurdo .ldx-body{grid-template-columns:calc(var(--pd) + 8px) minmax(0,1fr);grid-template-areas:"R B"}
+.ldx-colB{grid-area:B}.ldx-colR{grid-area:R}
+.ldx-colB,.ldx-colR{display:flex;flex-direction:column;gap:6px;min-width:0;min-height:0}
 /* ---------- plato con la vista espacial ---------- */
-.ldx-space{position:relative;flex:none;width:var(--plat);aspect-ratio:1;padding:0;display:grid;place-items:center}
-.ldx-platter{position:relative;width:calc(100% - 16px);aspect-ratio:1;border-radius:50%;touch-action:none;cursor:grab;
-  background:radial-gradient(circle closest-side,#0000 0 79.5%,#3a434c 80%,#0d1013 81%,#000 100%);box-shadow:0 0 0 2px #0a0c0f,0 0 0 5px #4a535d,0 0 0 7px #15191d,0 14px 30px #000c}
+.ldx-space{position:relative;flex:1;min-height:calc(var(--pd) + 8px);padding:0;display:grid;place-items:center}
+.ldx-platter{position:relative;width:var(--pd);height:var(--pd);flex:none;border-radius:50%;touch-action:none;cursor:grab;
+  background:radial-gradient(circle closest-side,#0000 0 calc(var(--rin) - .6%),#3a434c var(--rin),#0d1013 calc(var(--rin) + .6%),#000 100%);box-shadow:0 0 0 2px #0a0c0f,0 0 0 5px #4a535d,0 0 0 7px #15191d,0 14px 30px #000c}
 .ldx-platter.touch{cursor:grabbing}
 .ldx-vinyl{position:absolute;inset:0;border-radius:50%;pointer-events:none;
   background:repeating-radial-gradient(circle closest-side,#ffffff0a 0 1px,#0000 1px 3px),
     conic-gradient(from 0deg,#111 0deg,#2b3036 18deg,#0c0d0f 40deg,#15171a 120deg,#2f353c 190deg,#0b0c0e 215deg,#16181b 300deg,#111 360deg);
-  -webkit-mask:radial-gradient(circle closest-side,#0000 0 80.5%,#000 81%);mask:radial-gradient(circle closest-side,#0000 0 80.5%,#000 81%)}
+  -webkit-mask:radial-gradient(circle closest-side,#0000 0 var(--rin),#000 calc(var(--rin) + .3%));mask:radial-gradient(circle closest-side,#0000 0 var(--rin),#000 calc(var(--rin) + .3%))}
 .ldx-shine{position:absolute;inset:0;border-radius:50%;pointer-events:none;
   background:conic-gradient(from -30deg,#0000 0 40deg,#3fe6ee22 55deg,#ffffff38 62deg,#3fe6ee22 70deg,#0000 85deg 220deg,#ffffff14 235deg,#0000 250deg);
-  -webkit-mask:radial-gradient(circle closest-side,#0000 0 80.5%,#000 81% 97%,#0000 97.5%);mask:radial-gradient(circle closest-side,#0000 0 80.5%,#000 81% 97%,#0000 97.5%)}
+  -webkit-mask:radial-gradient(circle closest-side,#0000 0 var(--rin),#000 calc(var(--rin) + .3%) 97%,#0000 97.5%);mask:radial-gradient(circle closest-side,#0000 0 var(--rin),#000 calc(var(--rin) + .3%) 97%,#0000 97.5%)}
 .ldx-platter::after{content:"";position:absolute;inset:-1px;border-radius:50%;pointer-events:none;
   background:repeating-conic-gradient(#c9d1d955 0 .6deg,#0000 .6deg 5deg);-webkit-mask:radial-gradient(circle closest-side,#0000 0 97.6%,#000 98%);mask:radial-gradient(circle closest-side,#0000 0 97.6%,#000 98%)}
 .ldx-mark{position:absolute;inset:0;pointer-events:none;z-index:2}
-.ldx-mark::before{content:"";position:absolute;left:50%;top:1.2%;width:5px;height:8%;margin-left:-2.5px;border-radius:3px;background:#3fe6ee;box-shadow:0 0 10px #3fe6ee,0 0 2px #fff}
+.ldx-mark::before{content:"";position:absolute;left:50%;top:4px;width:5px;height:calc(var(--vw) - 10px);margin-left:-2.5px;border-radius:3px;background:#3fe6ee;box-shadow:0 0 10px #3fe6ee,0 0 2px #fff}
 /* 4 sectores: divisiones finas a 45°, icono discreto y el sector tocado en cian */
 .ldx-sectors{position:absolute;inset:0;border-radius:50%;pointer-events:none}
-.ldx-sectors::before{content:"";position:absolute;inset:0;border-radius:50%;-webkit-mask:radial-gradient(circle closest-side,#0000 0 80.5%,#000 81% 99%,#0000 99.5%);mask:radial-gradient(circle closest-side,#0000 0 80.5%,#000 81% 99%,#0000 99.5%);
+.ldx-sectors::before{content:"";position:absolute;inset:0;border-radius:50%;-webkit-mask:radial-gradient(circle closest-side,#0000 0 var(--rin),#000 calc(var(--rin) + .3%) 99%,#0000 99.5%);mask:radial-gradient(circle closest-side,#0000 0 var(--rin),#000 calc(var(--rin) + .3%) 99%,#0000 99.5%);
   background:conic-gradient(from 45deg,#b8c8d688 0 .6deg,#0000 .6deg 90deg,#b8c8d688 90deg 90.6deg,#0000 90.6deg 180deg,#b8c8d688 180deg 180.6deg,#0000 180.6deg 270deg,#b8c8d688 270deg 270.6deg,#0000 270.6deg)}
-.ldx-sectors i{position:absolute;inset:0;border-radius:50%;opacity:0;transition:opacity .12s;-webkit-mask:radial-gradient(circle closest-side,#0000 0 80.5%,#000 81% 99%,#0000 99.5%);mask:radial-gradient(circle closest-side,#0000 0 80.5%,#000 81% 99%,#0000 99.5%)}
+.ldx-sectors i{position:absolute;inset:0;border-radius:50%;opacity:0;transition:opacity .12s;-webkit-mask:radial-gradient(circle closest-side,#0000 0 var(--rin),#000 calc(var(--rin) + .3%) 99%,#0000 99.5%);mask:radial-gradient(circle closest-side,#0000 0 var(--rin),#000 calc(var(--rin) + .3%) 99%,#0000 99.5%)}
 .ldx-sectors .s-f{background:conic-gradient(from -45deg,#3fe6ee77 0 90deg,#0000 0)}
 .ldx-sectors .s-r{background:conic-gradient(from 45deg,#3fe6ee77 0 90deg,#0000 0)}
 .ldx-sectors .s-b{background:conic-gradient(from 135deg,#3fe6ee77 0 90deg,#0000 0)}
@@ -1545,12 +1552,13 @@ body.ldjx-open #ldj{display:none!important}
 .ldx-sectors .ic-l{left:2.6%;top:50%;transform:translateY(-50%)}
 .ldx-sectors .ic-r{right:2.6%;top:50%;transform:translateY(-50%)}
 .ldx-platter[data-sec="f"] .ic-f,.ldx-platter[data-sec="r"] .ic-r,.ldx-platter[data-sec="b"] .ic-b,.ldx-platter[data-sec="l"] .ic-l{color:#3fe6ee;text-shadow:0 0 8px #3fe6ee}
-.ldx-space-slot{position:absolute;inset:9.5%;border-radius:50%;overflow:hidden;background:#020304;box-shadow:0 0 0 2px #000,0 0 0 4px #2f3740,inset 0 0 30px #000;z-index:1}
+.ldx-space-slot{position:absolute;left:50%;top:50%;width:var(--m);height:var(--m);transform:translate(-50%,-50%);clip-path:circle(var(--rc) at 50% 50%);background:#020304;z-index:1}
+.ldx-rim{position:absolute;left:50%;top:50%;width:calc(2 * var(--rc));height:calc(2 * var(--rc));transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;z-index:2;box-shadow:0 0 0 2px #000,0 0 0 4px #2f3740,inset 0 0 24px #000}
 .ldx-ov{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:6}
-.ldx-jog-deg,.ldx-tilt{position:absolute;z-index:3;font:700 11px var(--mono,ui-monospace),monospace;color:#3fe6ee;background:#000c;padding:2px 6px;border-radius:6px;pointer-events:none;white-space:nowrap}
-.ldx-jog-deg{left:50%;top:10.5%;transform:translateX(-50%)}
-.ldx-tilt{left:50%;bottom:10.5%;transform:translateX(-50%);color:#ffb347}
-.ldx-tilt[hidden]{display:none}
+.ldx-jog-deg,.ldx-tilt{font:700 11px var(--mono,ui-monospace),monospace;color:#3fe6ee;background:#000c;padding:2px 6px;border-radius:6px;white-space:nowrap;align-self:flex-start}
+.ldx-tilt{color:#ffb347;opacity:.5}.ldx-tilt.on{opacity:1}
+
+
 /* la pantalla de la Mesa, movida aquí: misma geometría, solo cambia el tamaño */
 .ldx-space-slot .play-monitor-screen{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;margin:0!important;border:0!important;border-radius:50%!important;aspect-ratio:auto!important;max-height:none!important;min-height:0!important;padding:0!important}
 .ldx-space-slot .play-monitor-screen :is(#pFull,.play-screen-logo,#pWaitingLabel,.psrc,.pel,.play-plane,#pView3D,#pCues){display:none!important}
@@ -1597,9 +1605,9 @@ body.ldjx-open #ldj{display:none!important}
 .ldx-pad span{display:block;max-height:2.2em;overflow:hidden;word-break:break-word}
 .ldx-pad.full{background:linear-gradient(180deg,color-mix(in srgb,var(--c) 36%,#111),color-mix(in srgb,var(--c) 20%,#0b0b0b));color:color-mix(in srgb,var(--c) 55%,#fff);
   box-shadow:inset 0 1px 0 #ffffff1c,inset 0 0 0 1px color-mix(in srgb,var(--c) 40%,#000),0 2px 0 #000}
-.ldx-pad.queue{background:var(--c);color:#000;box-shadow:0 0 12px var(--c),inset 0 1px 0 #fff8;animation:ldxBlink .5s steps(2) infinite}
+.ldx-pad.queue{background:var(--c);color:#000;box-shadow:0 0 12px var(--c),inset 0 1px 0 #fff8;opacity:var(--blink)}
 .ldx-pad.play{background:radial-gradient(circle at 50% 35%,color-mix(in srgb,var(--c) 30%,#fff),var(--c) 70%);color:#000;
-  box-shadow:0 0 calc(10px + 14px*var(--pulse)) var(--c),0 0 0 1px #fff6,inset 0 1px 0 #fffa;filter:brightness(calc(1 + .25*var(--pulse)))}
+  box-shadow:0 0 calc(10px + 10px*var(--pulse)) var(--c),0 0 0 1px #fff6,inset 0 1px 0 #fffa}
 @keyframes ldxBlink{50%{opacity:.35}}
 .ldx-pad:active{filter:brightness(1.4)}
 .ldx-scene{width:32px;height:32px;border-radius:50%;justify-self:center;align-self:center;border:1px solid #000;cursor:pointer;color:#3fe08a;padding:0;
@@ -1677,38 +1685,124 @@ body.ldjx-open #ldj{display:none!important}
 .ldx-epad.hit,.ldx-epad:active,.ldx-epad.lit{background:hsl(var(--h) 90% 60%);color:#000;box-shadow:0 0 14px hsl(var(--h) 90% 60%)}
 .ldx-tabs{display:none}
 @media (max-height:820px) and (min-width:761px){.ldx-ro{height:40px}.ldx-wave{height:40px}.ldx-round{width:60px;height:60px}.ldx-knob{--s:22px}.ldx-launch-head{margin-bottom:4px}.ldx-launch-head .ldx-btn{min-height:28px}}
-/* ---------- celular: pestañas PADS · ESPACIO · MIXER · FX, transporte fijo abajo ---------- */
+/* ---------- distribución v3.1: plato a tamaño de Mesa a la derecha; a la izquierda transporte, pads, tiras, mando y fila de escena/máster/FX ---------- */
+.ldx-transport{flex-direction:row;align-items:center;flex-wrap:wrap;gap:8px;padding:6px 8px}
+.ldx-tr-big{gap:8px}.ldx-round{width:52px;height:52px}.ldx-play svg{width:24px;height:24px}
+.ldx-tr-small{display:flex;flex-wrap:wrap;align-items:center;gap:6px;flex:1}
+.ldx-q{grid-column:auto;gap:4px}.ldx-q small,.ldx-tempo-lab{display:none}.ldx-tempo{grid-column:auto;gap:4px}.ldx-qsel{min-width:72px}
+.ldx-launch{flex:none}
+.ldx-pad{--h:clamp(26px,calc((100vh - 700px)/8),56px)}
+.ldx-colB{overflow-y:auto;overflow-x:hidden}
+.ldx-strips{flex:1;min-height:178px}
+.ldx-strip{cursor:pointer}
+.ldx-strip.sel{border-color:var(--c);box-shadow:0 0 0 1px var(--c),0 0 14px color-mix(in srgb,var(--c) 45%,transparent)}
+.ldx-strip.sel .ldx-chname{background:var(--c)}.ldx-strip.sel .ldx-chname span{color:#000}
+.ldx-gh.sel{box-shadow:0 0 0 1px var(--c),0 0 10px var(--c)}
+.ldx-chname{order:-1}
+.ldx-mando{flex:none;display:flex;flex-direction:column;gap:6px;padding:8px;border:1px solid #2a3139;border-radius:12px;background:linear-gradient(180deg,#171b20,#0e1114);box-shadow:inset 0 1px 0 #ffffff0d,0 6px 18px #0009}
+.ldx-mando-head{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}.ldx-mando-names{display:flex;gap:6px;flex-wrap:wrap;overflow:hidden;max-height:22px}
+.ldx-mando-names b{font:800 11px UI;color:#000;background:var(--c);padding:3px 8px;border-radius:6px;letter-spacing:.04em}
+.ldx-mando-body{display:flex;align-items:center;gap:16px;justify-content:space-between;flex-wrap:wrap}
+.ldx-mando-knobs{display:flex;gap:12px;align-items:flex-start;justify-content:space-around}
+.ldx-knob.ldx-knob-xl{--s:60px;height:76px}.ldx-knob-xl .ldx-knob-lab{font-size:12px}
+.ldx-knob-xl .ldx-knob-face::after{width:3px;margin-left:-1.5px}
+.ldx-knob-xl.ldx-knob-filter{grid-column:auto}
+.ldx-mando-8d{display:flex;align-items:center;gap:4px;min-width:0;margin-left:auto}
+.ldx-mando-movs{display:flex;gap:4px}
+.ldx-mov.ldx-mov-xl{height:32px;width:36px;padding:0;color:#9aa6b2}
+.ldx-mov.ldx-mov-xl svg{width:20px;height:20px}.ldx-mov-xl[aria-pressed="true"]{color:#3fe6ee}
+.ldx-mando-spd{display:flex;align-items:center;gap:6px}.ldx-mando-spd .ldx-spd{width:56px;height:26px}
+.ldx-row3{flex:none;display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px}
+.ldx-row3 .ldx-escena{flex:none}.ldx-row3 .ldx-esc-grid{grid-template-columns:repeat(6,1fr);grid-auto-rows:34px}
+.ldx-row3 .ldx-epad{min-height:34px;padding:2px}
+.ldx-row3 .ldx-master{flex:none;min-width:0;padding:6px 8px}.ldx-row3 .ldx-master-row{min-height:0;height:96px;gap:8px}
+.ldx-row3 .ldx-fx{padding:6px 8px;gap:4px;width:220px}.ldx-row3 .ldx-fxrow .ldx-knob{--s:32px}.ldx-row3 .ldx-fxon{min-height:30px}
+.ldx-row3 .ldx-master-side small{font-size:11px}
+.ldx-plat-ctl .ldx-seg{max-width:calc((100% - var(--pd)) / 2 + 160px)}
+@media (max-height:860px) and (min-width:761px){.ldx-row3 .ldx-esc-grid{grid-auto-rows:28px}.ldx-row3 .ldx-epad{min-height:28px}.ldx-row3 .ldx-master-row{height:76px}.ldx-knob.ldx-knob-xl{--s:52px;height:68px}.ldx-mov.ldx-mov-xl{height:30px}}
+/* ---------- celular: pestañas PADS · ESPACIO · MIXER · FX; transporte fijo abajo ---------- */
 @media (max-width:760px){
-  .ldjx{--plat:min(calc(100vw - 16px),calc(100vh - 330px));padding:8px;gap:8px;overflow-y:auto}
+  .ldjx{padding:8px;gap:8px;overflow-y:auto}
   .ldx-disp{grid-template-columns:1fr auto;gap:8px;padding:8px}
   .ldx-brand,.ldx-hide-m,.ldx-ro-pct,.ldx-ro-phr{display:none}.ldx-wave{grid-column:1/-1;order:3;height:32px}
   .ldx-readout{gap:4px}.ldx-ro{min-width:0;padding:0 6px;height:44px}.ldx-ro-bpm output{font-size:20px}
   .ldx-kit small{display:none}.ldx-kit-sel{max-width:132px}
   .ldx-body{display:flex;flex-direction:column;flex:1}
-  .ldx-colL,.ldx-colB,.ldx-colR{display:contents}
-  .ldx-space{order:1;align-self:center}.ldx-escena{order:2}.ldx-launch{order:3}.ldx-strips{order:4}.ldx-master{order:5}.ldx-fx{order:6}.ldx-transport{order:9}
-  .ldjx[data-tab="pads"] :is(.ldx-space,.ldx-escena,.ldx-strips,.ldx-master,.ldx-fx),
-  .ldjx[data-tab="space"] :is(.ldx-launch,.ldx-strips,.ldx-master,.ldx-fx),
+  .ldx-colB,.ldx-colR,.ldx-row3{display:contents}
+  .ldx-space{order:1;min-height:0;display:flex;flex-direction:column;gap:8px;padding:8px 0;align-items:center}.ldx-escena{order:2}.ldx-launch{order:3}.ldx-strips{order:4}.ldx-mando{order:5}.ldx-master{order:6}.ldx-fx{order:7}.ldx-transport{order:9}
+  .ldjx[data-tab="pads"] :is(.ldx-space,.ldx-escena,.ldx-strips,.ldx-mando,.ldx-master,.ldx-fx),
+  .ldjx[data-tab="space"] :is(.ldx-launch,.ldx-strips,.ldx-mando,.ldx-master,.ldx-fx),
   .ldjx[data-tab="mix"] :is(.ldx-space,.ldx-escena,.ldx-launch,.ldx-master,.ldx-fx),
-  .ldjx[data-tab="fx"] :is(.ldx-space,.ldx-escena,.ldx-launch,.ldx-strips){display:none}
-  .ldx-space{aspect-ratio:auto;display:flex;flex-direction:column;gap:8px;padding:8px 0}
-  .ldx-platter{width:calc(var(--plat) - 16px)}
+  .ldjx[data-tab="fx"] :is(.ldx-space,.ldx-escena,.ldx-launch,.ldx-strips,.ldx-mando){display:none}
   .ldx-plat-ctl{position:static;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 8px;width:100%;box-sizing:border-box}
-  .ldx-seg{position:static;flex-direction:row!important;flex-wrap:wrap;align-items:center!important}.ldx-seg .ldx-btn{min-width:0}
+  .ldx-seg{position:static;flex-direction:row!important;flex-wrap:wrap;align-items:center!important;max-width:none!important}.ldx-seg .ldx-btn{min-width:0}
   .ldx-grid,.ldx-strips{--cols:16px repeat(var(--n,8),calc((100vw - 96px)/4)) 36px;overflow-x:auto;scroll-snap-type:x mandatory;overscroll-behavior-x:contain}
   .ldx-grid>*,.ldx-strips>*{scroll-snap-align:start}
-  .ldx-pad{--h:56px}
-  .ldx-epad{min-height:44px}.ldx-esc-grid{grid-auto-rows:auto}
-  .ldx-strips{flex:none;min-height:360px}
-  .ldx-knob{--s:32px}
-  .ldx-transport{position:sticky;bottom:52px;z-index:5;flex-direction:row;align-items:center;justify-content:space-between;padding:8px}
-  .ldx-tr-big{gap:8px}.ldx-round{width:56px;height:56px}.ldx-play svg{width:26px;height:26px}
-  .ldx-tr-small{grid-template-columns:repeat(3,auto)}.ldx-tempo,.ldx-q small{display:none}.ldx-q{grid-column:auto}
+  .ldx-pad{--h:clamp(40px,calc((100vh - 430px)/8),56px)}
+  .ldx-strips{flex:1;min-height:300px}
+  .ldx-mando-knobs{flex-wrap:wrap;gap:10px}.ldx-knob.ldx-knob-xl{--s:56px;height:72px}
+  .ldx-escena .ldx-esc-grid{grid-template-columns:repeat(4,1fr);grid-auto-rows:auto}.ldx-epad{min-height:44px}
+  .ldjx[data-tab="fx"] .ldx-master{flex:1}.ldx-fx{width:auto!important}
+  .ldx-transport{position:sticky;bottom:52px;z-index:5;flex-wrap:nowrap;justify-content:space-between;padding:8px}
+  .ldx-tr-big{gap:8px}.ldx-round{width:52px;height:52px}
+  .ldx-tr-small{flex-wrap:wrap;justify-content:flex-end}.ldx-tempo,.ldx-q small{display:none}
   .ldx-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;position:sticky;bottom:0;z-index:6;padding:4px;border-radius:12px;background:#0b0e11;border:1px solid #2a3139;order:10;flex:none}
   .ldx-tabs button{min-height:40px;border-radius:8px;border:1px solid #3c4650;background:#16191d;color:#9aa6b2;font:800 12px UI;letter-spacing:.1em}
   .ldx-tabs button[aria-selected="true"]{background:linear-gradient(180deg,#5ff0f6,#16b8b0);color:#061314;border-color:#3fe6ee}
   .ldx-master-row{min-height:200px}
 }
+
+/* compactación para que todo quepa a 1440×900 sin achicar el plato */
+.ldx-chname{flex:none}
+.ldx-pad span{white-space:nowrap;text-overflow:ellipsis;max-height:none}
+.ldx-launch{padding:6px 8px}.ldx-launch-head{margin-bottom:4px}.ldx-launch-head .ldx-btn{min-height:26px}
+.ldx-strips{min-height:164px;padding:6px 8px}.ldx-fadrow,.ldx-fader{min-height:48px}
+.ldx-mando{padding:6px 8px;gap:4px}.ldx-mando .ldx-knob.ldx-knob-xl{--s:56px;height:70px}
+.ldx-row3{height:112px}
+.ldx-row3>section{min-height:0;overflow:hidden}
+.ldx-row3 .ldx-escena{padding:6px 8px;gap:4px}.ldx-row3 .ldx-esc-grid{grid-auto-rows:1fr;flex:1}
+.ldx-row3 .ldx-epad{min-height:0}
+.ldx-row3 .ldx-master{padding:6px 8px;gap:4px}.ldx-row3 .ldx-master-row{height:auto;flex:1}
+.ldx-row3 .ldx-fx{display:grid;grid-template-columns:1fr auto;grid-template-rows:auto 1fr auto;gap:4px;width:250px}
+.ldx-row3 .ldx-fx h3{grid-column:1/-1}.ldx-row3 .ldx-fxsel{grid-template-columns:repeat(2,1fr)}.ldx-row3 .ldx-fxdiv{grid-column:1/-1}
+.ldx-row3 .ldx-fxrow{grid-row:2;grid-column:2;flex-direction:column;gap:2px}.ldx-row3 .ldx-fxrow .ldx-knob{--s:28px}.ldx-row3 .ldx-fxon{min-height:24px;min-width:48px}
+.ldx-row3 .ldx-fxrow .ldx-knob-lab{font-size:11px}
+.ldx-row3 .ldx-btn.ldx-sm{min-height:22px}
+@media (max-height:860px) and (min-width:761px){.ldx-row3{height:100px}}
+.ldx-scene{width:min(var(--h,32px),32px);height:min(var(--h,32px),32px)}
+.ldx-grid{--h:clamp(26px,calc((100vh - 700px)/8),56px)}
+.ldx-transport{padding:4px 8px}.ldx-round{width:46px;height:46px;font-size:12px}.ldx-play svg{width:22px;height:22px}
+.ldx-mando .ldx-knob.ldx-knob-xl{--s:52px;height:66px}.ldx-mando-head{min-height:28px}.ldx-mov.ldx-mov-xl{height:28px}
+
+/* fila: mando del seleccionado | MASTER | BEAT FX; debajo ESCENA 8D a todo el ancho */
+.ldx-row3{height:auto}.ldx-row3>section{overflow:visible}
+.ldx-row3 .ldx-mando{min-width:0}
+.ldx-mando-names{max-width:120px}
+.ldx-row3 .ldx-master{width:104px;height:auto}.ldx-row3 .ldx-master-row{gap:6px}.ldx-row3 .ldx-master-side{display:none}
+.ldx-row3 .ldx-master h3{display:flex;justify-content:space-between}
+.ldx-escena{flex:none;padding:6px 8px;gap:4px}.ldx-colB>.ldx-escena .ldx-esc-grid{grid-template-columns:repeat(6,1fr);grid-auto-rows:32px}
+.ldx-colB>.ldx-escena .ldx-epad{min-height:32px}
+@media (max-height:860px) and (min-width:761px){.ldx-colB>.ldx-escena .ldx-esc-grid{grid-auto-rows:28px}}
+
+.ldx-row3 .ldx-fx{width:208px;grid-template-columns:1fr 64px;grid-template-rows:auto auto auto;gap:4px}
+.ldx-row3 .ldx-fx .ldx-fxsel .ldx-btn,.ldx-row3 .ldx-fx .ldx-fxdiv .ldx-btn{min-height:22px;padding:0 4px;letter-spacing:0}
+.ldx-row3 .ldx-fxrow{grid-row:2;grid-column:2;justify-content:flex-start}
+.ldx-row3 .ldx-fxrow .ldx-knob-lab{left:-18px;right:-18px}
+.ldx-row3 .ldx-fxon{min-height:22px!important;min-width:56px!important;padding:0}
+.ldx-row3 .ldx-mando-knobs{gap:2px;justify-content:space-between}.ldx-row3 .ldx-mando .ldx-knob.ldx-knob-xl{--s:48px;height:62px}
+.ldx-row3 .ldx-mando-head{gap:6px}.ldx-row3 .ldx-mando-8d{margin-left:auto}.ldx-row3 .ldx-mov.ldx-mov-xl{width:30px;height:26px}
+.ldx-row3 .ldx-master-row{height:84px;flex:none}
+.ldx-row3{height:120px}.ldx-row3>section{overflow:hidden}.ldx-row3 .ldx-master-row{height:auto;flex:1}
+@media (min-height:1000px){.ldx-row3{height:128px}}
+.ldx-row3 .ldx-mando .ldx-knob.ldx-knob-xl{--s:56px;height:70px}.ldx-row3 .ldx-mando-head{min-height:24px}
+.ldx-row3 .ldx-master{width:96px}.ldx-row3 .ldx-fx{width:200px}
+@media (min-height:1000px){.ldx-row3 .ldx-mando .ldx-knob.ldx-knob-xl{--s:60px;height:76px}.ldx-row3{height:128px}}
+.ldx-row3 .ldx-fx{grid-template-columns:1fr 80px;width:212px}.ldx-row3 .ldx-master{width:92px}
+/* mando en la fila: sin rótulo largo (los chips dicen qué pistas son), una sola línea, perillas que no se tocan */
+.ldx-row3 .ldx-mando-head{flex-wrap:nowrap}.ldx-row3 .ldx-mando-head h3{display:none}.ldx-row3 .ldx-mando-names{max-width:none;flex:1;min-width:0;flex-wrap:nowrap}
+.ldx-row3 .ldx-mov.ldx-mov-xl{width:28px;height:26px}.ldx-row3 .ldx-mando-movs{gap:2px}
+.ldx-row3 .ldx-mando .ldx-knob.ldx-knob-xl{--s:52px;height:66px}.ldx-row3 .ldx-mando-knobs{gap:4px;justify-content:space-between;padding:0 4px}
+@media (min-height:1000px){.ldx-row3 .ldx-mando .ldx-knob.ldx-knob-xl{--s:60px;height:76px}}
 /* Materiales comunes para el estudio, los modos inmersivos y el mezclador integrado. */
 :root {
   --rack-edge:#535c65;
@@ -19620,7 +19714,7 @@ try{const q=new URLSearchParams(location.search),no=v=>["0","no","false","off"].
   ON=(q.has("dj")&&!no(q.get("dj")))||(q.has("orbitaldj")&&!no(q.get("orbitaldj")))}catch(e){}
 if(!ON)return {on:false};
 
-const SR=48000,BASE_BPM=128,LOOK=.2,LA=.07,FI=.004,FO=.008,TAU=Math.PI*2,D2R=Math.PI/180;
+const SR=48000,BASE_BPM=128,LOOK=.2,LA=.07,FI=.004,FO=.008,TAU=Math.PI*2,D2R=Math.PI/180,IDLE_MOVE=2.5,IDLE_FREE=4;
 const clamp=(x,a,b)=>x<a?a:x>b?b:x,dB=x=>Math.pow(10,x/20);
 const hdOf=n=>n<=1?1:Math.max(dB(-9),1/Math.sqrt(n));
 
@@ -19878,13 +19972,14 @@ function Deck(c,destOf,o={}){
       r.cur={pad,node,launchBar:keepLb??bar,endBar:p.kind==="shot"?bar+Math.ceil(buf.duration/bd()-1e-6):null};}
     head(at);emit("exec",{row:r.id,pad,bar});}
   function head(at){const n=Object.values(D.R).filter(r=>r.cur).length,g=(D.A&&D.A.arr.club===true?CLUB_HEAD:hdOf(n))*(D.mk||1);for(const r of Object.values(D.R))if(r.ch)r.ch.head.gain.setTargetAtTime(g,at,.05)}
-  D.setVol=(id,db)=>{const r=D.R[id];r.vol=db;chVol(D.chain(id),db,D.master,c.currentTime);emit("param",{row:id,type:"vol",val:db})};
-  D.setFilt=(id,x)=>{const r=D.R[id];r.filt=x;chFilt(D.chain(id),x,D.sweep,c.currentTime);emit("param",{row:id,type:"filt",val:x})};
+  // consumo: fader y filtro no crean la voz 8D de una pista callada (se aplican al crearla en D.chain)
+  D.setVol=(id,db)=>{const r=D.R[id];r.vol=db;if(r.ch)chVol(r.ch,db,D.master,c.currentTime);emit("param",{row:id,type:"vol",val:db})};
+  D.setFilt=(id,x)=>{const r=D.R[id];r.filt=x;if(r.ch)chFilt(r.ch,x,D.sweep,c.currentTime);emit("param",{row:id,type:"filt",val:x})};
   D.setSweep=x=>{D.sweep=x;for(const r of Object.values(D.R))if(r.ch)chFilt(r.ch,r.filt,x,c.currentTime);emit("param",{type:"sweep",val:x})};
   D.setMaster=db=>{D.master=Math.min(0,db);for(const r of Object.values(D.R))if(r.ch)chVol(r.ch,r.vol,D.master,c.currentTime);emit("param",{type:"master",val:D.master})};
   D.setMov=(id,mov)=>{D.R[id].mov=movCopy(mov);emit("param",{row:id,type:"mov",val:movCopy(mov)})};
   D.drop=()=>{if(!D.playing)return;D.dropAt=D.nextBar()||1;emit("ui")};
-  function doDrop(bar){const t=D.timeAt(bar),t2=D.timeAt(bar+1);for(const r of Object.values(D.R)){const g=D.chain(r.id).drop.gain;g.setValueAtTime(1,t-FO);g.linearRampToValueAtTime(0,t);g.setValueAtTime(0,t2);g.linearRampToValueAtTime(1,t2+FI)}emit("exec",{drop:true,bar})}
+  function doDrop(bar){const t=D.timeAt(bar),t2=D.timeAt(bar+1);for(const r of Object.values(D.R)){if(!r.ch)continue;const g=r.ch.drop.gain;g.setValueAtTime(1,t-FO);g.linearRampToValueAtTime(0,t);g.setValueAtTime(0,t2);g.linearRampToValueAtTime(1,t2+FI)}emit("exec",{drop:true,bar})}
   D.setBpm=bpm=>{bpm=clamp(Math.round(bpm*10)/10,70,180);if(bpm===D.bpm)return;
     for(const r of Object.values(D.R)){if(r.cur)bufFor(r.cur.pad,bpm)}
     if(!D.playing){D.bpm=bpm;emit("ui");return}
@@ -19918,7 +20013,12 @@ function Deck(c,destOf,o={}){
     if(A.i>=ev.length&&!A.closing&&D.timeAt(end)<=hor){A.closing=true;for(const r of Object.values(D.R))if(r.cur&&(!r.cur.endBar||r.cur.endBar>end))r.pend={pad:null,bar:end}}
     if(A.closing&&D.barAt(now)>=end){D.A=null;if(!o.offline)CLUB=false;emit("arrEnd")}}
   D.sc=SC_DEF;D.mk=1;
-  D.tick=()=>{if(!D.playing)return;const now=c.currentTime,hor=now+(o.hidden?.()?1.6:LOOK);
+  // consumo (como el tope de voces de la Mesa): la voz 8D de una pista existe solo mientras suena; callada IDLE_FREE s, se libera
+  function gc(now){if(!o.free)return;for(const r of Object.values(D.R)){if(r.cur||r.pend){r.idle=null;continue}if(r.idle==null)r.idle=now;if(r.ch&&now-r.idle>IDLE_FREE){const ch=r.ch;r.ch=null;try{o.free(r.id,ch)}catch(e){console.warn(e)}}}
+    // tope de voces de la Mesa (ORB.MAXV): si hay más voces vivas, se liberan primero las calladas (la más antigua primero)
+    const vmax=(typeof ORB!=="undefined"&&ORB.MAXV)||8,live=Object.values(D.R).filter(r=>r.ch);let n=live.length;
+    if(n>vmax)for(const r of live.filter(r=>!r.cur&&!r.pend).sort((x,y)=>(x.idle??now)-(y.idle??now))){if(n<=vmax)break;const ch=r.ch;r.ch=null;n--;try{o.free(r.id,ch)}catch(e){console.warn(e)}}}
+  D.tick=()=>{gc(c.currentTime);if(!D.playing)return;const now=c.currentTime,hor=now+(o.hidden?.()?1.6:LOOK);
     tempoSwitch();runArr(now,hor);
     for(const r of Object.values(D.R)){
       if(r.pend&&D.timeAt(r.pend.bar)<=hor){const pe=r.pend;r.pend=null;if(D.timeAt(pe.bar)<now)D.missed++;exec(r,pe.pad,pe.bar)}
@@ -19929,7 +20029,8 @@ function Deck(c,destOf,o={}){
       if(p&&p.kind!=="shot"&&hits.length){const base=Math.floor(b/p.bars)*p.bars;for(let k=0;k<64;k++){const lp=base+Math.floor(k/hits.length)*p.bars,hb=lp+hits[k%hits.length]*p.bars;if(hb>b1)break;
         if(hb<=b||hb<K_.cur.launchBar)continue;const t=D.timeAt(hb);for(const [row,db] of Object.entries(D.sc)){const ch=D.R[row]?.ch;if(ch&&D.R[row].cur)duckAt(ch.duck.gain,t,db,bd()/4)}}D.scNext=b1}}
     if(D.metro&&o.click){const bt=bd()/4;let k=Math.max(D.metroNext||0,Math.ceil(D.barAt(now)*4-1e-6));for(;D.timeAt(k/4)<=hor;k++)o.click(D.timeAt(k/4),k%4===0);D.metroNext=k}
-    if(o.move){const t=now+LA,b=D.barAt(t);for(const r of Object.values(D.R))if(r.cur||r.lastLaunch!=null){if(r.cur)r.lastLaunch=r.cur.launchBar;o.move(r.id,t,movPos(ROW[r.id],r.mov,b-(r.lastLaunch??0)))}}};
+    // solo se mueven las pistas que suenan (y IDLE_MOVE s de cola tras parar), no todas las que sonaron alguna vez
+    if(o.move){const t=now+LA,b=D.barAt(t);for(const r of Object.values(D.R)){if(r.cur)r.lastLaunch=r.cur.launchBar;if(r.ch&&r.lastLaunch!=null&&(r.cur||r.pend||r.idle==null||now-r.idle<IDLE_MOVE))o.move(r.id,t,movPos(ROW[r.id],r.mov,b-(r.lastLaunch??0)))}}};
   D.state=()=>({bpm:D.bpm,sweep:D.sweep,master:D.master,quant:D.quant,metro:D.metro,rows:Object.fromEntries(Object.values(D.R).map(r=>[r.id,{mov:movCopy(r.mov),vol:r.vol,filt:r.filt,sel:r.sel}]))});
   function emit(type,data){try{D.onEvent&&D.onEvent(type,data)}catch(e){console.warn(e)}}
   return D}
@@ -19982,6 +20083,7 @@ async function renderArr0(arr,opt={}){const prog=opt.onProgress||(()=>{}),T0=per
     let filt=R.filt,sw=sw0;const fev=[...R.par.filter(p=>p.type==="filt").map(p=>({b:p.b,f:p.val})),...TL.sweep.slice(1).map(s=>({b:s.b,s:s.val}))].sort((a,b)=>a.b-b.b);
     for(const e of fev){if(e.f!=null)filt=e.f;if(e.s!=null)sw=e.s;chFilt(ch,filt,sw,TM.tAt(e.b))}
     for(const p of R.par)if(p.type==="vol")chVol(ch,p.val,arr.init?.master||0,TM.tAt(p.b));
+    for(const h of HOOKS.chain||[])try{h(arr,id,ch,oc,TM)}catch(e){console.warn(e)}// LAB_DJ_EXPORT: EQ, BEAT FX, fader y filtro grabados en vivo (arr.auto)
     ch.head.gain.value=TL.heads[0];TL.heads.forEach((g,q)=>{if(q&&g!==TL.heads[q-1])ch.head.gain.setTargetAtTime(g,TM.tAt(q/4),.05)});
     if(SCm&&SCm[id]!=null)for(const hb of kicks)duckAt(ch.duck.gain,TM.tAt(hb),SCm[id],TM.bdAt(hb)/4);
     for(const b of TL.drops){const g=ch.drop.gain,t=TM.tAt(b),t2=TM.tAt(b+1);g.setValueAtTime(1,t-FO);g.linearRampToValueAtTime(0,t);g.setValueAtTime(0,t2);g.linearRampToValueAtTime(1,t2+FI)}
@@ -19999,6 +20101,7 @@ async function renderArr0(arr,opt={}){const prog=opt.onProgress||(()=>{}),T0=per
     const movs=[{b:-1,val:R.mov0},...R.mov].sort((a,b)=>a.b-b.b);
     for(let i=0;i<nf;i++){const b=TM.bAt(i/fr);let m=movs[0].val;for(const x of movs)if(x.b<=b+1e-9)m=x.val;
       let lb=0;for(const s of R.segs)if(s.start<=b+1e-9)lb=s.lb;const P=movPos(ROW[id],m,b-lb);frames[i*3]=P[0];frames[i*3+1]=P[1];frames[i*3+2]=P[2]}
+    for(const h of HOOKS.frames||[])try{h(arr,id,frames,fr,TM)}catch(e){console.warn(e)}// LAB_DJ_EXPORT: posición final grabada en vivo (sala, mano, REC MOV)
     const sc={dur,seed:1,inten:.7,room:.22,vol_db:0,ren:"v10-a",limiter:false,fileBuf:mono,
       sources:[{kind:"file",label:"DJ · "+ROW[id].n,vol_db:0,depth:.7,speed:.45,distance:.35,seed:1,ren:"v10-a",path:{type:"take",frames,fr,loop:false}}]};
     const b2=await ORB.render(sc);const l=b2.getChannelData(0),r=b2.getChannelData(1),n=Math.min(N,l.length);
@@ -20110,9 +20213,13 @@ const ICO={
 let deck=null,ctx=null,panel=null,rowsEl=null,statusEl=null,beatEl=null,timer=null,raf=0,lastSay="",drawing=false;
 const RV={};// voces del motor por fila
 function ensureLive(){if(deck&&ctx)return deck;ctx=ORB.ac();
-  deck=Deck(ctx,id=>rowVoice(id).src,{bpm:deck0.bpm,hidden:()=>document.hidden,
+  deck=Deck(ctx,id=>rowVoice(id).src,{bpm:deck0.bpm,hidden:()=>document.hidden,free:freeRow,
     click:(t,acc)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=acc?1500:1000;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(acc?.16:.09,t+.002);g.gain.exponentialRampToValueAtTime(1e-4,t+.05);o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+.06)},
-    move:(id,t,P)=>{const x=RV[id];if(!x||!x.v)return;for(const h of HOOKS.pos)try{P=h(id,P,t)||P}catch(e){}try{vPos(x.v,t,P,x.v.k||.7,x.v.last!=null)}catch(e){}}});
+    // consumo: si la posición no cambió (pista fija o ancla), no se programa nada → los filtros de la voz dejan de recalcularse por muestra.
+    // Al volver a moverse, primero se fija el valor que tenía (sin salto) y luego la rampa.
+    move:(id,t,P)=>{const x=RV[id];if(!x||!x.v)return;for(const h of HOOKS.pos)try{P=h(id,P,t)||P}catch(e){}const L=x.v.last;
+      if(L&&Math.abs(L[0]-P[0])<.02&&Math.abs(L[1]-P[1])<.02&&Math.abs(L[2]-P[2])<.002){x.held=true;return}
+      try{if(x.held&&L)vPos(x.v,Math.max(ctx.currentTime,x.lt||0),L,x.v.k||.7,false);x.held=false;vPos(x.v,t,P,x.v.k||.7,L!=null);x.lt=t}catch(e){}}});
   Object.assign(deck,{quant:deck0.quant,metro:deck0.metro});
   for(const r of ROWS){const s=deck0.R[r.id];Object.assign(deck.R[r.id],{mov:s.mov,vol:s.vol,filt:s.filt,sel:s.sel})}
   deck.sweep=deck0.sweep;deck.master=deck0.master;
@@ -20126,6 +20233,9 @@ function rowVoice(id){let x=RV[id];if(x&&x.v&&x.s._v===x.v)return x.v;
   const s=ORB.newSource({kind:"file",label:"DJ · "+ROW[id].n,vol_db:0,depth:.7,speed:.45,distance:.35,ren:"v10-a",path:{type:"still",az0:0,el:0}});
   const v=ORB.rtVoice(s);const t=ctx.currentTime;try{v.lvl.gain.cancelScheduledValues(t);v.lvl.gain.setTargetAtTime(1,t,.05)}catch(e){}
   RV[id]={s,v};return v}
+// libera la voz 8D y la cadena de una pista callada (se vuelven a crear al lanzarla)
+function freeRow(id,ch){const dis=n=>{try{n&&n.disconnect&&n.disconnect()}catch(e){}};if(ch){for(const k of ["in","hp","lp","vol","drop","duck","head"])dis(ch[k]);if(ch.eq)for(const n of Object.values(ch.eq))dis(n)}
+  const x=RV[id];if(x){try{ORB.killVoice(x.s,.05)}catch(e){}delete RV[id]}}
 function freeVoices(){if(panel&&!panel.hidden)return;for(const id of Object.keys(RV)){try{ORB.killVoice(RV[id].s,.1)}catch(e){}delete RV[id]}if(deck)for(const r of Object.values(deck.R))r.ch=null}
 
 function say(t){if(!statusEl)return;statusEl.textContent=t;lastSay=t}
@@ -21008,7 +21118,7 @@ let lastB=null;
 function roomStep(){const b=nowBar(),db=lastB==null?0:clamp(b-lastB,0,.5);lastB=b;
   for(let i=TW.length-1;i>=0;i--){const w=TW[i],u=clamp((b-w.b0)/(w.b1-w.b0),0,1);ROOM[w.k]=w.from+(w.to-w.from)*ease(u);if(u>=1)TW.splice(i,1)}
   if(!plate.touch&&!ROOM.frozen)ROOM.az+=ROOM.spin*db;plate.virt+=ROOM.spin*db;
-  if(!plate.touch&&S.jogMode==="inercia"&&Math.abs(plate.v)>.01){ROOM.man+=plate.v;plate.v*=.975}
+  if(!plate.touch&&S.jogMode==="inercia"&&Math.abs(plate.v)>.01){ROOM.man+=plate.v;plate.v*=.96}
   if(ROOM.glitch&&b>ROOM.glitch.end)ROOM.glitch=null}
 const isAncla=t=>S.ancla&&t&&/^(bombo|bajo|sub)$/.test(t.rol||t.role||"");
 // rota [az,el,r] con la sala (Rodrigues sobre el eje horizontal que dan roll y pitch)
@@ -21055,12 +21165,12 @@ function fader(lab,o){const v={x:o.v??.78};const cap=E("i",{class:"ldx-fader-cap
   el.addEventListener("dblclick",()=>set(o.def??.78,true));
   el.addEventListener("keydown",e=>{if(e.key==="ArrowUp"){e.preventDefault();set(v.x+.02,true)}if(e.key==="ArrowDown"){e.preventDefault();set(v.x-.02,true)}});
   set(v.x);el.set=set;el.get=()=>v.x;return el}
-const vu=(cls="")=>{const m=E("div",{class:"ldx-vu "+cls,"aria-hidden":"true"});for(let i=0;i<15;i++)m.append(E("i"));m.set=x=>{const n=Math.round(clamp(x,0,1)*15);[...m.children].forEach((c,j)=>c.classList.toggle("on",14-j<n))};return m};
+const vu=(cls="")=>{const m=E("div",{class:"ldx-vu "+cls,"aria-hidden":"true"});for(let i=0;i<15;i++)m.append(E("i"));m.set=x=>{const n=Math.round(clamp(x,0,1)*15);if(n===m._n)return;m._n=n;[...m.children].forEach((c,j)=>c.classList.toggle("on",14-j<n))};return m};
 const btn=(lab,o={})=>E("button",Object.assign({type:"button",class:"ldx-btn"+(o.cls?" "+o.cls:""),title:o.tip||null,"aria-pressed":o.press!=null?String(!!o.press):null,onclick:o.on||null},o.attr||{}),o.html?E("span",{html:o.html}):null,lab);
 
 
 /* ---------- construir ---------- */
-let root=null,grid=null,strips=null,disp=null,spaceBox=null,platter=null,ov=null,bankLab=null,escGrid=null;
+let mando=null,root=null,grid=null,strips=null,disp=null,spaceBox=null,platter=null,ov=null,bankLab=null,escGrid=null;
 const plate={touch:false,v:0,virt:0,sector:null};
 function build(){
   root=E("div",{id:"ldjx",class:"ldjx"+(S.zurdo?" zurdo":""),role:"application","aria-label":"Orbital DJ"});
@@ -21086,17 +21196,16 @@ function build(){
     E("div",{class:"ldx-vinyl"}),E("i",{class:"ldx-shine"}),E("i",{class:"ldx-mark"}),
     E("div",{class:"ldx-sectors","aria-hidden":"true"},E("i",{class:"s-f"}),E("i",{class:"s-r"}),E("i",{class:"s-b"}),E("i",{class:"s-l"}),
       E("b",{class:"ic-f"},"▲"),E("b",{class:"ic-r"},"⟳"),E("b",{class:"ic-b"},"▼"),E("b",{class:"ic-l"},"⟲")),
-    E("div",{class:"ldx-space-slot"},ov=E("canvas",{class:"ldx-ov","aria-hidden":"true"})),
-    E("output",{class:"ldx-jog-deg"},"0°"),E("output",{class:"ldx-tilt"},""));
+    E("div",{class:"ldx-space-slot"},ov=E("canvas",{class:"ldx-ov","aria-hidden":"true"})),E("i",{class:"ldx-rim"}));
   spaceBox=E("section",{class:"ldx-space","aria-label":"Vista espacial 8D (Mesa) con plato"},platter,
     E("div",{class:"ldx-plat-ctl"},
-      E("div",{class:"ldx-seg",role:"group","aria-label":"Plato"},E("small",{},"PLATO"),
+      E("div",{class:"ldx-seg",role:"group","aria-label":"Plato"},E("output",{class:"ldx-jog-deg",title:"Giro de la sala"},"SALA 0°"),E("small",{},"PLATO"),
         btn("LIBRE",{cls:"ldx-sm",press:S.plato==="libre",attr:{"data-pl":"libre"},tip:"Los gestos del borde mueven la sala al instante, 1:1 con la mano",on:()=>setPlato("libre")}),
         btn("COMPÁS",{cls:"ldx-sm",press:S.plato==="compas",attr:{"data-pl":"compas"},tip:"El gesto se ve como sombra y la sala llega ahí en el próximo compás",on:()=>setPlato("compas")})),
       E("div",{class:"ldx-seg",role:"group","aria-label":"Al soltar el plato"},E("small",{},"AL SOLTAR"),
         btn("INERCIA",{cls:"ldx-sm",press:true,attr:{"data-jm":"inercia"},tip:"La sala sigue girando y frena despacio, como un plato que se suelta",on:()=>setJogMode("inercia")}),
         btn("VINILO",{cls:"ldx-sm",press:false,attr:{"data-jm":"vinilo"},tip:"Vuelve a la velocidad del cue de giro activo (en fase), o se detiene",on:()=>setJogMode("vinilo")})),
-      E("div",{class:"ldx-seg"},
+      E("div",{class:"ldx-seg"},E("output",{class:"ldx-tilt",title:"Inclinación lateral, adelante/atrás y altura de la sala"},"◢ 0°  ⊿ 0°  ▲ 0°"),
         btn("RESORTE",{cls:"ldx-sm ldx-resorte",press:false,tip:"Al soltar, inclinación y altura vuelven solas a cero (como un pitch bend)",on:e=>{S.resorte=!S.resorte;e.currentTarget.setAttribute("aria-pressed",S.resorte)}}),
         btn("NIVELAR",{cls:"ldx-sm",tip:"Devuelve inclinación y altura a cero en 1 compás (o doble toque en el borde)",on:e=>{const b=e.currentTarget;schedule("escena",at=>ESCF.nivelar(at),b)}})),
       E("div",{class:"ldx-seg"},
@@ -21115,10 +21224,10 @@ function build(){
   strips=E("section",{class:"ldx-strips","aria-label":"Mezclador: una tira de canal por pista"});
   /* transporte */
   const qSel=E("select",{class:"ldx-qsel","aria-label":"QUANTIZE",title:"QUANTIZE: todo lo que disparas entra al inicio del próximo bloque de compases",onchange:e=>setQuant(+e.target.value)},
-    ...[[0,"OFF"],[.25,"1/4"],[.5,"1/2"],[1,"1"],[2,"2"],[4,"4"]].map(([v,n])=>E("option",{value:v,selected:v===S.quant?"":null},n)));
+    ...[[0,"Q OFF"],[.25,"Q 1/4"],[.5,"Q 1/2"],[1,"Q 1"],[2,"Q 2"],[4,"Q 4"]].map(([v,n])=>E("option",{value:v,selected:v===S.quant?"":null},n)));
   const tr=E("section",{class:"ldx-transport","aria-label":"Transporte"},
     E("div",{class:"ldx-tr-big"},
-      E("button",{type:"button",class:"ldx-round ldx-cue",title:"CUE: con la música parada vuelve al compás 1; mantenlo para escuchar desde ahí","aria-label":"CUE",onpointerdown:cueDown,onpointerup:cueUp,onpointerleave:cueUp},E("span",{},"CUE")),
+      E("button",{type:"button",class:"ldx-round ldx-cue",title:"CUE: sonando, vuelve al compás 1 y para · parado, mantenlo para escuchar desde el 1 (al soltar vuelve)","aria-label":"CUE",onpointerdown:cueDown,onpointerup:cueUp,onpointercancel:cueUp},E("span",{},"CUE")),
       E("button",{type:"button",class:"ldx-round ldx-play",title:"PLAY/PAUSE (barra espaciadora)","aria-label":"PLAY/PAUSE",onclick:togglePlay},E("span",{html:SV('<path d="M2 4l10 8-10 8z" fill="currentColor"/><path d="M14.5 5h2.8v14h-2.8zM19.7 5h2.8v14h-2.8z" fill="currentColor"/>',"0 0 24 24")}))),
     E("div",{class:"ldx-tr-small"},
       btn("TAP",{tip:"Toca 4 veces al ritmo para fijar el tempo",on:()=>K.panel?.querySelector(".ldj-tempo .ldj-btn")?.click()}),
@@ -21147,13 +21256,14 @@ function build(){
   const esc=E("section",{class:"ldx-escena","aria-label":"ESCENA 8D"},
     E("div",{class:"ldx-esc-head"},E("h3",{},"ESCENA 8D"),E("span",{class:"ldx-ucues"}),
       btn("+ CUE",{cls:"ldx-sm",tip:"Guarda cómo está la sala ahora (giro, inclinación, altura) como un cue tuyo",on:addUserCue})),escGrid);
+  mando=E("section",{class:"ldx-mando","aria-label":"Mando del canal seleccionado"});
   root.append(disp,E("div",{class:"ldx-body"},
-    E("div",{class:"ldx-colL"},tr,master,fx),
-    E("div",{class:"ldx-colB"},gridWrap,strips),
-    E("div",{class:"ldx-colR"},spaceBox,esc)));
+    E("div",{class:"ldx-colB"},tr,gridWrap,strips,E("div",{class:"ldx-row3"},mando,master,fx),esc),
+    E("div",{class:"ldx-colR"},spaceBox)));
   root.append(E("nav",{class:"ldx-tabs",role:"tablist"},...[["pads","PADS"],["space","ESPACIO"],["mix","MIXER"],["fx","FX"]].map(([k,n],i)=>
     E("button",{type:"button",role:"tab","data-tab":k,"aria-selected":String(i===0),onclick:()=>setTab(k)},n))));
   root.dataset.tab="pads";master.mVU=mVU;root.master=master;document.body.append(root);
+  if(!S.sel.size&&S.tracks[0])S.sel.add(S.tracks[0].id);
   renderGrid();renderStrips();renderEsc();kitOptions();
 }
 function setTab(k){root.dataset.tab=k;root.querySelectorAll(".ldx-tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===k)));requestAnimationFrame(fitSpace)}
@@ -21186,25 +21296,38 @@ function renderGrid(){const T=visible(),a=S.bank*8+1,b=S.bank*8+T.length;bankLab
 
 /* ---------- tiras de canal ---------- */
 function renderStrips(){const T=visible();strips.style.setProperty("--n",T.length);
-  strips.replaceChildren(E("div",{class:"ldx-strip-gap","aria-hidden":"true"}),...T.map((t,i)=>strip(t,S.bank*8+i)))}
+  strips.replaceChildren(E("div",{class:"ldx-strip-gap","aria-hidden":"true"}),...T.map((t,i)=>strip(t,S.bank*8+i)));renderMando()}
 function strip(t,idx){const m=vu("ldx-vu-ch");t._vu=m;
   const movs=E("div",{class:"ldx-movs",role:"group","aria-label":"Movimiento 8D"},...MOVK.map(k=>E("button",{type:"button",class:"ldx-mov","data-k":k,"aria-pressed":String(t.mov.k===k),title:MOVN[k]+" (entra en el próximo compás)","aria-label":MOVN[k],html:MOVI[k],
-    onclick:e=>{const b=e.currentTarget;schedule("mov:"+t.id,()=>{t.mov.k=k;t.rec=null;applyMov(t);b.parentNode.querySelectorAll(".ldx-mov").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.k===k)))},b)}})));
-  const spd=E("select",{class:"ldx-spd","aria-label":"Compases por vuelta del movimiento",title:"Compases por vuelta (y largo de REC MOV)",onchange:e=>{const v=+e.target.value;schedule("mov:"+t.id,()=>{t.mov.s=v;applyMov(t)},e.target)}},...["1","2","4","8"].map((n,i)=>E("option",{value:i,selected:(t.mov.s??1)===i?"":null},n)));
-  return E("div",{class:"ldx-strip"+(S.sel.has(t.id)?" sel":""),style:"--c:"+t.color,"data-t":t.id},
-    E("div",{class:"ldx-knobs"},
-      knob("TRIM",{min:-12,max:12,v:t.trim,center:0,tip:"Ganancia de entrada",on:x=>{t.trim=x;applyEq(t)}}),
-      knob("HI",{min:-26,max:6,v:t.hi,center:0,kill:true,tip:"Agudos (al mínimo: kill)",on:x=>{t.hi=x;applyEq(t)}}),
-      knob("MID",{min:-26,max:6,v:t.mid,center:0,kill:true,tip:"Medios (al mínimo: kill)",on:x=>{t.mid=x;applyEq(t)}}),
-      knob("LOW",{min:-26,max:6,v:t.low,center:0,kill:true,tip:"Graves (al mínimo: kill)",on:x=>{t.low=x;applyEq(t)}}),
-      knob("FILTER",{min:-1,max:1,v:t.filt,center:0,cls:"ldx-knob-filter",tip:"Izquierda: paso bajo · centro: neutro · derecha: paso alto",on:x=>{t.filt=x;applyFilt(t)}})),
+    onclick:e=>{const b=e.currentTarget;setMovFor([t],{k},b)}})));
+  const spd=E("select",{class:"ldx-spd","aria-label":"Compases por vuelta del movimiento",title:"Compases por vuelta (y largo de REC MOV)",onchange:e=>setMovFor([t],{s:+e.target.value},e.target)},...["1","2","4","8"].map((n,i)=>E("option",{value:i,selected:(t.mov.s??1)===i?"":null},n)));
+  const el=E("div",{class:"ldx-strip"+(S.sel.has(t.id)?" sel":""),style:"--c:"+t.color,"data-t":t.id,title:"Toca la tira para seleccionarla (Shift: varias)",
+    onclick:e=>{if(e.target.closest("button,select,.ldx-fader"))return;selTrack(t,e.shiftKey||S.shift)}},
+    E("button",{type:"button",class:"ldx-chname",style:"--c:"+t.color,title:"Pista "+(idx+1)+" · selecciónala (Shift: varias)",onclick:e=>selTrack(t,e.shiftKey||S.shift)},E("span",{},t.name)),
     E("div",{class:"ldx-8d"},movs,E("div",{class:"ldx-8d-row"},spd,btn("REC MOV",{cls:"ldx-recmov"+(t.rec?" has":""),tip:"Graba el movimiento con el dedo en la vista espacial: arranca en el próximo compás y dura lo que diga el selector",on:e=>recMov(t,e.currentTarget)}))),
     E("div",{class:"ldx-csm"},btn("CUE",{cls:"ldx-cuebtn",press:t.cue,tip:"Escucha previa (necesita una segunda salida de audio para auriculares)",on:e=>{t.cue=!t.cue;e.currentTarget.setAttribute("aria-pressed",t.cue)}}),
       btn("S",{cls:"ldx-solo",press:t.solo,tip:"SOLO",attr:{"aria-label":"SOLO "+t.name},on:e=>{t.solo=!t.solo;e.currentTarget.setAttribute("aria-pressed",t.solo);applyAll()}}),
       btn("M",{cls:"ldx-mute",press:t.mute,tip:"MUTE",attr:{"aria-label":"MUTE "+t.name},on:e=>{t.mute=!t.mute;e.currentTarget.setAttribute("aria-pressed",t.mute);applyAll()}})),
-    E("div",{class:"ldx-fadrow"},fader("Volumen de "+t.name,{v:t.vol,tip:"Fader de canal",on:x=>{t.vol=x;applyVol(t)}}),m),
-    E("button",{type:"button",class:"ldx-chname",style:"--c:"+t.color,title:"Pista "+(idx+1)+" · selecciónala en la vista espacial (Shift: varias)",onclick:e=>selTrack(t,e.shiftKey||S.shift)},E("span",{},t.name)))}
-function selTrack(t,add){if(!add){const had=S.sel.has(t.id)&&S.sel.size===1;S.sel.clear();if(!had)S.sel.add(t.id)}else{S.sel.has(t.id)?S.sel.delete(t.id):S.sel.add(t.id)}renderGrid();renderStrips()}
+    E("div",{class:"ldx-fadrow"},fader("Volumen de "+t.name,{v:t.vol,tip:"Fader de canal",on:x=>{t.vol=x;applyVol(t)}}),m));
+  return el}
+// cambia el movimiento de varias pistas en el próximo compás
+function setMovFor(list,ch,el){schedule("mov:"+list.map(t=>t.id).join(","),()=>{for(const t of list){if(ch.k){t.mov.k=ch.k;t.rec=null}if(ch.s!=null)t.mov.s=ch.s;applyMov(t)}renderStrips();renderMando()},el)}
+/* ---------- MANDO del canal seleccionado: TRIM, EQ, FILTER y 8D grandes; con varias pistas se mueven juntas (relativo) ---------- */
+const KN=[["trim","TRIM",-12,12,"Ganancia de entrada",false],["hi","HI",-26,6,"Agudos (al mínimo: kill)",true],["mid","MID",-26,6,"Medios (al mínimo: kill)",true],["low","LOW",-26,6,"Graves (al mínimo: kill)",true],["filt","FILTER",-1,1,"Izquierda: paso bajo · centro: neutro · derecha: paso alto",false]];
+function selList(){const L=S.tracks.filter(t=>S.sel.has(t.id));return L.length?L:[S.tracks[0]]}
+function renderMando(){if(!mando)return;const L=selList(),t0=L[0];
+  const names=L.map(t=>E("b",{style:"--c:"+t.color},t.name));
+  // EQ como en el hardware: el centro (0 dB) a las 12; a la izquierda hasta kill (−26 → −40 dB), a la derecha hasta +6 dB
+  const toK=(k,v)=>kq(k)?(v<0?v/26:v/6):v,fromK=(k,x)=>kq(k)?(x<0?x*26:x*6):x,kq=k=>k==="hi"||k==="mid"||k==="low";
+  const knobs=KN.map(([k,lab,mn0,mx0,tip,kill])=>{const mn=kq(k)?-1:mn0,mx=kq(k)?1:mx0;let prev=toK(k,t0[k]);const kb=knob(lab,{min:mn,max:mx,v:toK(k,t0[k]),center:0,kill,cls:"ldx-knob-xl"+(k==="filt"?" ldx-knob-filter":""),tip:tip+(L.length>1?" · mueve las "+L.length+" pistas juntas":""),
+    on:x=>{const dlt=x-prev;prev=x;for(const t of L){const nx=clamp(t===t0?x:toK(k,t[k])+dlt,mn,mx);t[k]=fromK(k,nx);if(k==="filt")applyFilt(t);else applyEq(t)}save()}});kb.style.setProperty("--c",t0.color);return kb});
+  const movs=E("div",{class:"ldx-mando-movs",role:"group","aria-label":"Movimiento 8D del seleccionado"},...MOVK.map(k=>E("button",{type:"button",class:"ldx-mov ldx-mov-xl","data-k":k,"aria-pressed":String(t0.mov.k===k),title:MOVN[k]+" (entra en el próximo compás)","aria-label":MOVN[k],html:MOVI[k],
+    onclick:e=>setMovFor(L,{k},e.currentTarget)})));
+  const spd=E("label",{class:"ldx-mando-spd",title:"Compases por vuelta"},E("small",{},"BARS"),E("select",{class:"ldx-spd","aria-label":"Compases por vuelta",onchange:e=>setMovFor(L,{s:+e.target.value},e.target)},...["1","2","4","8"].map((n,i)=>E("option",{value:i,selected:(t0.mov.s??1)===i?"":null},n))));
+  mando.replaceChildren(E("div",{class:"ldx-mando-head"},E("h3",{},L.length>1?"CANALES ("+L.length+")":"CANAL"),E("div",{class:"ldx-mando-names"},...names),
+      E("div",{class:"ldx-mando-8d",title:"Movimiento 8D de la selección (entra en el próximo compás)"},movs)),
+    E("div",{class:"ldx-mando-knobs"},...knobs))}
+function selTrack(t,add){if(!add){S.sel.clear();S.sel.add(t.id)}else{S.sel.has(t.id)&&S.sel.size>1?S.sel.delete(t.id):S.sel.add(t.id)}renderGrid();renderStrips();renderMando()}
 
 /* ---------- motor: cada pista es una fila del motor (las 6 de siempre + las nuevas, hasta 18) ---------- */
 const deck=()=>K.ensureLive();
@@ -21230,10 +21353,20 @@ function chainFor(t){const d=K.deck;if(!d||!d.R[t.eng])return null;const ch=d.ch
   if(!ch.eq){const c=d.c,lo=c.createBiquadFilter(),mid=c.createBiquadFilter(),hi=c.createBiquadFilter(),trim=c.createGain();
     lo.type="lowshelf";lo.frequency.value=220;mid.type="peaking";mid.frequency.value=1000;mid.Q.value=.7;hi.type="highshelf";hi.frequency.value=3200;
     try{ch.in.disconnect()}catch(e){}ch.in.connect(trim);trim.connect(lo);lo.connect(mid);mid.connect(hi);hi.connect(ch.hp);
-    // BEAT FX: envío desde el canal (después del fader) a eco, reverb o roll, y vuelta al mismo canal antes de la voz 8D
-    const send=c.createGain(),dl=c.createDelay(4),fb=c.createGain(),cv=c.createConvolver(),wetD=c.createGain(),wetR=c.createGain();send.gain.value=0;
-    cv.buffer=irBuf(c);try{ch.duck.disconnect()}catch(e){}ch.duck.connect(ch.head);ch.duck.connect(send);send.connect(dl);dl.connect(fb);fb.connect(dl);dl.connect(wetD);wetD.connect(ch.head);send.connect(cv);cv.connect(wetR);wetR.connect(ch.head);
-    ch.eq={lo,mid,hi,trim,send,dl,fb,wetD,wetR};applyFx()}return ch}
+    // BEAT FX (consumo, como la Mesa: una sola reverb compartida): cada canal solo tiene un envío al bus común de efectos (fxBus)
+    const send=c.createGain();send.gain.value=0;ch.head.connect(send);send.connect(fxBus(c).bus);
+    const an=c.createAnalyser();an.fftSize=1024;ch.head.connect(an);// vúmetro del canal (solo lectura)
+    ch.eq={lo,mid,hi,trim,send,an};applyFx()}return ch}
+// bus de BEAT FX compartido: un eco y una reverb para toda la consola, de vuelta al master de la Mesa (ORB.M.dry).
+// Apagado, el bus no está conectado a nada → ni el eco ni el convolver procesan. La reverb solo se conecta con REVERB activo.
+let FXB=null;
+function fxBus(c){const dest=(ORB.M&&ORB.M.ctx===c&&ORB.M.dry)||c.destination;if(FXB&&FXB.c===c){if(FXB.dest!==dest){try{FXB.out.disconnect()}catch(e){}FXB.out.connect(dest);FXB.dest=dest}return FXB}
+  const F={c,dest,bus:c.createGain(),dl:c.createDelay(4),fb:c.createGain(),wetD:c.createGain(),cv:null,wetR:c.createGain(),out:c.createGain(),mode:null};
+  F.dl.connect(F.fb);F.fb.connect(F.dl);F.dl.connect(F.wetD);F.wetD.connect(F.out);F.wetR.connect(F.out);F.out.connect(dest);return FXB=F}
+function fxRoute(F,mode){if(F.mode===mode)return;try{F.bus.disconnect()}catch(e){}
+  if(mode==="echo")F.bus.connect(F.dl);
+  else if(mode==="reverb"){if(!F.cv){F.cv=F.c.createConvolver();F.cv.normalize=false;F.cv.buffer=irBuf(F.c);F.cv.connect(F.wetR)}F.bus.connect(F.cv)}
+  F.mode=mode}
 let IR=null;function irBuf(c){if(IR&&IR.sampleRate===c.sampleRate)return IR;const n=Math.round(c.sampleRate*1.8),b=c.createBuffer(2,n,c.sampleRate);
   for(let ch=0;ch<2;ch++){const x=b.getChannelData(ch);let s=7+ch;for(let i=0;i<n;i++){s=(s*16807)%2147483647;x[i]=(s/1073741823-1)*Math.pow(1-i/n,3)*.5}}return IR=b}
 const kdb=x=>x<=-25.9?-40:x;
@@ -21244,12 +21377,18 @@ function applyFilt(t){const d=K.deck;if(!d||!d.R[t.eng])return;try{d.setFilt(t.e
 function applyAll(){for(const t of S.tracks)applyVol(t)}
 function applyMov(t){const d=K.deck;if(d&&d.R[t.eng])try{d.setMov(t.eng,movOf(t))}catch(e){}save()}
 function applyFx(){const d=K.deck;if(!d)return;const bd=240/d.bpm/4,n=d.c.currentTime,on=S.fx.on,dep=S.fx.depth,ty=S.fx.type;
-  for(const R of Object.values(d.R)){const q=R.ch&&R.ch.eq;if(!q)continue;
-    q.send.gain.setTargetAtTime(on&&ty!=="filter"?1:0,n,.01);q.dl.delayTime.setTargetAtTime(clamp(bd*S.fx.div,.02,3.9),n,.01);
-    q.fb.gain.setTargetAtTime(ty==="roll"?.92:ty==="echo"?.35+.4*dep:0,n,.02);q.wetD.gain.setTargetAtTime(ty==="echo"?dep*.8:ty==="roll"?dep:0,n,.02);q.wetR.gain.setTargetAtTime(ty==="reverb"?dep*.9:0,n,.02)}
-  try{d.setSweep(on&&ty==="filter"?(dep-.5)*1.8:0)}catch(e){}}
+  const F=fxBus(d.c),act=on&&ty!=="filter";
+  for(const R of Object.values(d.R)){const q=R.ch&&R.ch.eq;if(!q)continue;q.send.gain.setTargetAtTime(act?1:0,n,.01)}
+  F.dl.delayTime.setTargetAtTime(clamp(bd*S.fx.div,.02,3.9),n,.01);F.fb.gain.setTargetAtTime(ty==="roll"?.92:ty==="echo"?.35+.4*dep:0,n,.02);
+  F.wetD.gain.setTargetAtTime(ty==="echo"?dep*.8:ty==="roll"?dep:0,n,.02);F.wetR.gain.setTargetAtTime(ty==="reverb"?dep*.9:0,n,.02);
+  // al apagar: los envíos bajan y, pasada la cola (eco/roll ≈ 2,5 s · reverb 1,8 s), el bus se desconecta
+  clearTimeout(F.offT);if(act)fxRoute(F,ty==="reverb"?"reverb":"echo");else F.offT=setTimeout(()=>{if(!(S.fx.on&&S.fx.type!=="filter"))fxRoute(F,null)},3000)
+  const sw=on&&ty==="filter";if(sw||S._sw){try{d.setSweep(sw?(dep-.5)*1.8:0)}catch(e){}}S._sw=sw}
 function togglePlay(){const d=deck();if(d.playing){d.stop()}else{d.quant=quantVal();d.start()}K.paint();sync()}
-function cueDown(){const d=deck();if(d.playing){d.stop();K.paint()}sync()}function cueUp(){}
+let cuePlay=false;
+function cueDown(e){const d=deck();if(d.playing&&!cuePlay){d.stop();K.paint();sync();return}// sonando: vuelve al compás 1 (para)
+  if(!d.playing){d.quant=quantVal();d.start();cuePlay=true;try{e&&e.currentTarget&&e.currentTarget.setPointerCapture(e.pointerId)}catch(_){}}sync()}
+function cueUp(){if(!cuePlay)return;cuePlay=false;const d=K.deck;if(d&&d.playing){d.stop();K.paint()}sync()}
 function nudgeBpm(n){K.panel?.querySelector(n<0?'.ldj-tempo [aria-label="Bajar tempo"]':'.ldj-tempo [aria-label="Subir tempo"]')?.click();sync()}
 function setQuant(v){S.quant=v;const d=K.deck;if(d)d.quant=quantVal();save()}
 function toggleMetro(e){K.panel?.querySelector(".ldj-metro")?.click();S.metro=!S.metro;e.currentTarget.setAttribute("aria-pressed",S.metro)}
@@ -21292,9 +21431,9 @@ const ESCF={girar_der:b=>{ROOM.spin=90},girar_izq:b=>{ROOM.spin=-90},frenar:b=>t
   incl_der:b=>tween("roll",clamp(ROOM.roll-20,-60,60),1,b),incl_izq:b=>tween("roll",clamp(ROOM.roll+20,-60,60),1,b),
   nivelar:b=>{tween("roll",0,1,b);tween("pitch",0,1,b);tween("elev",0,1,b);toGrp("nivelar")},elevar:b=>tween("elev",clamp(ROOM.elev+20,-40,70),1,b),bajar:b=>tween("elev",clamp(ROOM.elev-20,-40,70),1,b)};
 function escena(id,el){if(id==="frenar"&&S.shift){ROOM.spin=0;plate.v=0;for(let i=TW.length-1;i>=0;i--)if(TW[i].k==="spin")TW.splice(i,1);return}
-  const P=typeof PLAY!=="undefined"?PLAY:null;const f=P&&P.escena&&typeof P.escena[id]==="function"?P.escena[id]:null;
   el=el||root.querySelector('[data-esc="'+id+'"]');
-  schedule("escena",at=>{if(f){try{f({ancla:S.ancla,beats:4})}catch(e){console.warn(e)}}else if(ESCF[id])ESCF[id](at);
+  // las pistas DJ siempre las mueve la sala de la consola (ESCF); los sonidos de la Mesa, si hay, reciben el mismo cue por grupos.js
+  schedule("escena",at=>{if(ESCF[id])ESCF[id](at);
     toGrp(id);
     if(el){el.classList.add("hit");setTimeout(()=>el.classList.remove("hit"),350)}},el)}
 // los sonidos de la Mesa (si hay) reciben el mismo cue por el motor de grupos (grupos.js, destino «sala»), sin cuantizar otra vez
@@ -21328,7 +21467,18 @@ function mountSpace(){screenEl=document.querySelector("#play .play-monitor-scree
   try{if(typeof PLAY!=="undefined"&&!PLAY.on)PLAY.open()}catch(e){console.warn("Mesa",e)}
   const slot=platter.querySelector(".ldx-space-slot");slot.insertBefore(screenEl,ov);fitSpace()}
 function unmountSpace(){if(screenEl&&screenHome){screenHome.p.insertBefore(screenEl,screenHome.n)}try{if(typeof PLAY!=="undefined"&&PLAY.on)PLAY.close(true)}catch(e){}}
-function fitSpace(){try{PLAY.resize()}catch(e){}const r=ov.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1);ov.width=Math.round(r.width*dpr);ov.height=Math.round(r.height*dpr)}
+// el círculo interior es el de la Mesa a tamaño real: mismo min(W,H) del lienzo #pc que la Mesa usa en esta ventana
+// (ringRadius = 0,42·min(W,H), el campo de 4 m y el aro de espera salen de ahí). El vinilo va afuera, sin achicarlo.
+let MESA_M=0;
+function mesaM(){const slot=platter.querySelector(".ldx-space-slot");if(!screenEl||!screenHome)return 0;const inSlot=screenEl.parentNode===slot;
+  if(inSlot)screenHome.p.insertBefore(screenEl,screenHome.n);let M=0;try{PLAY.resize();const r=screenEl.querySelector("#pc").getBoundingClientRect();M=Math.min(r.width,r.height)}catch(e){}
+  if(inSlot)slot.insertBefore(screenEl,ov);return M>80?Math.round(M):0}
+function fitSpace(){const mob=innerWidth<=760;let M=mesaM()||MESA_M||Math.round(Math.min(innerHeight-100,innerWidth*.5));MESA_M=M;
+  const half=m=>.42*m+Math.min(19,m*.045)+4;let vw=mob?26:44;
+  if(mob){const maxP=innerWidth-16;while(2*(half(M)+vw)>maxP&&M>200)M-=2}// en el celular el círculo se reduce lo justo para que quepa el aro
+  const rc=half(M),rp=rc+vw;const st=root.style;st.setProperty("--m",M+"px");st.setProperty("--rc",rc.toFixed(1)+"px");st.setProperty("--vw",vw+"px");
+  st.setProperty("--pd",(2*rp).toFixed(1)+"px");st.setProperty("--rin",(rc/rp*100).toFixed(2)+"%");root.dataset.mesaM=M;
+  try{PLAY.resize()}catch(e){}const r=ov.getBoundingClientRect(),dpr=Math.min(1.5,devicePixelRatio||1);ov.width=Math.round(r.width*dpr);ov.height=Math.round(r.height*dpr)}
 const projP=P=>{try{const q=PLAY.proj(P);return q}catch(e){const r=ov.getBoundingClientRect(),k=Math.min(r.width,r.height)/2*.86*Math.min(1,P[2]/4),a=P[0]*Math.PI/180;return [r.width/2+Math.sin(a)*k,r.height/2-Math.cos(a)*k,P[1]/80]}};
 // horizonte: proyección horizontal (r·cos el), así el aro inclinado se ve como elipse
 const projH=P=>{const rh=P[2]*Math.cos(P[1]*Math.PI/180);try{return PLAY.toScr(P[0],rh)}catch(e){return projP([P[0],0,rh])}};
@@ -21378,7 +21528,7 @@ function plateInit(){const ring=platter;
   const geo=e=>{const r=ring.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);return {a:Math.atan2(dy,dx)*180/Math.PI,rr:Math.hypot(dx,dy)/(r.width/2),px:r.width/2}};
   const sectorOf=a=>a>-135&&a<=-45?"f":a>-45&&a<=45?"r":a>45&&a<=135?"b":"l";
   let g0=null,lastTap=0;
-  ring.addEventListener("pointerdown",e=>{const g=geo(e);if(g.rr<.80||g.rr>1.03)return;e.preventDefault();e.stopPropagation();ring.setPointerCapture(e.pointerId);
+  ring.addEventListener("pointerdown",e=>{const g=geo(e);const rin=parseFloat(root.style.getPropertyValue("--rin"))/100||.8;if(g.rr<rin-.005||g.rr>1.03)return;// solo el anillo de vinilo; adentro manda la Mesae.preventDefault();e.stopPropagation();ring.setPointerCapture(e.pointerId);
     const now=Date.now();if(now-lastTap<320){API.nivelar(1);lastTap=0}else lastTap=now;
     g0={a:g.a,rr:g.rr,t:performance.now(),sec:sectorOf(g.a),x:e.clientX,y:e.clientY,shift:e.shiftKey||S.shift};plate.touch=true;plate.v=0;plate.sector=g0.sec;ring.dataset.sec=g0.sec;ring.classList.add("touch");
     if(S.plato==="compas")GHOST={az:ROOM.az,man:ROOM.man,roll:ROOM.roll,pitch:ROOM.pitch,elev:ROOM.elev,rs:ROOM.rs}});
@@ -21389,7 +21539,7 @@ function plateInit(){const ring=platter;
     else if(g0.sec==="f"){R.elev=clamp(R.elev+Math.abs(d)*.5,-40,70)}
     else{R.elev=clamp(R.elev-Math.abs(d)*.5,-40,70)}
     g0.a=g.a;g0.rr=g.rr;g0.t=t;g0.x=e.clientX;g0.y=e.clientY});
-  const up=()=>{if(!g0)return;g0=null;plate.touch=false;ring.classList.remove("touch");delete ring.dataset.sec;
+  const up=()=>{if(!g0)return;if(performance.now()-g0.t>90)plate.v=0;plate.v=clamp(plate.v,-12,12);g0=null;plate.touch=false;ring.classList.remove("touch");delete ring.dataset.sec;
     if(S.jogMode==="vinilo"){plate.v=0;if(ROOM.spin){ROOM.az=plate.virt}}// vuelve al giro del cue, en fase con la rejilla
     if(S.plato==="compas"&&GHOST){const G=GHOST;schedule("plato",b=>{for(const k of ["roll","pitch","elev"])tween(k,G[k],.25,b);tween("man",G.man,.25,b);GHOST=null})}
     if(S.resorte)API.nivelar(.25)};
@@ -21399,7 +21549,7 @@ function roce(v){try{const c=K.deck?.c||ORB.ac();const n=c.createBufferSource(),
   const f=c.createBiquadFilter();f.type="bandpass";f.frequency.value=900+v*300;f.Q.value=2;const g=c.createGain();g.gain.value=Math.min(.03,.005*v);n.buffer=b;n.connect(f);f.connect(g);g.connect(c.destination);n.start()}catch(e){}}
 
 /* ---------- pantalla: forma de onda y cuadrícula ---------- */
-function drawWave(){const cv=disp.querySelector(".ldx-wave-cv"),r=cv.getBoundingClientRect(),dpr=Math.min(2,devicePixelRatio||1);if(!r.width)return;
+function drawWave(){const cv=disp.querySelector(".ldx-wave-cv"),r=cv.getBoundingClientRect(),dpr=1;if(!r.width)return;
   if(cv.width!==Math.round(r.width*dpr)){cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.height*dpr)}
   const g=cv.getContext("2d"),W=cv.width,H=cv.height,d=K.deck;const bar=d&&d.playing?nowBar():0;
   g.clearRect(0,0,W,H);const span=8,px=W/span,x0=W*.35;const live=S.tracks.filter(t=>t.state.play>=0).length;
@@ -21427,19 +21577,29 @@ function syncPads(){const d=K.deck;if(!d)return;const at={};for(const t of S.tra
     if(R.pend&&R.pend.pad){const w=own&&own.clips.includes(R.pend.pad)?[own,own.clips.indexOf(R.pend.pad)]:at[R.pend.pad];if(w)queue[w[0].id]=w[1]}}
   let ch=false;for(const t of S.tracks){const p=play[t.id]??-1,q=queue[t.id]??-1;if(p!==t.state.play||q!==t.state.queue){t.state.play=p;t.state.queue=q;ch=true}}if(ch)paintPads()}
 let raf=0,tick=0;
-function frame(){raf=requestAnimationFrame(frame);if(!root||root.hidden)return;tick++;const d=K.deck;
-  runQueue();roomStep();recStep();syncPads();
+// un solo bucle liviano: la cola y la sala en cada cuadro; lo visual a 30 fps; vúmetros a 10 fps; nada si la pestaña está oculta
+let lastVis=0,EL=null,lastTxt={},lastBeat=-1,lastPulse=-1;
+const setTxt=(k,el,v)=>{if(lastTxt[k]!==v){lastTxt[k]=v;el.textContent=v}};
+function frame(now){raf=requestAnimationFrame(frame);if(!root||root.hidden||document.hidden)return;const d=K.deck;
+  runQueue();roomStep();recStep();
+  if(now-lastVis<33)return;lastVis=now;tick++;
+  if(!EL)EL={pos:root.querySelector(".ldx-pos"),phr:root.querySelector(".ldx-phr"),ph:[...root.querySelectorAll(".ldx-phase i")],vinyl:platter.querySelector(".ldx-vinyl"),mark:platter.querySelector(".ldx-mark"),
+    deg:root.querySelector(".ldx-jog-deg"),tilt:root.querySelector(".ldx-tilt"),gr:root.querySelector(".ldx-gr")};
+  syncPads();
   const playing=!!(d&&d.playing),bar=nowBar(),beat=Math.floor(((bar%1)+1)%1*4);
-  root.querySelector(".ldx-pos").textContent=playing?(Math.floor(bar)+1)+"."+(beat+1):"1.1";
-  root.querySelector(".ldx-phr").textContent=playing?((Math.floor(bar)%4)+1)+"/4 · "+((Math.floor(bar)%16)+1)+"/16":"1/4 · 1/16";
-  root.querySelectorAll(".ldx-phase i").forEach((i,j)=>i.className=playing&&j===beat?"on":"");
-  root.style.setProperty("--blink",(beat%2?".35":"1"));root.style.setProperty("--pulse",playing?String(1-(((bar*4)%1+1)%1)):"0");
-  const az=ROOM.az+ROOM.man;platter.querySelector(".ldx-vinyl").style.transform="rotate("+az+"deg)";platter.querySelector(".ldx-mark").style.transform="rotate("+az+"deg)";
-  platter.querySelector(".ldx-jog-deg").textContent=Math.round(((az%360)+360)%360)+"°";
-  const tl=platter.querySelector(".ldx-tilt"),hasT=Math.abs(ROOM.roll)>.5||Math.abs(ROOM.pitch)>.5||Math.abs(ROOM.elev)>.5;tl.hidden=!hasT;if(hasT)tl.textContent="◢ "+Math.round(ROOM.roll)+"°  ⊿ "+Math.round(ROOM.pitch)+"°  ▲ "+Math.round(ROOM.elev)+"°";
-  drawWave();drawOv();
-  if(tick%3===0){let m=null;try{m=ORB.meters()}catch(e){}const lv=m?Math.min(1,m.lev||0):0;const M=root.master.mVU;M[0].set(m?.l??lv);M[1].set(m?.r??lv);
-    for(const t of visible())if(t._vu)t._vu.set(t.state.play>=0&&!t.mute?Math.min(1,lv*1.15*(t.vol/.78)):0)}}
+  setTxt("pos",EL.pos,playing?(Math.floor(bar)+1)+"."+(beat+1):"1.1");
+  setTxt("phr",EL.phr,playing?((Math.floor(bar)%4)+1)+"/4 · "+((Math.floor(bar)%16)+1)+"/16":"1/4 · 1/16");
+  const bk=playing?beat:-1;if(bk!==lastBeat){lastBeat=bk;EL.ph.forEach((i,j)=>i.className=j===bk?"on":"");grid.style.setProperty("--blink",beat%2?".35":"1")}
+  const pu=playing?Math.round((1-(((bar*4)%1+1)%1))*4)/4:0;if(pu!==lastPulse){lastPulse=pu;grid.style.setProperty("--pulse",String(pu))}
+  const az=ROOM.az+ROOM.man,rot="rotate("+az.toFixed(1)+"deg)";if(EL.vinyl.style.transform!==rot){EL.vinyl.style.transform=rot;EL.mark.style.transform=rot}
+  if(tick%3===0){setTxt("deg",EL.deg,"SALA "+Math.round(((az%360)+360)%360)+"°");
+    const hasT=Math.abs(ROOM.roll)>.5||Math.abs(ROOM.pitch)>.5||Math.abs(ROOM.elev)>.5;EL.tilt.classList.toggle("on",hasT);setTxt("tilt",EL.tilt,"◢ "+Math.round(ROOM.roll)+"°  ⊿ "+Math.round(ROOM.pitch)+"°  ▲ "+Math.round(ROOM.elev)+"°")}
+  if(playing||tick%8===0)drawWave();drawOv();
+  if(tick%3===0){let m=null;try{m=ORB.meters()}catch(e){}const M=root.master.mVU,toU=v=>v>0?clamp((20*Math.log10(v)+48)/48,0,1):0;
+    M[0].set(m?toU(Math.max(m.pl||0,(m.lev||0)*.5)):0);M[1].set(m?toU(Math.max(m.pr||0,(m.lev||0)*.5)):0);
+    if(EL.gr&&m&&m.gr!=null)setTxt("gr",EL.gr,(Math.abs(m.gr)<.05?"0":m.gr.toFixed(1))+" dB GR");
+    for(const t of visible()){if(!t._vu)continue;const ch=d&&d.R[t.eng]&&d.R[t.eng].ch;t._vu.set(ch&&ch.eq&&ch.eq.an&&t.state.play>=0?toU(rmsOf(ch.eq)):0)}}}
+const rmsOf=q=>{const a=q.buf||(q.buf=new Float32Array(q.an.fftSize));q.an.getFloatTimeDomainData(a);let s=0;for(let i=0;i<a.length;i++)s+=a[i]*a[i];return Math.sqrt(s/a.length)*2.2};
 function paintPads(){for(const b of grid.querySelectorAll(".ldx-pad")){const t=S.tracks.find(x=>x.id===b.dataset.t),r=+b.dataset.r;if(!t)continue;
   b.classList.toggle("play",t.state.play===r);b.classList.toggle("queue",t.state.queue===r&&t.state.play!==r)}}
 
@@ -21469,7 +21629,9 @@ function init(){try{
     S.tracks=tracksFromKit(S.kit);build();plateInit();slotInit();open();
     // cuando el motor terminó de leer el catálogo: selector con los 16 kits y pistas por rol (o las de la última sesión)
     let n=0;const iv=setInterval(()=>{n++;const KI=LAB_DJ._t?.kits||{};if(Object.keys(KI).length>1||n>40){clearInterval(iv);kitOptions();ROLP.then(()=>{if(!S.userKit){S.kit=LAB_DJ._t?.kit||S.kit;uiLoad(LSG("orb_dj_ui",null))}sync()})}},250);
-    addEventListener("keydown",onKey,true);addEventListener("keyup",onKey,true);addEventListener("resize",()=>requestAnimationFrame(fitSpace));new ResizeObserver(()=>fitSpace()).observe(platter)}catch(e){console.warn("Orbital DJ UI",e)}}
+    // el botón flotante viejo («Orbital DJ») abre esta consola, no la de 6 filas
+    document.addEventListener("click",e=>{const f=e.target.closest&&e.target.closest(".ldj-fab");if(f){e.preventDefault();e.stopImmediatePropagation();open()}},true);
+    addEventListener("keydown",onKey,true);addEventListener("keyup",onKey,true);addEventListener("resize",()=>requestAnimationFrame(fitSpace))}catch(e){console.warn("Orbital DJ UI",e)}}
 if(document.readyState==="complete")setTimeout(init,60);else addEventListener("load",()=>setTimeout(init,60));
 return {on:true,_pos:i=>{const t=S.tracks[i];return [basePos(t,nowBar()),posOf(t,nowBar()),t.state.play]},get _rol(){return Object.keys(ROLMAP).length},open,close,S,ROOM,API,setKit,setBank,setTab,escena,uiState,uiLoad,
   _demo(o={}){/* solo para capturas sin audio: marca pistas sonando y en cola, y opcionalmente inclina la sala */const T=S.tracks;
@@ -21479,6 +21641,110 @@ return {on:true,_pos:i=>{const t=S.tracks[i];return [basePos(t,nowBar()),posOf(t
     if(o.spin!=null)ROOM.spin=o.spin;if(o.roll!=null)ROOM.roll=o.roll;if(o.pitch!=null)ROOM.pitch=o.pitch;if(o.elev!=null)ROOM.elev=o.elev;if(o.az!=null)ROOM.az=o.az;
     if(o.sel)o.sel.forEach(i=>S.sel.add(T[i].id));if(o.sec){platter.dataset.sec=o.sec;platter.classList.add("touch")}renderGrid();renderStrips()}}})();
 /* ==== LAB_DJ_UI_FIN ==== */
+
+/* ==== LAB_DJ_EXPORT_INICIO · ORBITAL DJ · el WAV exporta lo que el DJ tocó (solo con ?dj=1) =======
+   Mientras ● REC graba, este módulo registra:
+   - a la tasa del reloj del motor (~40 Hz, tick de 25 ms) la posición FINAL que recibe la voz 8D de cada
+     fila [azimut, elevación, distancia], después de grupo, sala, inclinación, altura, mano y REC MOV
+     (es el último enganche de LAB_DJ._k.HOOKS.pos, así que ve exactamente lo que se programa en la voz);
+   - a 50 Hz el fader (con MUTE/SOLO), el máster, el FILTER, el barrido, el EQ (TRIM/HI/MID/LOW) y BEAT FX.
+   Al terminar la grabación lo guarda en el arreglo (arr.auto, viaja en el .orbitaldj) y, al exportar,
+   renderArr (motor real v10-a) usa esas automatizaciones a través de HOOKS.frames y HOOKS.chain:
+   posiciones interpoladas a 50 Hz y parámetros con setTargetAtTime, la misma constante que en vivo.
+   Un arreglo sin «auto» (IAH DJ, Armar por mí, guion, sesiones viejas) se exporta igual que antes.
+   Para quitarlo: borrar este archivo y su línea de build.py (los ganchos de lab_dj.js no hacen nada solos).
+   ============================================================================================== */
+const LAB_DJ_EXPORT=(()=>{
+if(typeof LAB_DJ==="undefined"||!LAB_DJ.on||!LAB_DJ._k)return {on:false};
+const K=LAB_DJ._k,HZ=50,V=1;
+const dB=x=>Math.pow(10,x/20),clamp=(x,a,b)=>x<a?a:x>b?b:x;
+// mismas fórmulas que lab_dj.js (cadena de fila) y lab_dj_ui.js (EQ y BEAT FX): si cambian allí, cambiarlas aquí
+const lpOf=x=>x<0?20000*Math.pow(180/20000,-x):20000,hpOf=x=>x>0?20*Math.pow(2500/20,x):20,kdb=x=>x<=-25.9?-40:x;
+const UI=()=>typeof LAB_DJ_UI!=="undefined"&&LAB_DJ_UI.on?LAB_DJ_UI:null;
+const r1=x=>Math.round(x*10)/10,r3=x=>Math.round(x*1000)/1000,r4=x=>Math.round(x*1e4)/1e4;
+
+/* ---------- registro en vivo ---------- */
+let LOG=null,timer=0,lastArrSeen=null;
+function posRec(id,P,t){const d=K.deck;if(!LOG||!d||d.rec!==LOG.rec||!P)return;
+  const b=d.barAt(t)-LOG.b0,L=LOG.pos[id]||(LOG.pos[id]=[]),last=L[L.length-1];
+  if(last&&b<=last[0]+1e-6){if(b>last[0]-1e-6){last[1]=P[0];last[2]=P[1];last[3]=P[2]}return}
+  L.push([b,+P[0],+P[1],+P[2]])}
+function hookLast(){const H=K.HOOKS;if(!H)return;H.pos=H.pos||[];const i=H.pos.indexOf(posRec);if(i>=0)H.pos.splice(i,1);H.pos.push(posRec)}
+// guarda un valor solo cuando cambia (los parámetros se aplican en vivo con setTargetAtTime al cambiar)
+function put(L,b,v){const last=L[L.length-1];if(last&&JSON.stringify(last.slice(1))===JSON.stringify(v))return;if(last&&Math.abs(b-last[0])<1e-6){L[L.length-1]=[last[0],...v];return}L.push([b,...v])}
+function sample(){const d=K.deck;if(!d)return;
+  if(d.rec&&(!LOG||LOG.rec!==d.rec))start(d);
+  if(!d.rec&&LOG){finish();return}
+  if(!LOG)return;const b=d.barAt(d.c.currentTime)-LOG.b0,ui=UI();
+  put(LOG.ms,b,[r3(d.master||0)]);put(LOG.sw,b,[r4(d.sweep||0)]);
+  for(const R of Object.values(d.R)){if(!R.ch&&!R.cur&&R.lastLaunch==null)continue;const id=R.id;
+    put(LOG.vol[id]||(LOG.vol[id]=[]),b,[r3(R.vol)]);put(LOG.filt[id]||(LOG.filt[id]=[]),b,[r4(R.filt||0)])}
+  if(ui){const S=ui.S;put(LOG.fx,b,[S.fx.on?1:0,S.fx.type,S.fx.div,r3(S.fx.depth),d.bpm]);
+    for(const t of S.tracks){const R=d.R[t.eng];if(!R)continue;const eq=!!(R.ch&&R.ch.eq);// sin cadena de EQ en vivo, el EQ no sonaba
+      put(LOG.eq[t.eng]||(LOG.eq[t.eng]=[]),b,eq?[r3(t.trim||0),r3(kdb(t.hi||0)),r3(kdb(t.mid||0)),r3(kdb(t.low||0)),1]:[0,0,0,0,0])}}}
+function start(d){hookLast();LOG={rec:d.rec,b0:d.rec.b0,init:d.rec.init,bpm:d.bpm,pos:{},vol:{},filt:{},eq:{},fx:[],sw:[],ms:[]}}
+function finish(){const L=LOG;LOG=null;const a=K.lastArr;if(!a||a.init!==L.init||a.auto)return;
+  a.auto=pack(L,a.len);lastArrSeen=a;try{localStorage.setItem("orb_dj_actual",JSON.stringify(K.sessionState()))}catch(e){}}
+// simplifica la trayectoria: quita puntos que la interpolación lineal ya da con error < 0,25° / 0,005 m
+function simplify(L,tol=[.25,.25,.005]){if(L.length<3)return L;const out=[L[0]];let a=0;
+  const unw=x=>{const o=[x[0].slice()];for(let i=1;i<x.length;i++){const p=x[i].slice();let da=p[1]-o[i-1][1];da=((da%360)+540)%360-180;p[1]=o[i-1][1]+da;o.push(p)}return o},U=unw(L);
+  for(let j=2;j<U.length;j++){const A=U[a],B=U[j];let bad=false;
+    for(let i=a+1;i<j&&!bad;i++){const u=(U[i][0]-A[0])/Math.max(1e-9,B[0]-A[0]);for(let k=1;k<4;k++)if(Math.abs(A[k]+(B[k]-A[k])*u-U[i][k])>tol[k-1]){bad=true;break}}
+    if(bad){a=j-1;out.push(L[a])}}
+  out.push(L[L.length-1]);return out}
+function pack(L,len){const pos={};for(const [id,x] of Object.entries(L.pos)){const y=simplify(x.filter(p=>p[0]<=len+1));if(y.length)pos[id]=y.map(p=>[r4(p[0]),r1(p[1]),r1(p[2]),r3(p[3])])}
+  const trim=o=>Object.fromEntries(Object.entries(o).filter(([,v])=>v.length).map(([k,v])=>[k,v.map(p=>[r4(p[0]),...p.slice(1)])]));
+  const fxOn=L.fx.some(p=>p[1]&&p[2]!=="filter");// el FILTER de BEAT FX va por el barrido (sw)
+  const eq=Object.fromEntries(Object.entries(trim(L.eq)).filter(([,v])=>v.some(p=>p[1]||p[2]||p[3]||p[4]||(fxOn&&p[5]))));
+  return {v:V,hz:HZ,bpm:L.bpm,pos,vol:trim(L.vol),filt:trim(L.filt),eq,fx:fxOn?L.fx.map(p=>[r4(p[0]),...p.slice(1)]):[],sw:L.sw.map(p=>[r4(p[0]),p[1]]),ms:L.ms.map(p=>[r4(p[0]),p[1]])}}
+
+/* ---------- valor de una curva en el compás b (escalón: valor vigente) ---------- */
+const at=(L,b)=>{let v=L[0];for(const p of L){if(p[0]<=b+1e-9)v=p;else break}return v};
+// posición interpolada (azimut por el camino corto)
+function posAt(L,b){if(b<=L[0][0])return L[0].slice(1);const n=L.length;if(b>=L[n-1][0])return L[n-1].slice(1);
+  let lo=0,hi=n-1;while(hi-lo>1){const m=(lo+hi)>>1;if(L[m][0]<=b)lo=m;else hi=m}const A=L[lo],B=L[hi],u=(b-A[0])/Math.max(1e-9,B[0]-A[0]);
+  let da=B[1]-A[1];da=((da%360)+540)%360-180;const az=A[1]+da*u;return [((az%360)+540)%360-180,A[2]+(B[2]-A[2])*u,A[3]+(B[3]-A[3])*u]}
+
+/* ---------- ganchos del render (lab_dj.js → renderArr0) ---------- */
+function onFrames(arr,id,frames,fr,TM){const L=arr&&arr.auto&&arr.auto.pos&&arr.auto.pos[id];if(!L||!L.length)return;
+  const nf=frames.length/3;for(let i=0;i<nf;i++){const P=posAt(L,TM.bAt(i/fr));frames[i*3]=P[0];frames[i*3+1]=P[1];frames[i*3+2]=P[2]}}
+let IR=null;// misma reverb de BEAT FX que lab_dj_ui.js (ruido con semilla fija, 1,8 s)
+function irBuf(c){if(IR&&IR.sampleRate===c.sampleRate)return IR;const n=Math.round(c.sampleRate*1.8),b=c.createBuffer(2,n,c.sampleRate);
+  for(let ch=0;ch<2;ch++){const x=b.getChannelData(ch);let s=7+ch;for(let i=0;i<n;i++){s=(s*16807)%2147483647;x[i]=(s/1073741823-1)*Math.pow(1-i/n,3)*.5}}return IR=b}
+function onChain(arr,id,ch,oc,TM){const A=arr&&arr.auto;if(!A)return;const T=b=>Math.max(0,TM.tAt(Math.max(0,b)));
+  // fader + máster (vol) y FILTER + barrido: se rehacen con la curva fina grabada en vivo
+  const V_=A.vol[id],F_=A.filt[id];
+  if(V_&&V_.length){const g=ch.vol.gain,ms=A.ms.length?A.ms:[[0,0]],bs=[...new Set([...V_.map(p=>p[0]),...ms.map(p=>p[0])])].sort((a,b)=>a-b);
+    const val=b=>{const v=at(V_,b)[1],m=at(ms,b)[1];return v<=-40?0:dB(v+m)};g.cancelScheduledValues(0);g.value=val(0);
+    for(const b of bs)if(b>0)g.setTargetAtTime(val(b),T(b),.03)}
+  if(F_&&F_.length){const sw=A.sw.length?A.sw:[[0,0]],bs=[...new Set([...F_.map(p=>p[0]),...sw.map(p=>p[0])])].sort((a,b)=>a-b);
+    const lp=b=>Math.min(lpOf(at(F_,b)[1]),lpOf(at(sw,b)[1])),hp=b=>Math.max(hpOf(at(F_,b)[1]),hpOf(at(sw,b)[1]));
+    ch.lp.frequency.cancelScheduledValues(0);ch.hp.frequency.cancelScheduledValues(0);ch.lp.frequency.value=lp(0);ch.hp.frequency.value=hp(0);
+    for(const b of bs)if(b>0){ch.lp.frequency.setTargetAtTime(lp(b),T(b),.03);ch.hp.frequency.setTargetAtTime(hp(b),T(b),.03)}}
+  // EQ de la tira: TRIM → LOW → MID → HI antes del filtro (igual que chainFor de lab_dj_ui.js)
+  const Q=A.eq[id];
+  if(Q&&Q.length){const trim=oc.createGain(),lo=oc.createBiquadFilter(),mid=oc.createBiquadFilter(),hi=oc.createBiquadFilter();
+    lo.type="lowshelf";lo.frequency.value=220;mid.type="peaking";mid.frequency.value=1000;mid.Q.value=.7;hi.type="highshelf";hi.frequency.value=3200;
+    try{ch.in.disconnect()}catch(e){}ch.in.connect(trim);trim.connect(lo);lo.connect(mid);mid.connect(hi);hi.connect(ch.hp);
+    const p0=at(Q,0);trim.gain.value=dB(p0[1]);hi.gain.value=p0[2];mid.gain.value=p0[3];lo.gain.value=p0[4];
+    for(const p of Q)if(p[0]>0){const t=T(p[0]);trim.gain.setTargetAtTime(dB(p[1]),t,.02);hi.gain.setTargetAtTime(p[2],t,.02);mid.gain.setTargetAtTime(p[3],t,.02);lo.gain.setTargetAtTime(p[4],t,.02)}}
+  // BEAT FX: envío después del fader a eco / reverb / roll y vuelta antes de la voz 8D (el efecto también orbita)
+  if(A.fx&&A.fx.length&&Q&&Q.length){const send=oc.createGain(),dl=oc.createDelay(4),fb=oc.createGain(),cv=oc.createConvolver(),wetD=oc.createGain(),wetR=oc.createGain();
+    send.gain.value=0;fb.gain.value=0;wetD.gain.value=0;wetR.gain.value=0;cv.buffer=irBuf(oc);
+    ch.duck.connect(send);send.connect(dl);dl.connect(fb);fb.connect(dl);dl.connect(wetD);wetD.connect(ch.head);send.connect(cv);cv.connect(wetR);wetR.connect(ch.head);
+    const set=(p,v,t,tc)=>t<=0?(p.value=v):p.setTargetAtTime(v,t,tc);
+    for(const p of A.fx){const [b,on,ty,div,dep,bpm]=p;const en=(at(Q,b)||[])[5]?1:0,t=b<=0?0:T(b),bd=240/(bpm||TM.bpmAt(Math.max(0,b)))/4;
+      set(send.gain,on&&en&&ty!=="filter"?1:0,t,.01);set(dl.delayTime,clamp(bd*div,.02,3.9),t,.01);
+      set(fb.gain,ty==="roll"?.92:ty==="echo"?.35+.4*dep:0,t,.02);set(wetD.gain,ty==="echo"?dep*.8:ty==="roll"?dep:0,t,.02);set(wetR.gain,ty==="reverb"?dep*.9:0,t,.02)}}}
+function hookRender(){const H=K.HOOKS;if(!H)return;H.frames=H.frames||[];H.chain=H.chain||[];if(!H.frames.includes(onFrames))H.frames.push(onFrames);if(!H.chain.includes(onChain))H.chain.push(onChain)}
+
+/* ---------- arranque ---------- */
+function init(){hookRender();if(!timer)timer=setInterval(()=>{try{sample()}catch(e){console.warn("Orbital DJ export",e)}},1000/HZ)}
+init();
+return {on:true,get log(){return LOG},posAt,simplify,pack,onFrames,onChain,
+  // resumen de lo grabado en el último arreglo (para pruebas)
+  info(a=K.lastArr){const A=a&&a.auto;if(!A)return null;return {pos:Object.fromEntries(Object.entries(A.pos).map(([k,v])=>[k,v.length])),eq:Object.keys(A.eq),fx:A.fx.length,vol:Object.keys(A.vol).length,filt:Object.keys(A.filt).length,bytes:JSON.stringify(A).length}}}})();
+/* ==== LAB_DJ_EXPORT_FIN ==== */
 
 </script>
 <script>(()=>{
