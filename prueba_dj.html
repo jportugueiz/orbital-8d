@@ -21534,7 +21534,7 @@ function mesaM(){const slot=platter.querySelector(".ldx-space-slot");if(!screenE
   if(inSlot)screenHome.p.insertBefore(screenEl,screenHome.n);let M=0;try{PLAY.resize();const r=screenEl.querySelector("#pc").getBoundingClientRect();M=Math.min(r.width,r.height)}catch(e){}
   if(inSlot)slot.insertBefore(screenEl,ov);return M>80?Math.round(M):0}
 function fitSpace(){const mob=innerWidth<=760;let M=mesaM()||MESA_M||Math.round(Math.min(innerHeight-100,innerWidth*.5));MESA_M=M;
-  const half=m=>.42*m+Math.min(19,m*.045)+4;let vw=mob?26:44;
+  const half=m=>.42*m+Math.min(19,m*.045)+4;let vw=mob?40:50;
   if(mob){const maxP=innerWidth-16;while(2*(half(M)+vw)>maxP&&M>200)M-=2}// en el celular el círculo se reduce lo justo para que quepa el aro
   const rc=half(M),rp=rc+vw;const st=root.style;st.setProperty("--m",M+"px");st.setProperty("--rc",rc.toFixed(1)+"px");st.setProperty("--vw",vw+"px");
   st.setProperty("--pd",(2*rp).toFixed(1)+"px");st.setProperty("--rin",(rc/rp*100).toFixed(2)+"%");root.dataset.mesaM=M;
@@ -21588,17 +21588,23 @@ function plateInit(){const ring=platter;
   const geo=e=>{const r=ring.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);return {a:Math.atan2(dy,dx)*180/Math.PI,rr:Math.hypot(dx,dy)/(r.width/2),px:r.width/2}};
   const sectorOf=a=>a>-135&&a<=-45?"f":a>-45&&a<=45?"r":a>45&&a<=135?"b":"l";
   let g0=null,lastTap=0;
-  ring.addEventListener("pointerdown",e=>{const g=geo(e);const rin=parseFloat(root.style.getPropertyValue("--rin"))/100||.8;if(g.rr<rin-.005||g.rr>1.03)return;// solo el anillo de vinilo; adentro manda la Mesa
+  ring.addEventListener("pointerdown",e=>{const g=geo(e);const rin=parseFloat(root.style.getPropertyValue("--rin"))/100||.8;if(g.rr<rin-.005||g.rr>1.08)return;// solo el anillo de vinilo; adentro manda la Mesa
     e.preventDefault();e.stopPropagation();try{ring.setPointerCapture(e.pointerId)}catch(_){}
     const now=Date.now();if(now-lastTap<320){API.nivelar(1);lastTap=0}else lastTap=now;
     g0={a:g.a,rr:g.rr,t:performance.now(),sec:sectorOf(g.a),x:e.clientX,y:e.clientY,shift:e.shiftKey||S.shift};plate.touch=true;plate.v=0;plate.sector=g0.sec;ring.dataset.sec=g0.sec;ring.classList.add("touch");
     if(S.plato==="compas")GHOST={az:ROOM.az,man:ROOM.man,roll:ROOM.roll,pitch:ROOM.pitch,elev:ROOM.elev,rs:ROOM.rs}});
-  ring.addEventListener("pointermove",e=>{if(!g0)return;const g=geo(e);let d=g.a-g0.a;if(d>180)d-=360;if(d<-180)d+=360;const dr=g.rr-g0.rr,t=performance.now(),dt=Math.max(1,t-g0.t);
+  // gesto fijado al empezar (como el scroll del teléfono): deslizar A LO LARGO del aro = scratch (gira la sala 1:1 con el dedo, en todo el aro);
+  // deslizar HACIA ADENTRO/AFUERA = la acción del sector (lados inclinan ese lado; frente y atrás suben/bajan: dedo hacia arriba sube la escena).
+  ring.addEventListener("pointermove",e=>{if(!g0)return;const g=geo(e);const t=performance.now(),dt=Math.max(1,t-g0.t);
     const R=S.plato==="compas"&&GHOST?GHOST:ROOM;
-    if(g0.shift){R.roll=clamp(R.roll-(e.clientY-g0.y)*.3,-60,60);R.pitch=clamp(R.pitch+(e.clientX-g0.x)*.3,-60,60)}
-    else if(g0.sec==="l"||g0.sec==="r"){R.man+=d;if(R===ROOM)plate.v=d/dt*16.7;R.roll=clamp(R.roll+(g0.sec==="r"?-1:1)*dr*-80,-60,60);if(S.roce)roce(Math.abs(d/dt*16.7))}
-    else if(g0.sec==="f"){R.elev=clamp(R.elev+Math.abs(d)*.5,-40,70)}
-    else{R.elev=clamp(R.elev-Math.abs(d)*.5,-40,70)}
+    if(g0.shift){R.roll=clamp(R.roll-(e.clientY-g0.y)*.3,-60,60);R.pitch=clamp(R.pitch+(e.clientX-g0.x)*.3,-60,60);g0.x=e.clientX;g0.y=e.clientY;g0.t=t;return}
+    let d=g.a-g0.a;if(d>180)d-=360;if(d<-180)d+=360;const drp=(g.rr-g0.rr)*g.px;
+    if(!g0.mode){const tg=Math.abs(d)*Math.PI/180*Math.max(.5,g.rr)*g.px,rd=Math.abs(drp);if(Math.max(tg,rd)<6)return;// zona muerta de 6 px para decidir
+      g0.mode=rd>tg*1.4&&g0.sec?"radial":"scratch"}
+    if(g0.mode==="scratch"){R.man+=d;if(R===ROOM)plate.v=d/dt*16.7;if(S.roce)roce(Math.abs(d/dt*16.7))}
+    else{const k=drp*.35,s=g0.sec;// grados por píxel
+      if(s==="r")R.roll=clamp(R.roll+k,-60,60);else if(s==="l")R.roll=clamp(R.roll-k,-60,60);
+      else if(s==="f")R.elev=clamp(R.elev+k,-40,70);else R.elev=clamp(R.elev-k,-40,70)}
     g0.a=g.a;g0.rr=g.rr;g0.t=t;g0.x=e.clientX;g0.y=e.clientY});
   const up=()=>{if(!g0)return;if(performance.now()-g0.t>90)plate.v=0;plate.v=clamp(plate.v,-12,12);g0=null;plate.touch=false;ring.classList.remove("touch");delete ring.dataset.sec;
     if(S.jogMode==="vinilo"){plate.v=0;if(ROOM.spin){ROOM.az=plate.virt}}// vuelve al giro del cue, en fase con la rejilla
