@@ -9106,9 +9106,10 @@ function ownPoint(s){
   return ORB.advance(s,s._mo||ORB.mkMotion(s),ORB.pos(),0,{reduce:false,scale:S.scale,rot:S.rot});
 }
 // posición que se OYE: con grupos o cues de escena, la del grupo y la sala encima de la propia (grupos.js)
+const dragging=id=>{try{for(const p of PT.values())if(p.oid===id)return true}catch(e){}return false};
 function sourcePoint(s){
   if(!GRP.on||s.live?.mode==="take")return ownPoint(s);
-  if(S.playing&&s._P&&s._Po)return s._P;
+  if(S.playing&&s._P&&s._Po&&!dragging(s.id))return s._P;// mientras lo arrastras se dibuja al instante, no con el retraso del motor
   return GRP.live(s,ownPoint(s),ORB.pos());
 }
 function orbs(){const L=S.sources.filter(s=>!s.waiting).map(s=>{const P=sourcePoint(s);return {id:s.id,s,P,col:colOf(s),img:s.kind==="file"?null:SOUND_LIBRARY.photoFor(s.inst),label:s.label}});
@@ -9444,7 +9445,7 @@ function grpDown(e,p,o,x,y){
   if(L0.size>1&&L0.has(o.id)&&!e.altKey){p.kind="mdrag";p.P0=sourcePoint(o.s);p.lv=new Map();
     for(const id of L0){const s=S.sources.find(q=>q.id===id);if(!s||s.waiting||autoPath(s))continue;const Lv=live(s);Lv.mode="free";Lv.w=0;delete Lv.pm;p.lv.set(id,{az:Lv.az,el:Lv.el,r:Lv.r})}
     sel=o.id;srcBar();vib(8);return true}
-  if(gg&&e.altKey)p.inv=true;
+  if(GRP.on){p.inv=true;const tk=()=>{if(![...PT.values()].includes(p))return;if(p.moved&&p.kind==="orb")step(p,p.x,p.y,performance.now());requestAnimationFrame(tk)};requestAnimationFrame(tk)}// con la sala girando, el sonido sigue bajo el dedo aunque no lo muevas · con grupos o cues de sala activos, el dedo manda la posición que se VE (antes solo con Alt: el sonido se iba del dedo)
   return false}
 function grpDelta(p,X,Y){const P0=p.P0;
   if(VIEW==="X"){const [az,r]=fromScr(X,Y),r0=Math.max(.15,P0[2]*Math.cos(P0[1]*D2R));return {dA:ORB.wrap(az-P0[0]),k:Math.max(.2,Math.min(5,r/r0)),dE:0}}
@@ -21617,16 +21618,17 @@ function slotInit(){const slot=platter.querySelector(".ldx-space-slot");
     if(TP.size===2){drag=null;const [a,b]=[...TP.values()];two={a,b,last:Date.now()};if(two.tap&&Date.now()-two.tap<350)API.nivelar(1);two.tap=Date.now();e.stopPropagation();e.preventDefault();return}
     const [x,y]=loc(e);const hit=DOTS.find(d=>Math.hypot(d.x-x,d.y-y)<d.r);if(!hit)return;e.stopPropagation();e.preventDefault();if(S.delMode){TP.delete(e.pointerId);delPlaying(hit.t);return}slot.setPointerCapture(e.pointerId);
     const t=hit.t;if(e.shiftKey||S.shift){selTrack(t,true)}else if(!S.sel.has(t.id)){S.sel.clear();S.sel.add(t.id);renderGrid();renderStrips()}
-    const b=nowBar();const group=S.tracks.filter(o=>S.sel.has(o.id));drag={id:e.pointerId,x0:x,y0:y,group:group.map(o=>({t:o,P0:posOf(o,b)}))};for(const o of drag.group)o.t.man=o.P0.slice()},true);
+    const b=nowBar();const group=S.tracks.filter(o=>S.sel.has(o.id));drag={id:e.pointerId,x0:x,y0:y,ox:hit.x-x,oy:hit.y-y,ref:t,group:group.map(o=>({t:o,P0:posOf(o,b)}))};for(const o of drag.group)o.t.man=o.P0.slice()},true);
   slot.addEventListener("pointermove",e=>{if(!TP.has(e.pointerId))return;const p=loc(e);
     if(two&&TP.size>=2){e.stopPropagation();e.preventDefault();const ids=[...TP.keys()],a0=TP.get(ids[0]),b0=TP.get(ids[1]);TP.set(e.pointerId,p);const a1=TP.get(ids[0]),b1=TP.get(ids[1]);
       const r=ov.getBoundingClientRect(),cx=r.width/2,cy=r.height/2,mx=(a1[0]+b1[0])/2-cx,my=(a1[1]+b1[1])/2-cy,L=Math.hypot(mx,my)||1,ux=mx/L,uy=my/L,nx=-uy,ny=ux;
       const da=(a1[0]-a0[0])*nx+(a1[1]-a0[1])*ny,dbb=(b1[0]-b0[0])*nx+(b1[1]-b0[1])*ny,side=((a1[0]-cx)*ux+(a1[1]-cy)*uy)>((b1[0]-cx)*ux+(b1[1]-cy)*uy)?1:-1;
       const th=(da-dbb)*side*.25;roomTilt(th*(-uy),th*ux);return}
     TP.set(e.pointerId,p);if(!drag||drag.id!==e.pointerId)return;e.stopPropagation();e.preventDefault();
-    let A0=null;try{A0=PLAY.fromScr(drag.x0,drag.y0)}catch(_){}let A1=null;try{A1=PLAY.fromScr(p[0],p[1])}catch(_){}
-    const r=ov.getBoundingClientRect(),cx=r.width/2,cy=r.height/2;const ang=(x,y)=>Math.atan2(x-cx,-(y-cy))*180/Math.PI;
-    const dA=A0&&A1?A1[0]-A0[0]:ang(p[0],p[1])-ang(drag.x0,drag.y0),k=A0&&A1?(A1[1]+.05)/(A0[1]+.05):Math.hypot(p[0]-cx,p[1]-cy)/Math.max(4,Math.hypot(drag.x0-cx,drag.y0-cy));
+    // ABSOLUTO, como en la Mesa: el punto que tomaste queda bajo el dedo (aunque la sala gire); el resto del grupo lo acompaña
+    const r=ov.getBoundingClientRect(),cx=r.width/2,cy=r.height/2,fx=p[0]+drag.ox,fy=p[1]+drag.oy;const q4=projP([0,0,4]),R4=Math.max(20,Math.hypot(q4[0]-cx,q4[1]-cy));
+    const azF=Math.atan2(fx-cx,-(fy-cy))*180/Math.PI,rF=clamp(Math.hypot(fx-cx,fy-cy)/R4*4,.15,4);
+    const g0=drag.group.find(o=>o.t===drag.ref)||drag.group[0],dA=azF-g0.P0[0],k=rF/Math.max(.15,g0.P0[2]);
     for(const o of drag.group)o.t.man=[o.P0[0]+dA,o.P0[1],clamp(o.P0[2]*k,.15,4)]},true);
   const up=e=>{TP.delete(e.pointerId);if(two&&TP.size<2){two=null;if(S.resorte)API.nivelar(.25)}
     if(drag&&drag.id===e.pointerId){e.stopPropagation();const b=nowBar();for(const o of drag.group){const t=o.t,P=t.man;t.man=null;
