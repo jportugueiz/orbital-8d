@@ -21588,7 +21588,8 @@ function plateInit(){const ring=platter;
   const geo=e=>{const r=ring.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);return {a:Math.atan2(dy,dx)*180/Math.PI,rr:Math.hypot(dx,dy)/(r.width/2),px:r.width/2}};
   const sectorOf=a=>a>-135&&a<=-45?"f":a>-45&&a<=45?"r":a>45&&a<=135?"b":"l";
   let g0=null,lastTap=0;
-  ring.addEventListener("pointerdown",e=>{const g=geo(e);const rin=parseFloat(root.style.getPropertyValue("--rin"))/100||.8;if(g.rr<rin-.005||g.rr>1.03)return;// solo el anillo de vinilo; adentro manda la Mesae.preventDefault();e.stopPropagation();ring.setPointerCapture(e.pointerId);
+  ring.addEventListener("pointerdown",e=>{const g=geo(e);const rin=parseFloat(root.style.getPropertyValue("--rin"))/100||.8;if(g.rr<rin-.005||g.rr>1.03)return;// solo el anillo de vinilo; adentro manda la Mesa
+    e.preventDefault();e.stopPropagation();try{ring.setPointerCapture(e.pointerId)}catch(_){}
     const now=Date.now();if(now-lastTap<320){API.nivelar(1);lastTap=0}else lastTap=now;
     g0={a:g.a,rr:g.rr,t:performance.now(),sec:sectorOf(g.a),x:e.clientX,y:e.clientY,shift:e.shiftKey||S.shift};plate.touch=true;plate.v=0;plate.sector=g0.sec;ring.dataset.sec=g0.sec;ring.classList.add("touch");
     if(S.plato==="compas")GHOST={az:ROOM.az,man:ROOM.man,roll:ROOM.roll,pitch:ROOM.pitch,elev:ROOM.elev,rs:ROOM.rs}});
