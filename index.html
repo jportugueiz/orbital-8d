@@ -21592,21 +21592,29 @@ function plateInit(){const ring=platter;
     e.preventDefault();e.stopPropagation();try{ring.setPointerCapture(e.pointerId)}catch(_){}
     const now=Date.now();if(now-lastTap<320){API.nivelar(1);lastTap=0}else lastTap=now;
     g0={a:g.a,rr:g.rr,t:performance.now(),sec:sectorOf(g.a),x:e.clientX,y:e.clientY,shift:e.shiftKey||S.shift};plate.touch=true;plate.v=0;plate.sector=g0.sec;ring.dataset.sec=g0.sec;ring.classList.add("touch");
-    if(S.plato==="compas")GHOST={az:ROOM.az,man:ROOM.man,roll:ROOM.roll,pitch:ROOM.pitch,elev:ROOM.elev,rs:ROOM.rs}});
+    if(S.plato==="compas")GHOST={az:ROOM.az,man:ROOM.man,roll:ROOM.roll,pitch:ROOM.pitch,elev:ROOM.elev,rs:ROOM.rs};
+    // dejar el dedo apretado sin moverlo: gira solo (lados: ⟳ derecha / ⟲ izquierda, acelera mientras lo mantienes) · frente: sube · atrás: baja
+    const me=g0;me.hold=setTimeout(()=>{if(g0!==me||me.mode)return;me.mode="hold";let last=performance.now();const h0=last;
+      const loop=()=>{if(g0!==me)return;const now=performance.now(),dt=Math.min(.1,(now-last)/1000),u=Math.min(1,(now-h0)/2000);last=now;
+        const R=S.plato==="compas"&&GHOST?GHOST:ROOM;
+        if(me.sec==="r"||me.sec==="l"){const w=(me.sec==="r"?1:-1)*(45+135*u);R.man+=w*dt;if(R===ROOM)plate.v=w/60;me.t=now}
+        else R.elev=clamp(R.elev+(me.sec==="f"?1:-1)*25*dt,-40,70);
+        requestAnimationFrame(loop)};requestAnimationFrame(loop)},280)});
   // gesto fijado al empezar (como el scroll del teléfono): deslizar A LO LARGO del aro = scratch (gira la sala 1:1 con el dedo, en todo el aro);
   // deslizar HACIA ADENTRO/AFUERA = la acción del sector (lados inclinan ese lado; frente y atrás suben/bajan: dedo hacia arriba sube la escena).
-  ring.addEventListener("pointermove",e=>{if(!g0)return;const g=geo(e);const t=performance.now(),dt=Math.max(1,t-g0.t);
+  ring.addEventListener("pointermove",e=>{if(!g0||g0.mode==="hold")return;const g=geo(e);const t=performance.now(),dt=Math.max(1,t-g0.t);
     const R=S.plato==="compas"&&GHOST?GHOST:ROOM;
     if(g0.shift){R.roll=clamp(R.roll-(e.clientY-g0.y)*.3,-60,60);R.pitch=clamp(R.pitch+(e.clientX-g0.x)*.3,-60,60);g0.x=e.clientX;g0.y=e.clientY;g0.t=t;return}
     let d=g.a-g0.a;if(d>180)d-=360;if(d<-180)d+=360;const drp=(g.rr-g0.rr)*g.px;
     if(!g0.mode){const tg=Math.abs(d)*Math.PI/180*Math.max(.5,g.rr)*g.px,rd=Math.abs(drp);if(Math.max(tg,rd)<6)return;// zona muerta de 6 px para decidir
       g0.mode=rd>tg*1.4&&g0.sec?"radial":"scratch"}
-    if(g0.mode==="scratch"){R.man+=d;if(R===ROOM)plate.v=d/dt*16.7;if(S.roce)roce(Math.abs(d/dt*16.7))}
+    if(g0.mode==="scratch"&&(g0.sec==="f"||g0.sec==="b")){R.elev=clamp(R.elev+(g0.sec==="f"?1:-1)*Math.abs(d)*.6,-40,70)}// frente: girarlo sube la escena · atrás: la baja
+    else if(g0.mode==="scratch"){R.man+=d;if(R===ROOM)plate.v=d/dt*16.7;if(S.roce)roce(Math.abs(d/dt*16.7))}
     else{const k=drp*.35,s=g0.sec;// grados por píxel
       if(s==="r")R.roll=clamp(R.roll+k,-60,60);else if(s==="l")R.roll=clamp(R.roll-k,-60,60);
       else if(s==="f")R.elev=clamp(R.elev+k,-40,70);else R.elev=clamp(R.elev-k,-40,70)}
     g0.a=g.a;g0.rr=g.rr;g0.t=t;g0.x=e.clientX;g0.y=e.clientY});
-  const up=()=>{if(!g0)return;if(performance.now()-g0.t>90)plate.v=0;plate.v=clamp(plate.v,-12,12);g0=null;plate.touch=false;ring.classList.remove("touch");delete ring.dataset.sec;
+  const up=()=>{if(!g0)return;clearTimeout(g0.hold);if(performance.now()-g0.t>90)plate.v=0;plate.v=clamp(plate.v,-12,12);g0=null;plate.touch=false;ring.classList.remove("touch");delete ring.dataset.sec;
     if(S.jogMode==="vinilo"){plate.v=0;if(ROOM.spin){ROOM.az=plate.virt}}// vuelve al giro del cue, en fase con la rejilla
     if(S.plato==="compas"&&GHOST){const G=GHOST;schedule("plato",b=>{for(const k of ["roll","pitch","elev"])tween(k,G[k],.25,b);tween("man",G.man,.25,b);GHOST=null})}
     if(S.resorte)API.nivelar(.25)};
