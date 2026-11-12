@@ -20890,7 +20890,7 @@ function paintForm(){form.replaceChildren();
   const last=K.lastArr&&K.lastArr.iah?K.lastArr:null;
   if(last)form.append(E("div",{class:"ldj-row-btns ldj-iah-back"},E("button",{type:"button",class:"ldj-btn",title:"Vuelve a la sesión que armaste antes",onclick:()=>{model=last.iah;arr=last;showView()}},"Ver la última sesión ▸")));
   form.append(E("h4",{},"1 · Tus beats"),kitBox,
-    E("button",{type:"button",class:"ldj-btn",onclick:()=>{showPads=!showPads;paintForm()}},showPads?"Ocultar pads":"Elegir pads uno a uno"),padsBox,cnt,
+    E("div",{class:"ldj-row-btns"},E("button",{type:"button",class:"ldj-btn",onclick:()=>{showPads=!showPads;paintForm()}},showPads?"Ocultar pads":"Elegir pads uno a uno"),E("button",{type:"button",class:"ldj-btn ldj-iah-clear",title:"Quita todos los sonidos elegidos para empezar de cero",onclick:()=>{pick.clear();paintForm()}},"✕ Borrar sonidos elegidos")),padsBox,cnt,
     E("h4",{},"2 · Duración"),seg("Duración",[[2,"2 min"],[3,"3 min"],[5,"5 min"],[10,"10 min"],[20,"20 min"]],minutes,v=>minutes=v),
     E("h4",{},"3 · Energía"),seg("Energía",ENERGY,energy,v=>energy=v),
     E("h4",{},"4 · Estilo"),seg("Estilo",[["auto","Según el kit","IAH elige por el kit"],...(ESC()?.GENEROS||[]).map(g=>[g.id,g.n,g.bpm[0]+"–"+g.bpm[1]+" BPM · "+g.recursos])],genre,v=>genre=v),
