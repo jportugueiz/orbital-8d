@@ -1811,6 +1811,9 @@ body.ldjx-open .ldj-fab{display:none!important}
 .ldx-del-big{color:#ff8a8a!important;border-color:#ff6b6b55!important;white-space:nowrap}
 .ldx-add-big{color:#3fe6ee!important;border-color:#3fe6ee66!important;margin-left:auto;white-space:nowrap}
 .ldx-pick-note{margin:0 0 8px;font-size:12px;opacity:.75}
+.ldx-delmode[aria-pressed="true"]{background:#ff4d4d!important;color:#fff!important}
+.ldjx.delmode .ldx-pad.full{outline:2px dashed #ff6b6b;outline-offset:-3px;cursor:not-allowed}
+.ldx-pick-q{width:100%;box-sizing:border-box;margin:0 0 8px;padding:8px 10px;border-radius:8px;border:1px solid #2f3740;background:#0b0e11;color:#e6edf3;font:500 14px UI,system-ui}
 /* Materiales comunes para el estudio, los modos inmersivos y el mezclador integrado. */
 :root {
   --rack-edge:#535c65;
@@ -19868,8 +19871,22 @@ let decoder=null;const dec=()=>decoder||(decoder=new OfflineAudioContext(1,1,SR)
 async function decodeMono(ab){const b=await dec().decodeAudioData(ab);const n=b.length,x=new Float32Array(n);
   for(let c=0;c<b.numberOfChannels;c++){const d=b.getChannelData(c);for(let i=0;i<n;i++)x[i]+=d[i]/b.numberOfChannels}return x}
 async function loadSrc(id){if(SRC[id])return SRC[id];const p=PAD[id];if(!p)return null;
+  if(p.libInst){await libSrc(p.libInst,id);return SRC[id]||null}
   if(p.own){const rec=await idb.get(p.ownId);if(!rec)return null;SRC[id]=await decodeMono(await rec.blob.arrayBuffer());return SRC[id]}
   const r=await fetch(p.file);if(!r.ok)throw new Error("No se pudo cargar "+p.file);SRC[id]=await decodeMono(await r.arrayBuffer());return SRC[id]}
+/* sonidos de la biblioteca de la Mesa (instrumentos, animales, naturaleza…) como pads del DJ: la toma del banco, en mono a 48 kHz.
+   Lazos sostenidos (ambientes, drones) → loop ajustado a compases; golpes, notas y frases → suenan una vez. */
+async function libSrc(lid,id){await ORB.libCargar(lid);let kind=null,L=null;
+  for(const k of ["sustain_loops","phrases","swells","notes","strikes","grains"]){const q=ORB.libSmp(lid,k);if(q&&q.length){kind=k;L=q;break}}
+  if(!L||!L[0].buf)throw new Error("Sin audio para "+lid);const b=L[0].buf;let src=b;
+  if(b.sampleRate!==SR){const oc=new OfflineAudioContext(b.numberOfChannels,Math.ceil(b.duration*SR),SR),n=oc.createBufferSource();n.buffer=b;n.connect(oc.destination);n.start();src=await oc.startRendering()}
+  const n=src.length,x=new Float32Array(n);for(let c=0;c<src.numberOfChannels;c++){const d=src.getChannelData(c);for(let i=0;i<n;i++)x[i]+=d[i]/src.numberOfChannels}
+  let pk=0;for(let i=0;i<n;i++){const a=Math.abs(x[i]);if(a>pk)pk=a}if(pk>0){const g=Math.min(4,.5/pk);for(let i=0;i<n;i++)x[i]*=g}// nivel parejo con los loops del kit
+  if(id)SRC[id]=x;return {x,kind}}
+async function libPad(lid){const id="lib_"+lid;if(PAD[id])return id;const {x,kind}=await libSrc(lid,null);const dur=x.length/SR,bpm=D_().bpm;
+  const loop=kind==="sustain_loops"&&dur>=2,bars=loop?Math.max(1,Math.round(dur*bpm/240)):Math.max(1,Math.ceil(dur*bpm/240));
+  PAD[id]={id,n:String((ORB.LIB[lid]||{}).n||lid).slice(0,30),row:loop?"pads":"fx",bars,kind:loop?"loop":"shot",libInst:lid,file:null,lib:null};SRC[id]=x;
+  try{PADS_OF[PAD[id].row].push(id)}catch(e){}return id}
 const mkBuf=x=>{const b=new AudioBuffer({length:Math.max(1,x.length),numberOfChannels:1,sampleRate:SR});b.copyToChannel(x,0);return b};
 // longitud: un loop dura «bars» compases al tempo pedido (se redondea hacia arriba; el bucle usa loopEnd exacto → sin deriva).
 // Los efectos de la biblioteca se estiran con el tempo (la subida sigue cayendo en el compás); los tuyos que no encajan, no.
@@ -19879,7 +19896,7 @@ function bufFor(id,bpm){const k=bkey(id,bpm),club=k.endsWith("|c");if(BUF[k])ret
   return BUFP[k]=(async()=>{const p=PAD[id];if(p&&p.synth&&SYN[p.synth])return BUF[k]=mkBuf(await SYN[p.synth](p,bpm,{bufFor,bufNow,SR}));
     if(club){const was=CLUB;CLUB=false;let b0;try{b0=bufFor(id,bpm)}finally{CLUB=was}b0=await b0;if(!b0)return null;return BUF[k]=mkBuf(clubBake(p,b0.getChannelData(0),id))}
     const x=await loadSrc(id);if(!x)return null;let y=x,L=null;if(p.row==="bombo")kickHits(id,x);
-    if(p.kind==="shot"){const sb=p.bpm||BASE_BPM;if(!p.own&&bpm!==sb)L=Math.round(x.length*sb/bpm)}
+    if(p.kind==="shot"){const sb=p.bpm||BASE_BPM;if(!p.own&&!p.libInst&&bpm!==sb)L=Math.round(x.length*sb/bpm)}
     else L=Math.ceil(p.bars*240/bpm*SR-1e-6);
     if(L&&Math.abs(L-x.length)>1)y=await stretch(x,L,p.kind!=="shot");
     else if(L&&L!==x.length){y=new Float32Array(L);y.set(x.subarray(0,L))}
@@ -20575,7 +20592,7 @@ const _t={
   demoArr,renderArr,timeline,movPos,stretch,kitDemoArr,setKit,loadKits,get kits(){return KITS},get kit(){return KIT}};
 return {on:true,open,close,get deck(){return deck},demoArr,renderArr,PAD,ROWS,_t,sessionState,loadState,
   // piezas internas para módulos de Orbital DJ (IAH DJ, selector de kits): lectura y llamadas, sin copiar código
-  _k:{HOOKS,SYN,KH,BAKE,SC_DEF,kicksOf,clubMaster,clubBake,bandsOf,lufsOf,meterOf,PAD,PADS_OF,ROWS,ROW,CAT,CYC,MOVS,SPEED,ICO,BASE_BPM,movPos,movCopy,speedTip,bufFor,bufNow,renderArr,timeline,tmap,demoArr,ensureLive,padNum,E,say,toast,paint,exportFile,sessionState,loadState,
+  _k:{HOOKS,SYN,KH,BAKE,SC_DEF,kicksOf,clubMaster,clubBake,bandsOf,lufsOf,meterOf,PAD,PADS_OF,ROWS,ROW,CAT,CYC,MOVS,SPEED,ICO,BASE_BPM,movPos,movCopy,speedTip,bufFor,bufNow,libPad,renderArr,timeline,tmap,demoArr,ensureLive,padNum,E,say,toast,paint,exportFile,sessionState,loadState,
     get deck(){return deck},get lastArr(){return lastArr},set lastArr(a){lastArr=a},get panel(){return panel}}}})();
 /* ==== LAB_DJ_FIN ==== */
 
@@ -21291,6 +21308,7 @@ function build(){
       btn("▶",{cls:"ldx-bank",tip:"Banco siguiente de pistas (flecha derecha)",attr:{"aria-label":"Banco siguiente"},on:()=>setBank(S.bank+1)}),
       E("span",{class:"ldx-dots"}),
       btn("＋ SONIDO",{cls:"ldx-sm ldx-add-big",tip:"Agrega un sonido a la pista seleccionada: de los kits, tus sonidos o tu propio audio (WAV, MP3, OGG)",on:()=>addSound(selList()[0])}),
+      btn("✕ SONIDO",{cls:"ldx-sm ldx-del-big ldx-delmode",press:false,tip:"Modo borrar: toca un pad o un sonido del plato para eliminarlo (vuelve a tocar ✕ SONIDO para salir)",on:e=>setDelMode(!S.delMode)}),
       btn("✕ PISTA",{cls:"ldx-sm ldx-del-big",tip:"Elimina la(s) pista(s) seleccionada(s): las para y las deja vacías",on:()=>deleteTracks(selList())}),
       btn("STOP ALL",{cls:"ldx-sm ldx-stopall",tip:"Para todos los clips en el próximo compás",on:stopAll})),grid);
   strips=E("section",{class:"ldx-strips","aria-label":"Mezclador: una tira de canal por pista"});
@@ -21407,7 +21425,7 @@ const movOf=t=>{const m={k:t.mov.k,s:t.mov.s??1};if(t.mov.az0!=null)m.az0=t.mov.
 function ensureRow(t){if(!K.ROW[t.eng])K.ROW[t.eng]={id:t.eng,n:t.name,r:.8,def:{k:"fija",s:1},vol:-2,col:t.color};const d=K.deck;
   if(d&&!d.R[t.eng])d.R[t.eng]={id:t.eng,ch:null,cur:null,pend:null,mov:movOf(t),vol:-2,filt:0,sel:null};return d?d.R[t.eng]:null}
 const quantVal=()=>S.quant||1/16;
-function padPress(t,r){const id=t.clips[r];if(!id){openPicker(t,r);return}
+function padPress(t,r){const id=t.clips[r];if(S.delMode){delSound(t,r);return}if(!id){openPicker(t,r);return}
   const d=deck();const R=ensureRow(t);d.quant=quantVal();if(!d.playing)d.start();
   const p=K.PAD[id];K.bufFor(id,d.bpm).catch(()=>{});R.sel=id;R.mov=movOf(t);
   if(p&&p.kind==="shot")R.pend={pad:id,bar:d.nextBar()};
@@ -21419,6 +21437,12 @@ function sceneLaunch(r){for(const t of visible())if(t.clips[r]){const R=K.deck?.
   const b=grid.querySelector('.ldx-scene[data-r="'+r+'"]');if(b){b.classList.add("queued");setTimeout(()=>b.classList.remove("queued"),300)}}
 function trackStop(t){const d=K.deck;const R=d&&d.R[t.eng];if(R&&(R.cur||R.pend))R.pend=R.cur?{pad:null,bar:d.nextBar()}:null;syncPads()}
 function stopAll(){for(const t of S.tracks)trackStop(t)}
+// ✕ SONIDO: como en la Mesa, tocas un sonido y se elimina (el pad tocado, o en el plato lo que suena en esa pista)
+function setDelMode(on){S.delMode=!!on;root.classList.toggle("delmode",S.delMode);root.querySelectorAll(".ldx-delmode").forEach(b=>b.setAttribute("aria-pressed",String(S.delMode)));if(S.delMode)K.toast("Toca el sonido que quieres eliminar")}
+function delSound(t,r){const id=t.clips[r];if(!id)return;const R=K.deck&&K.deck.R[t.eng];if(R&&((R.cur&&R.cur.pad===id)||(R.pend&&R.pend.pad===id)))trackStop(t);
+  t.clips[r]=null;if(t.state.play===r)t.state.play=-1;if(t.state.queue===r)t.state.queue=-1;if(R&&R.sel===id)R.sel=null;
+  if(!t.clips.some(Boolean)){t.man=null;t.rec=null}renderGrid();renderStrips();syncPads();save();K.toast("Sonido eliminado")}
+function delPlaying(t){const R=K.deck&&K.deck.R[t.eng];const id=R&&R.cur?R.cur.pad:null;let r=id?t.clips.indexOf(id):-1;if(r<0)r=t.state.play;if(r<0)r=t.clips.findIndex(Boolean);if(r>=0)delSound(t,r)}
 // ＋ SONIDO: carga en el primer pad vacío de la pista (si está llena, reemplaza el último)
 function addSound(t){let r=t.clips.findIndex(x=>!x);if(r<0)r=ROWS_N-1;openPicker(t,r)}
 // ELIMINAR PISTA (como en la Mesa): para la pista en el próximo compás y la deja vacía (sonidos, posición, movimiento, EQ y volumen de fábrica)
@@ -21487,13 +21511,21 @@ function setKit(id){S.userKit=true;if(!(LAB_DJ._t?.kits||{})[id]){setTimeout(()=
 /* ---------- cargar un sonido en un pad vacío (del catálogo o tuyo) ---------- */
 let pickDlg=null,pickTo=null;
 function openPicker(t,r){pickTo={t,r};if(!pickDlg){const sel=E("select",{class:"ldx-pick-sel",size:12,"aria-label":"Sonidos"});
-    pickDlg=E("dialog",{class:"ldx-pick","aria-label":"Cargar un sonido en el pad"},E("h3",{},"AGREGAR SONIDO"),E("p",{class:"ldx-pick-note"},"Elige un sonido de los kits o de tus sonidos, o sube tu propio audio con «TU AUDIO…»"),sel,
-      E("div",{class:"ldx-pick-row"},btn("CARGAR",{cls:"ldx-pick-ok",on:()=>{const id=sel.value;if(id&&pickTo){assign(pickTo.t,pickTo.r,id)}pickDlg.close()}}),
+    const q=E("input",{type:"search",class:"ldx-pick-q",placeholder:"Buscar: guitarra, lobo, lluvia, bombo…","aria-label":"Buscar sonido",oninput:()=>fillPick(q.value)});
+    pickDlg=E("dialog",{class:"ldx-pick","aria-label":"Agregar un sonido al pad"},E("h3",{},"AGREGAR SONIDO"),E("p",{class:"ldx-pick-note"},"Beats de los kits, instrumentos, animales y naturaleza de la Mesa, tus sonidos, o sube tu propio audio con «TU AUDIO…»"),q,sel,
+      E("div",{class:"ldx-pick-row"},btn("CARGAR",{cls:"ldx-pick-ok",on:async e=>{const v=sel.value,to=pickTo;if(!v||!to)return;
+          if(v.startsWith("lib:")){const b=e.currentTarget;b.disabled=true;b.textContent="CARGANDO…";try{const id=await K.libPad(v.slice(4));assign(to.t,to.r,id)}catch(err){console.warn(err);K.toast("No pude cargar ese sonido")}b.disabled=false;b.textContent="CARGAR"}
+          else assign(to.t,to.r,v);pickDlg.close()}}),
         btn("TU AUDIO…",{tip:"WAV, MP3 u OGG tuyo o con licencia: detecta compases y BPM",on:()=>{pickDlg.close();ownFor(pickTo.t,pickTo.r)}}),btn("CANCELAR",{on:()=>pickDlg.close()})));
     sel.ondblclick=()=>pickDlg.querySelector(".ldx-pick-ok").click();root.append(pickDlg)}
-  const sel=pickDlg.querySelector("select"),KI=LAB_DJ._t?.kits||{};sel.replaceChildren(...Object.values(KI).map(k=>E("optgroup",{label:k.n},...k.ids.map(id=>E("option",{value:id},padName(id)+" · "+(K.PAD[id].bars)+" C")))),
-    E("optgroup",{label:"Tus sonidos"},...Object.values(K.PAD).filter(p=>p.own).map(p=>E("option",{value:p.id},p.n))));
-  pickDlg.showModal()}
+  pickDlg.querySelector(".ldx-pick-q").value="";fillPick("");pickDlg.showModal();setTimeout(()=>pickDlg.querySelector(".ldx-pick-q").focus(),50)}
+function fillPick(f){const sel=pickDlg.querySelector("select"),KI=LAB_DJ._t?.kits||{},n=s=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase(),fq=n(f||"").trim(),ok=s=>!fq||n(s).includes(fq);
+  const grp=(label,opts)=>opts.length?[E("optgroup",{label},...opts)]:[];
+  const LIBO=(typeof ORB!=="undefined"&&ORB.LIB_IDS?ORB.LIB_IDS:[]).map(id=>[id,(ORB.LIB[id]||{}).n||id]).filter(([id,nm])=>ok(nm+" "+id)).sort((a,b)=>a[1].localeCompare(b[1],"es"));
+  sel.replaceChildren(...Object.values(KI).flatMap(k=>grp(k.n,k.ids.filter(id=>K.PAD[id]&&ok(padName(id)+" "+k.n)).map(id=>E("option",{value:id},padName(id)+" · "+(K.PAD[id].bars)+" C")))),
+    ...grp("Instrumentos, animales y naturaleza (Mesa) · "+LIBO.length,LIBO.map(([id,nm])=>E("option",{value:"lib:"+id},nm))),
+    ...grp("Tus sonidos",Object.values(K.PAD).filter(p=>p.own&&ok(p.n)).map(p=>E("option",{value:p.id},p.n))));
+  if(sel.options.length)sel.selectedIndex=0}
 function assign(t,r,id){t.clips[r]=id;if(!t.role)t.role=K.PAD[id]?.row||"fx";if(!t.rol)t.rol=ROLMAP[id]||t.role;const d=K.deck;K.bufFor(id,d?d.bpm:S.bpm).catch(()=>{});renderGrid();save()}
 function ownFor(t,r){const before=new Set(Object.keys(K.PAD));const row=t.role||"fx";const add=K.panel?.querySelector('[data-row="'+row+'"] .ldj-add');if(!add){K.toast("Arrastra el audio a la consola");return}add.click();
   let n=0;const iv=setInterval(()=>{n++;const nu=Object.keys(K.PAD).find(id=>!before.has(id)&&K.PAD[id].own);if(nu){clearInterval(iv);assign(t,r,nu)}if(n>600)clearInterval(iv)},200)}
@@ -21583,7 +21615,7 @@ function slotInit(){const slot=platter.querySelector(".ldx-space-slot");
   const loc=e=>{const r=ov.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top]};
   slot.addEventListener("pointerdown",e=>{TP.set(e.pointerId,loc(e));
     if(TP.size===2){drag=null;const [a,b]=[...TP.values()];two={a,b,last:Date.now()};if(two.tap&&Date.now()-two.tap<350)API.nivelar(1);two.tap=Date.now();e.stopPropagation();e.preventDefault();return}
-    const [x,y]=loc(e);const hit=DOTS.find(d=>Math.hypot(d.x-x,d.y-y)<d.r);if(!hit)return;e.stopPropagation();e.preventDefault();slot.setPointerCapture(e.pointerId);
+    const [x,y]=loc(e);const hit=DOTS.find(d=>Math.hypot(d.x-x,d.y-y)<d.r);if(!hit)return;e.stopPropagation();e.preventDefault();if(S.delMode){TP.delete(e.pointerId);delPlaying(hit.t);return}slot.setPointerCapture(e.pointerId);
     const t=hit.t;if(e.shiftKey||S.shift){selTrack(t,true)}else if(!S.sel.has(t.id)){S.sel.clear();S.sel.add(t.id);renderGrid();renderStrips()}
     const b=nowBar();const group=S.tracks.filter(o=>S.sel.has(o.id));drag={id:e.pointerId,x0:x,y0:y,group:group.map(o=>({t:o,P0:posOf(o,b)}))};for(const o of drag.group)o.t.man=o.P0.slice()},true);
   slot.addEventListener("pointermove",e=>{if(!TP.has(e.pointerId))return;const p=loc(e);
