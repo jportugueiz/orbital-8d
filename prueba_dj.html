@@ -1472,6 +1472,9 @@ body.ldj-open .ldj-fab{display:none}
 @media (prefers-reduced-motion:reduce){.ldj-row.moving .ldj-ico,.ldj-pad.wait,.ldj-pad.leaving,.ldj-rec[aria-pressed="true"]{animation:none}}
 .ldj .ldj-kit{max-width:15em;min-height:34px;padding:4px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.22);background:rgba(10,14,30,.85);color:inherit;font:inherit;font-size:.85em}
 /* ==== LAB_DJ_FIN ==== */
+
+.ldj-iah-back{position:sticky;top:0;z-index:5;background:inherit;padding:4px 0}
+.ldj-iah-back .ldj-btn{border-color:#3fe6ee88;color:#3fe6ee}
 /* ==== ORBITAL DJ · consola de club (lab_dj_ui.js, solo con ?dj=1) ====
    Distribución diestra: transporte, MASTER y BEAT FX a la izquierda; rejilla y tiras al centro; plato (vista espacial de la Mesa) y ESCENA 8D a la derecha.
    .zurdo espeja solo la distribución (no el audio ni la vista). Rejilla de 8 px. Letra mínima 11 px. */
@@ -20884,6 +20887,8 @@ function paintForm(){form.replaceChildren();
   if(showPads)for(const r of ROWS){const ids=Object.keys(PAD).filter(id=>PAD[id].row===r.id&&(KITS.has(PAD[id].kit)||PAD[id].own));if(!ids.length)continue;
     padsBox.append(E("div",{class:"ldj-iah-prow",style:"--c:"+r.col},E("span",{class:"ldj-iah-plab",html:ICO[r.ico]+"<b>"+r.n+"</b>"}),...ids.map(id=>E("button",{type:"button",class:"ldj-iah-chip","aria-pressed":String(pick.has(id)),title:(PAD[id].kind==="shot"?"Efecto":"Loop de "+PAD[id].bars+" compases")+(PAD[id].kit&&KITS.get(PAD[id].kit)?" · "+KITS.get(PAD[id].kit).n:""),onclick:e=>{pick.has(id)?pick.delete(id):pick.add(id);e.currentTarget.setAttribute("aria-pressed",String(pick.has(id)));count()}},PAD[id].n))))}
   const cnt=E("span",{class:"ldj-iah-count"});const count=()=>{cnt.textContent=pick.size?pick.size+" sonidos elegidos":"Elige al menos un kit o unos pads"};count();
+  const last=K.lastArr&&K.lastArr.iah?K.lastArr:null;
+  if(last)form.append(E("div",{class:"ldj-row-btns ldj-iah-back"},E("button",{type:"button",class:"ldj-btn",title:"Vuelve a la sesión que armaste antes",onclick:()=>{model=last.iah;arr=last;showView()}},"Ver la última sesión ▸")));
   form.append(E("h4",{},"1 · Tus beats"),kitBox,
     E("button",{type:"button",class:"ldj-btn",onclick:()=>{showPads=!showPads;paintForm()}},showPads?"Ocultar pads":"Elegir pads uno a uno"),padsBox,cnt,
     E("h4",{},"2 · Duración"),seg("Duración",[[2,"2 min"],[3,"3 min"],[5,"5 min"],[10,"10 min"],[20,"20 min"]],minutes,v=>minutes=v),
@@ -20899,7 +20904,7 @@ async function oir(){if(typeof IAH_OIDO==="undefined")return;const vivo=()=>!!K.
 function showView(){form.hidden=true;view.hidden=false;view.replaceChildren();edit=null;
   storyEl=E("p",{class:"ldj-iah-story"},model.story);msgEl=E("p",{class:"ldj-note","aria-live":"polite"});
   tl=E("div",{class:"ldj-iah-tl"});
-  view.append(storyEl,
+  view.append(E("div",{class:"ldj-row-btns ldj-iah-back"},E("button",{type:"button",class:"ldj-btn",title:"Vuelve a elegir beats, duración, energía y estilo para armar otra sesión",onclick:()=>{view.hidden=true;form.hidden=false;paintForm()}},"◂ Volver a elegir / nueva sesión")),storyEl,
     E("div",{class:"ldj-row-btns"},
       E("button",{type:"button",class:"ldj-btn ldj-iah-play",title:"Toca la sesión en vivo",onclick:()=>{K.lastArr=arr;const d=K.ensureLive();if(d.playing)d.stop();d.playArr(arr);msgEl.textContent="Sonando · "+fmt(dur(arr))+" en total";K.paint()}},"▶ Tocar"),
       E("button",{type:"button",class:"ldj-btn",onclick:()=>{K.deck?.stop();K.paint()}},"■ Parar"),
@@ -20944,7 +20949,7 @@ async function wav(){K.lastArr=arr;msgEl.textContent="Preparo el WAV con el moto
   try{const r=await K.renderArr(arr,{onProgress:(u)=>msgEl.textContent="Preparo el WAV con el motor 8D… "+Math.round(u*100)+" %"});
     EXP.guardar(EXP.wav(r.buf,"pcm24"),"iah_dj_"+model.params.energy+"_"+model.params.minutes+"min.wav");msgEl.textContent="WAV listo · "+fmt(r.buf.duration)}catch(e){console.warn(e);msgEl.textContent="No pude preparar el WAV, prueba otra vez."}}
 async function openIah(){await ready;if(!pick.size)for(const id of (KITS.values().next().value?.pads||[]))pick.add(id);
-  const a=K.lastArr;if(a?.iah){model=a.iah;arr=a;showView()}else{view.hidden=true;form.hidden=false;paintForm()}dlg.showModal()}
+  view.hidden=true;form.hidden=false;paintForm();dlg.showModal()}// siempre abre en «elegir»; la última sesión queda a un toque («Ver la última sesión»)
 let ready=Promise.resolve();
 function init(){if(!K.panel){setTimeout(init,50);return}try{build();ready=loadCatalog();K.HOOKS?.arr.push(a=>{if(a?.iah)rehidratar(a.iah)});if(K.lastArr?.iah)rehidratar(K.lastArr.iah)}catch(e){console.warn("IAH DJ",e)}}
 if(document.readyState==="complete")setTimeout(init,30);else addEventListener("load",()=>setTimeout(init,30));
