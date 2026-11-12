@@ -4836,7 +4836,14 @@ function distApply(v,t,P,k,ramp){const m=v.m,I=distInfo(P[2],m.space,m.hyper,P[0
   const back=Math.max(0,-Math.cos(P[0]*D2R)),hyper=/^v10-/.test(v.ren)?m.hyper-1:0;
   S_(v.rpd.delayTime,Math.min(.29,I.rev_pre));S_(v.send.gain,I.rev_amp*(1+(.6+hyper)*back*Math.min(1,k))*wR*v.reverb*(iso==="er"?0:1));v.di=I}
 // la dirección va a los renderizadores siempre a la distancia de referencia (1,5 m): su nivel/aire internos quedan fijos y la distancia la pone distApply
+/* CRUCE POR LA CABEZA (Jorge, 12 nov 2026): «la app tiene que pensar que no hay nada ahí, pasa de largo».
+   Dentro de CRUCE.r (0,5 m) el sonido no se aplasta al centro ni sube de volumen: se conserva su posición lateral (x) y su altura (y)
+   y se dibuja sobre la esfera de 0,5 m, del mismo lado (adelante o atrás) por donde va. Así un paso de izquierda a derecha por el centro
+   barre la ILD de forma continua (izquierda → centro → derecha), sin golpe ni desvío. Fuera de 0,5 m no cambia nada. CRUCE.on=false → como antes. */
+const CRUCE={on:true,r:.5};
 function voicePos(v,t,P,k,ramp){
+  if(CRUCE.on&&P[2]<CRUCE.r){const R0=CRUCE.r,e=P[1]*D2R,a=P[0]*D2R,x=P[2]*Math.cos(e)*Math.sin(a),y=P[2]*Math.sin(e),z=P[2]*Math.cos(e)*Math.cos(a);
+    const zz=(z<0?-1:1)*Math.sqrt(Math.max(0,R0*R0-x*x-y*y));P=[Math.atan2(x,zz)/D2R,Math.asin(clamp(y/R0,-1,1))/D2R,R0]}
   // At the listener there is no stable direction. Blend to the centered signal before the azimuth flips.
   const u=clamp((P[2]-.15)/.35,0,1),directional=u*u*(3-2*u);
   const center=1-directional;
@@ -5466,7 +5473,7 @@ function meters(){if(!M||!M.anL)return null;M.anL.getFloatTimeDomainData(MB.l);M
   let lev=0;for(let i=2;i<200;i++)lev+=MB.f[i];lev/=198*255;
   return {pl,pr,ild,cor,itd:bl/M.ctx.sampleRate*1e6,lufs,lev,gr:M.lim.reduction||0,l:MB.l,r:MB.r,fft:MB.f}}
 
-return {cueEnded,setDist,setDistPath,getDist,setPos,setRoom,setHyperreal,ROOMS,distInfo,airAlpha,airFc,critDist,lvlOf,ildNF,itdNF,DIST:{MIN:D_MIN,MAX:D_MAX,REF:D_REF,C:C_SND,G_MAX_DB:12},get space(){return S.space},get hyper(){return S.hyper},
+return {cueEnded,setDist,setDistPath,getDist,setPos,setRoom,setHyperreal,ROOMS,distInfo,airAlpha,airFc,critDist,lvlOf,ildNF,itdNF,CRUCE,DIST:{MIN:D_MIN,MAX:D_MAX,REF:D_REF,C:C_SND,G_MAX_DB:12},get space(){return S.space},get hyper(){return S.hyper},
   v9Node,v9Set,V9P,onTransport(f){TRL.push(f);return()=>{const i=TRL.indexOf(f);if(i>=0)TRL.splice(i,1)}},gainOf,hdOf,MAXV,DECK_CHANNELS,BANCO,BANCO_IDS,REN,RENDS,HRK,addRenderer,renOf,LVREN,HR,LIC,atribucion,renderAll,renderRange,setPrefCC0(v){PREF_CC0=!!v},get prefCC0(){return PREF_CC0},genEvents,ac,_master,get M(){return M},S,LIB,LIB_IDS,PATHS,PATH_IDS,PRESET01,BEDS,BANDS,revS,radio,xyz,aer,wrap,rng,newSource,addSource,removeSource,setSources,applyMix,play,pause,stop,seek,pos,render,meters,setLim,setVol,setDeckMaster,
   recStart,recStop,takeAt,breathK,advance,mkMotion,libCargar,libSmp,bedLoad,stopBed,stopBin,binStart,bedStart,loadBenzai,clamp,lerp,dB,onEnd:null,ctl,loop,killVoice,rtVoice,
   startExtras(){const c=ac();startLiveBed(c);if(S.binCfg.on&&!S.bin)S.bin=binStart(c,M,S.binCfg,c.currentTime+.05);loop()}};
@@ -19996,7 +20003,8 @@ function padStop(node,at,hard){if(!node)return;try{if(hard){node.n.stop(Math.max
 
 /* ---------- posición en vivo: misma secuencia que voicePos/distApply/elevCue de orb_dsp.js (no exportadas) ----------
    El render offline usa el motor directamente (ORB.render); esto solo mueve las voces en vivo. */
-function vPos(v,t,P,k,ramp){const set=(p,x)=>{try{ramp?p.linearRampToValueAtTime(x,t):p.setValueAtTime(x,t)}catch(e){}};
+function vPos(v,t,P,k,ramp){const CR=ORB.CRUCE;if(CR&&CR.on&&P[2]<CR.r){/* cruce por la cabeza: pasa de largo, igual que en la Mesa (orb_dsp.js, CRUCE) */const R0=CR.r,e=P[1]*D2R,a=P[0]*D2R,x=P[2]*Math.cos(e)*Math.sin(a),y=P[2]*Math.sin(e),z=P[2]*Math.cos(e)*Math.cos(a);
+  const zz=(z<0?-1:1)*Math.sqrt(Math.max(0,R0*R0-x*x-y*y));P=[Math.atan2(x,zz)/D2R,Math.asin(clamp(y/R0,-1,1))/D2R,R0]}const set=(p,x)=>{try{ramp?p.linearRampToValueAtTime(x,t):p.setValueAtTime(x,t)}catch(e){}};
   const u=clamp((P[2]-.15)/.35,0,1),directional=u*u*(3-2*u),center=1-directional;
   if(!v.ab){const direct=v.originalMix??0;set(v.sp.gain,directional);set(v.orig.gain,direct+(1-direct)*center)}
   const m=v.m,I=ORB.distInfo(P[2],m.space,m.hyper,P[0],P[1],v.ren),iso=m.iso;
