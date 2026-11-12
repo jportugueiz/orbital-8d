@@ -21597,7 +21597,7 @@ function plateInit(){const ring=platter;
     const me=g0;me.hold=setTimeout(()=>{if(g0!==me||me.mode)return;me.mode="hold";let last=performance.now();const h0=last;
       const loop=()=>{if(g0!==me)return;const now=performance.now(),dt=Math.min(.1,(now-last)/1000),u=Math.min(1,(now-h0)/2000);last=now;
         const R=S.plato==="compas"&&GHOST?GHOST:ROOM;
-        if(me.sec==="r"||me.sec==="l"){const w=(me.sec==="r"?1:-1)*(45+135*u);R.man+=w*dt;if(R===ROOM)plate.v=w/60;me.t=now}
+        if(me.sec==="r"||me.sec==="l"){const w=(me.sec==="r"?1:-1)*(27+81*u);R.man+=w*dt;if(R===ROOM)plate.v=w/60;me.t=now}
         else R.elev=clamp(R.elev+(me.sec==="f"?1:-1)*25*dt,-40,70);
         requestAnimationFrame(loop)};requestAnimationFrame(loop)},280)});
   // gesto fijado al empezar (como el scroll del teléfono): deslizar A LO LARGO del aro = scratch (gira la sala 1:1 con el dedo, en todo el aro);
