@@ -18471,6 +18471,7 @@ const ESCUCHA_AB=(()=>{
      IAH_OIDO.espacial(bufferEstereo, {bpm,t0,drops}) → actividad espacial 8D por compás (ILD/ITD, gestos, sincronía, contraste,
                                                  zonas, capas, giros, contragiros, explosión en el drop) + puntaje 0–100;
                                                  criticar(buffer, {espacial:true}) suma sus problemas (ver prueba_coreografia)
+     IAH_OIDO.espacialCapas({id: bufferEstereo, …}, {bpm,t0,secciones,drops}) → lo mismo medido pista por pista (lo fiable si hay pistas)
      IAH_OIDO.escuchar(url|File|ArrayBuffer|AudioBuffer, opciones) → decodifica y analiza (navegador)
      IAH_OIDO.decodificar(arrayBuffer)        → AudioBuffer (solo navegador)
      IAH_OIDO.referencias / usarReferencias(json) → plantillas por género (_src/iah_referencias.json)
@@ -19527,7 +19528,8 @@ function espacial(buf,op={}){
       if(lat<6&&it<250){if(tilt[f]<tiltMed-4)zonas.detras++;else if(tilt[f]>tiltMed+3)zonas.delante++}
       if(alto[f]>altoMed+3)zonas.arriba++;if(lat>=24||it>=700)zonas.cerca++}
     porCompas.push({compas:b+1,t:rd(bars[b],2),ild_rango_db:rd(rango,1),ild_desvio_db:rd(sd,1),itd_rango_us:Math.round(itdR),cambios:rev,saltos:salto,gesto:g,capas,contragiro:opuesto,
-      evolucion_db:rd(ev,1),actividad:rd(ev+.15*rango,1),con_audio:x.length>8})}
+      evolucion_db:rd(ev,1),actividad:rd(ev+.15*rango,1),con_audio:x.length>8,ild_media:x.length?rd(mean(x),1):0,
+      pendiente:x.length>8?rd(mean(x.slice(Math.floor(x.length*.75)))-mean(x.slice(0,Math.ceil(x.length*.25))),1):0})}
   // giros completos: ciclos L→R→L de la ILD (±5 dB) de 1,5 a 40 s con el color distinto en los dos cruces (delante ≠ detrás)
   let giros=0,pendulos=0;{let st=0,tA=-1,tiltA=0,cruces=[];for(let f=0;f<nf;f++){if(!val[f])continue;const v=ild[f];const s=v>5?1:v<-5?-1:0;if(!s)continue;
       if(st&&s!==st){cruces.push({f,tilt:tilt[f]});if(cruces.length>=3){const c0=cruces[cruces.length-3],c2=cruces[cruces.length-1],dur=(c2.f-c0.f)/fps;
@@ -19558,13 +19560,41 @@ function espacial(buf,op={}){
   M.puntaje=Math.round(clamp(p,0,100));M.veredicto=M.puntaje>=70?'experiencia':M.puntaje>=45?'correcto':'plano';
   M.problemas=problemasEspaciales(M).map(x=>x.mensaje);
   return M}
+
+// por capas: cuando se tienen las pistas renderizadas (las da el motor: render8d, renderArr, IAH_COREO), se mide cada una por separado
+// y se suma: es la medida fiable de «cuántas capas se mueven», contragiros y explosión; la de la mezcla es una estimación.
+// IAH_OIDO.espacialCapas({id: bufferEstéreo, …}, {bpm, t0, secciones, drops}) → mismas claves que espacial() + por_capa
+function espacialCapas(capas,op={}){const ids=Object.keys(capas);if(!ids.length)return null;
+  const R={};for(const id of ids)R[id]=espacial(capas[id],op);const nb=Math.max(...ids.map(id=>R[id].compases));
+  const mueve=(id,b)=>{const x=R[id].por_compas[b];return !!x&&x.con_audio&&x.ild_rango_db>=6&&x.gesto!=='quieto'&&x.gesto!=='patron_fijo'};
+  const serie=(id,b)=>{const x=R[id].por_compas[b];return x?x.ild_media||0:0};
+  let capasMax=0,capasSum=0,contra=0,syncN=0,syncW=0;const gest=new Set(),porCompas=[];
+  for(let b=0;b<nb;b++){const m=ids.filter(id=>mueve(id,b));capasMax=Math.max(capasMax,m.length);capasSum+=m.length;for(const id of m)gest.add(R[id].por_compas[b].gesto);
+    // contrapunto: dos capas que se mueven con pendientes de ILD opuestas en el mismo compás (una va a la izquierda mientras la otra va a la derecha)
+    let op2=false;for(let i=0;i<m.length&&!op2;i++)for(let j=i+1;j<m.length&&!op2;j++){const a=R[m[i]].por_compas[b].pendiente||0,c=R[m[j]].por_compas[b].pendiente||0;if(a*c<0&&Math.abs(a)>4&&Math.abs(c)>4)op2=true}
+    if(op2)contra++;porCompas.push({compas:b+1,capas_moviendo:m.length,contrapunto:op2,actividad:rd(m.reduce((s2,id)=>s2+R[id].por_compas[b].actividad,0),1)})}
+  for(const id of ids){const r=R[id];const mv=r.por_compas.filter(x=>x.gesto!=='quieto'&&x.con_audio).length;if(mv){syncN+=r.sincronia*mv;syncW+=mv}}
+  const secs=(op.secciones||[]).map(s=>{const a=porCompas.slice((s.desde_compas||1)-1,s.hasta_compas);return {tipo:s.tipo,actividad:a.length?rd(mean(a.map(x=>x.actividad)),1):0}});
+  const acts=secs.map(s=>s.actividad+2).filter(x=>x>2);const contraste=acts.length>1?rd(20*Math.log10(Math.max(...acts)/Math.min(...acts)),1):0;
+  const explosion=(op.drops||[]).map(c=>{const k=c-1,pre=porCompas.slice(Math.max(0,k-2),k),post=porCompas.slice(k,k+2),aP=mean(pre.map(x=>x.actividad)),aD=mean(post.map(x=>x.actividad)),cP=mean(pre.map(x=>x.capas_moviendo)),cD=mean(post.map(x=>x.capas_moviendo));
+    return {compas:c,actividad_antes:rd(aP,1),actividad_drop:rd(aD,1),capas_antes:rd(cP,1),capas_drop:rd(cD,1),hay:aD>=aP*1.5&&cD>=cP+1}});
+  const M={compases:nb,capas:ids.length,ild_rango_db:rd(mean(ids.map(id=>R[id].ild_rango_db)),1),ild_rango_variacion_db:rd(mean(ids.map(id=>R[id].ild_rango_variacion_db)),1),
+    itd_rango_us:Math.round(mean(ids.map(id=>R[id].itd_rango_us))),gestos_distintos:[...gest].filter(g=>g!=='patron_fijo').length,gestos:[...gest],sincronia:syncW?rd(syncN/syncW,2):0,
+    contraste_secciones_db:contraste,zonas_usadas:Math.max(...ids.map(id=>R[id].zonas_usadas)),capas_moviendo_max:capasMax,capas_moviendo_media:rd(capasSum/Math.max(1,nb),1),
+    giros_completos:ids.reduce((s2,id)=>s2+R[id].giros_completos,0),compases_con_contragiro:contra,explosion_drop:explosion,
+    mismo_gesto_max:ids.map(id=>Object.assign({id},R[id].mismo_gesto_max)).sort((a,b)=>b.compases-a.compases)[0],compases_que_cambian:porCompas.filter(x=>x.capas_moviendo>0).length,
+    compases_quietos:porCompas.filter(x=>x.capas_moviendo===0).length,por_compas:porCompas,por_capa:Object.fromEntries(ids.map(id=>[id,{puntaje:R[id].puntaje,ild_rango_db:R[id].ild_rango_db,gestos:R[id].gestos,sincronia:R[id].sincronia}]))};
+  const s2=(x,a,b)=>clamp((x-a)/(b-a),0,1);let p=0;const fc=M.compases_que_cambian/Math.max(1,nb);
+  p+=10*s2(M.ild_rango_db,4,20);p+=5*s2(M.ild_rango_variacion_db,1,7);p+=18*s2(fc,.1,.6);p+=12*s2(M.gestos_distintos,1,4);p+=10*s2(M.sincronia,.2,.55);p+=10*s2(M.contraste_secciones_db,1,8);
+  p+=5*s2(M.zonas_usadas,1,4);p+=8*s2(M.capas_moviendo_max,1,4);p+=5*s2(M.giros_completos,0,3);p+=5*s2(M.compases_con_contragiro,0,4);p+=12*(explosion.length?explosion.filter(e=>e.hay).length/explosion.length:0);
+  M.puntaje=Math.round(clamp(p,0,100));M.veredicto=M.puntaje>=70?'experiencia':M.puntaje>=45?'correcto':'plano';M.problemas=problemasEspaciales(M).map(x=>x.mensaje);return M}
 const norm2=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 function problemasEspaciales(M){const out=[],add=(codigo,gravedad,mensaje,accion)=>out.push({codigo,gravedad,mensaje,accion});
   if(M.puntaje<45||M.ild_rango_db<6)add('espacial_plano',3,`espacialmente plano: la imagen cambia en ${M.compases_que_cambian} de ${M.compases} compases (la ILD varía ${fmt(M.ild_rango_db)} dB por compás), ${M.gestos_distintos} gesto(s) distinto(s) y ${M.capas_moviendo_max} capa(s) moviéndose a la vez (puntaje espacial ${M.puntaje}/100)`,{tipo:'coreografia',como:['ping-pong a tiempo en los hats','saltos en el contratiempo en la percusión','gancho espacial en la melodía','rotación de escena en el drop']});
   if(M.compases_que_cambian>=4&&M.sincronia<.3)add('movimiento_sin_ritmo',2,`movimiento sin ritmo: los cambios de lado no caen en la rejilla de corcheas y semicorcheas (sincronía ${fmt(M.sincronia,2)})`,{tipo:'sincronizar',rejilla:['1/4','1/8','1/16']});
   for(const e of M.explosion_drop||[])if(!e.hay)add('sin_explosion_espacial',2,`sin explosión espacial en el drop (compás ${e.compas}): la actividad pasa de ${fmt(e.actividad_antes)} a ${fmt(e.actividad_drop)} y el ancho de ${fmt(e.ancho_antes_db)} a ${fmt(e.ancho_drop_db)} dB`,{tipo:'explosion',compas:e.compas});
   const G=M.mismo_gesto_max;if(G&&G.compases>=16&&G.gesto!=='patron_fijo')add('gesto_repetido',2,`el mismo gesto durante 16 compases o más: «${G.gesto}» ${G.compases} compases seguidos desde el ${G.desde}`,{tipo:'variar_gesto',desde:G.desde,cada_compases:8});
-  if(M.compases_con_contragiro<1&&M.capas_moviendo_max<2)add('sin_contrapunto_espacial',2,`sin contrapunto espacial: ninguna capa se mueve en contra de otra (${M.capas_moviendo_max} capa(s) a la vez como máximo)`,{tipo:'contrapunto',como:['pads en contragiro de los leads','arpegio en espejo del lead']});
+  if(M.compases_con_contragiro<1&&M.capas_moviendo_max<3)add('sin_contrapunto_espacial',2,`sin contrapunto espacial: ninguna capa se mueve en contra de otra (${M.capas_moviendo_max} capa(s) a la vez como máximo)`,{tipo:'contrapunto',como:['pads en contragiro de los leads','arpegio en espejo del lead']});
   return out}
 // ───────────────────────── comparar, ciclo, resumen ─────────────────────────
 function comparar(a,b){const d=(x,y)=>rd(y-x,1);
@@ -19593,7 +19623,7 @@ async function escuchar(fuente,op={}){let b=fuente;
   return analizarAsync(b,op)}
 async function decodificar(ab,sr=48000){const C=root.OfflineAudioContext||root.webkitOfflineAudioContext;const c=new C(2,1,sr);return await new Promise((ok,ko)=>c.decodeAudioData(ab.slice?ab.slice(0):ab,ok,ko))}
 
-const API={version:VERSION,analizar:analizarSync,drop,desbalance,extasis,escuchar,analizarAsync,criticar,criticarAsync,criticarAnalisis,comparar,ciclo,resumen,decodificar,espacial,problemasEspaciales,
+const API={version:VERSION,analizar:analizarSync,drop,desbalance,extasis,escuchar,analizarAsync,criticar,criticarAsync,criticarAnalisis,comparar,ciclo,resumen,decodificar,espacial,espacialCapas,problemasEspaciales,
   parseTonalidad,plantilla,usarReferencias:j=>{REF=j;return API},get referencias(){return REF},
   _interno:{fft,espectro,bq,filtrar,tonalidadDe,acordeDe,diatonico,romano,PRNG,NOTA_ES,NOTA_EN,BANDAS}};
 root.IAH_OIDO=API;
@@ -20084,7 +20114,10 @@ function timeline(arr){const bd=240/arr.bpm,rows={},TM=tmap(arr);const T=id=>row
   // cuántas filas suenan en cada compás → mismo «headroom» que en vivo
   const heads=[];for(let q=0;q<=arr.len*4;q++){const b=q/4;let n=0;for(const R of Object.values(rows))if(R.segs.some(s=>s.start<=b&&b<s.end))n++;heads.push(arr.club===true?CLUB_HEAD:hdOf(n))}
   return {bd,TM,rows,drops,sweep,heads}}
-async function renderArr(arr,opt={}){const was=CLUB;CLUB=arr.club===true;try{return await renderArr0(arr,opt)}finally{CLUB=was}}
+// renderArr ocupa el hilo principal varios segundos (clubMaster, sincrónico): con la música en vivo sonando la trabaría.
+// Por eso, si el DJ suena, primero lo pausa y avisa (WAV de la consola, WAV de IAH DJ y cualquier otra exportación).
+async function renderArr(arr,opt={}){if(deck&&deck.playing&&!opt.conVivo){try{if(deck.rec)recToggle();deck.stop();paint();toast("Pausé la música para exportar")}catch(e){console.warn(e)}await new Promise(r=>setTimeout(r,60))}
+  const was=CLUB;CLUB=arr.club===true;try{return await renderArr0(arr,opt)}finally{CLUB=was}}
 async function renderArr0(arr,opt={}){const prog=opt.onProgress||(()=>{}),T0=performance.now();
   const used=new Set([...Object.values(arr.init?.rows||{}).map(s=>s.pad).filter(Boolean),...arr.ev.filter(e=>e.type==="launch").map(e=>e.pad)]);
   for(const id of used)if(PAD[id])await bufFor(id,arr.bpm);for(const [p,b] of needs(arr))await bufFor(p,b);
@@ -20117,7 +20150,7 @@ async function renderArr0(arr,opt={}){const prog=opt.onProgress||(()=>{}),T0=per
       const cuts=p.kind==="shot"?[s.start,s.end]:[s.start,...TM.S.map(x=>x.b).filter(b=>b>s.start&&b<s.end),s.end];
       for(let i=0;i+1<cuts.length;i++){const a=cuts[i],z=cuts[i+1],buf=bufNow(s.pad,TM.bpmAt(a));if(!buf)continue;const node=padStart(ch,p,buf,TM.tAt(a),a+ph,TM.bdAt(a));if(z!=null)padStop(node,TM.tAt(z))}}
     if(shared){prog(++k/(ids.length+1),"Fila "+ROW[id].n);continue}
-    const mono=await oc.startRendering();
+    const mono=await oc.startRendering();for(const h of HOOKS.mono||[])try{h(arr,id,mono,TM)}catch(e){console.warn(e)}// LAB_DJ_EXPORT: señal de la fila antes del 8D (envío a BEAT FX)
     if(opt.fast){const m=mono.getChannelData(0);for(let i=0;i<Math.min(N,m.length);i++){L[i]+=m[i]*.7;Rr[i]+=m[i]*.7}if(opt.stems)stems[id]=[m.slice(0,N),m.slice(0,N)];prog(++k/(ids.length+1),"Fila "+ROW[id].n);continue}
     // trayectoria a 50 Hz (la misma función de movimiento que en vivo)
     const fr=50,nf=Math.ceil(dur*fr)+1,frames=new Array(nf*3);
@@ -20131,6 +20164,7 @@ async function renderArr0(arr,opt={}){const prog=opt.onProgress||(()=>{}),T0=per
     for(let i=0;i<n;i++){L[i]+=l[i];Rr[i]+=r[i]}if(opt.onStem)opt.onStem(id,l.subarray(0,n),r.subarray(0,n));else if(opt.stems)stems[id]=[l.slice(0,n),r.slice(0,n)];
     prog(++k/(ids.length+1),"Fila "+ROW[id].n)}
   if(shared){const m=(await shared.startRendering()).getChannelData(0);for(let i=0;i<Math.min(N,m.length);i++){L[i]+=m[i]*.7;Rr[i]+=m[i]*.7}}
+  for(const h of HOOKS.mix||[])try{await h(arr,L,Rr,TM)}catch(e){console.warn(e)}// LAB_DJ_EXPORT: retorno estéreo de BEAT FX (bus común, sin 8D, como en vivo)
   if(opt.noMaster)return {buf:null,stats:null,stems,TL};
   let pre=0;for(let i=0;i<N;i++)pre=Math.max(pre,Math.abs(L[i]),Math.abs(Rr[i]));
   // máster de club (pegamento suave + saturación leve + loudness objetivo + limitador ≤ −1 dBTP); con club:false, solo el limitador de siempre
@@ -20854,7 +20888,9 @@ function paintForm(){form.replaceChildren();
     E("div",{class:"ldj-row-btns"},E("button",{type:"button",class:"ldj-big ldj-iah-go",title:"IAH arma la sesión completa",onclick:()=>{if(!pick.size){count();return}seed=(Date.now()%100000)+1;make()}},"Armar sesión")))}
 function make(){model=compose({pads:[...pick],minutes,energy,seed,genre,final});arr=compile(model);K.lastArr=arr;showView();oir()}
 // si existe el oído de IAH: escucha, corrige y vuelve a escuchar antes de entregar
-async function oir(){if(typeof IAH_OIDO==="undefined")return;msgEl.textContent="IAH escucha la sesión…";const r=await escucharYCorregir(model);if(!r.oido){msgEl.textContent="";return}model=r.M;arr=r.arr;K.lastArr=arr;showView();const v=r.oido.vueltas;msgEl.textContent=v.length?"IAH la escuchó "+v.length+(v.length===1?" vez":" veces")+(v[v.length-1].puntaje!=null?" · puntaje "+v[v.length-1].puntaje:""):""}
+// el oído renderiza y analiza la sesión entera en el hilo principal (varios segundos de bloqueo): con la música en vivo sonando
+// eso traba el audio y la página. Solo escucha con el DJ parado, y se detiene si empieza a sonar.
+async function oir(){if(typeof IAH_OIDO==="undefined")return;const vivo=()=>!!K.deck?.playing;if(vivo()){msgEl.textContent="";return}msgEl.textContent="IAH escucha la sesión…";const m0=model;const r=await escucharYCorregir(model,{alto:vivo});if(!r.oido||model!==m0||r.oido.cortado){if(model===m0)msgEl.textContent="";return}model=r.M;arr=r.arr;K.lastArr=arr;showView();const v=r.oido.vueltas;msgEl.textContent=v.length?"IAH la escuchó "+v.length+(v.length===1?" vez":" veces")+(v[v.length-1].puntaje!=null?" · puntaje "+v[v.length-1].puntaje:""):""}
 function showView(){form.hidden=true;view.hidden=false;view.replaceChildren();edit=null;
   storyEl=E("p",{class:"ldj-iah-story"},model.story);msgEl=E("p",{class:"ldj-note","aria-live":"polite"});
   tl=E("div",{class:"ldj-iah-tl"});
@@ -20959,7 +20995,7 @@ try{K.HOOKS?.escena?.push((e,t)=>ESCENA_API(e.cue,t))}catch(e){}
    Si IAH_OIDO no existe, la sesión se entrega tal cual (y los exámenes de abajo miden lo mismo con métricas propias). */
 async function escucharYCorregir(M,o={}){const out={vueltas:[],ok:true};if(typeof IAH_OIDO==="undefined"||typeof IAH_OIDO.criticar!=="function")return {M,arr:compile(M),oido:null};
   let arr=compile(M);
-  for(let v=0;v<(o.vueltas??2);v++){let r;try{const res=await K.renderArr(arr,{fast:true,tail:0});
+  for(let v=0;v<(o.vueltas??2);v++){if(o.alto&&o.alto()){out.cortado=true;break}let r;try{const res=await K.renderArr(arr,{fast:true,tail:0});if(o.alto&&o.alto()){out.cortado=true;break}
       r=await (IAH_OIDO.criticarAsync||IAH_OIDO.criticar)(res.buf,{genero:M.genre?.id,bpm:M.bpm0,lufs:M.lufs??-13,tonalidad:M.kits?.[0]?.key||undefined,tp:-1,secciones:M.sections,sidechain_db:M.sc,energia:M.params.energy})}catch(e){console.warn("IAH_OIDO",e);break}
     out.vueltas.push({puntaje:r?.puntaje,problemas:(r?.problemas||[]).map(p=>p.codigo||p.tipo)});if(!r||!(r.problemas||[]).length)break;
     let cambio=false;const ALIAS={loudness_baja:"loudness_bajo",loudness_alta:"loudness_alto",drop_plano:"energia_plana",sin_drop:"energia_plana",sin_sidechain:"sidechain_debil",choque_bajo_bombo:"graves_choque",repeticion:"repetitivo",pico:"pico_alto"};
@@ -21164,7 +21200,8 @@ function basePos(t,b){if(t.man)return t.man;const d=K.deck,R=d&&d.R[t.eng];const
     let da=c[0]-a[0];if(da>180)da-=360;if(da<-180)da+=360;return [a[0]+da*f,a[1]+(c[1]-a[1])*f,a[2]+(c[2]-a[2])*f]}
   const row=K.ROW[t.eng]||K.ROW[t.role]||{r:.8};try{return K.movPos(row,mov,b-ll)}catch(e){return [0,0,.8]}}
 const FROZ={};
-function posOf(t,b){if(ROOM.frozen&&FROZ[t.id])return FROZ[t.id];const P=roomXform(basePos(t,b),t,b);FROZ[t.id]=P;return P}
+// arrastrando (t.man): la mano ya está en coordenadas finales, con la sala aplicada → no se vuelve a rotar
+function posOf(t,b){if(t.man)return FROZ[t.id]=t.man;if(ROOM.frozen&&FROZ[t.id])return FROZ[t.id];const P=roomXform(basePos(t,b),t,b);FROZ[t.id]=P;return P}
 // enganche con el motor: cada vez que el motor mueve la voz de una fila, pasa por aquí
 function posHook(id,P,time){const t=engTrack(id);if(!t)return P;const d=K.deck;const b=d?d.barAt(time):nowBar();return posOf(t,b)}
 
@@ -21391,7 +21428,7 @@ function fxRoute(F,mode){if(F.mode===mode)return;try{F.bus.disconnect()}catch(e)
   else if(mode==="reverb"){if(!F.cv){F.cv=F.c.createConvolver();F.cv.normalize=false;F.cv.buffer=irBuf(F.c);F.cv.connect(F.wetR)}F.bus.connect(F.cv)}
   F.mode=mode}
 let IR=null;function irBuf(c){if(IR&&IR.sampleRate===c.sampleRate)return IR;const n=Math.round(c.sampleRate*1.8),b=c.createBuffer(2,n,c.sampleRate);
-  for(let ch=0;ch<2;ch++){const x=b.getChannelData(ch);let s=7+ch;for(let i=0;i<n;i++){s=(s*16807)%2147483647;x[i]=(s/1073741823-1)*Math.pow(1-i/n,3)*.5}}return IR=b}
+  for(let ch=0;ch<2;ch++){const x=b.getChannelData(ch);let s=7+ch,e=0;for(let i=0;i<n;i++){s=(s*16807)%2147483647;x[i]=(s/1073741823-1)*Math.pow(1-i/n,3)*.5;e+=x[i]*x[i]}const k=1/Math.sqrt(e||1);for(let i=0;i<n;i++)x[i]*=k}return IR=b}// energía 1 por canal: la reverb no sube la mezcla (antes ≈ +21 dB)
 const kdb=x=>x<=-25.9?-40:x;
 function applyEq(t){const ch=chainFor(t);if(!ch)return;const n=ch.c.currentTime;ch.eq.trim.gain.setTargetAtTime(Math.pow(10,t.trim/20),n,.02);
   ch.eq.lo.gain.setTargetAtTime(kdb(t.low),n,.02);ch.eq.mid.gain.setTargetAtTime(kdb(t.mid),n,.02);ch.eq.hi.gain.setTargetAtTime(kdb(t.hi),n,.02)}
@@ -21542,7 +21579,7 @@ function slotInit(){const slot=platter.querySelector(".ldx-space-slot");
   const up=e=>{TP.delete(e.pointerId);if(two&&TP.size<2){two=null;if(S.resorte)API.nivelar(.25)}
     if(drag&&drag.id===e.pointerId){e.stopPropagation();const b=nowBar();for(const o of drag.group){const t=o.t,P=t.man;t.man=null;
       // queda donde lo soltaste: el centro del movimiento pasa a esa posición (sin la sala)
-      t.mov.az0=((P[0]-(isAncla(t)?0:ROOM.az+ROOM.man))%360+360)%360;t.mov.el0=P[1];t.mov.r=P[2];applyMov(t)}drag=null}};
+      const an=isAncla(t);t.mov.az0=((P[0]-(an?0:ROOM.az+ROOM.man))%360+360)%360;t.mov.el0=an?P[1]:clamp(P[1]-ROOM.elev,-60,90);t.mov.r=an?P[2]:clamp(P[2]/(ROOM.rs||1),.15,4);applyMov(t)}drag=null}};
   slot.addEventListener("pointerup",up,true);slot.addEventListener("pointercancel",up,true)}
 function roomTilt(roll,pitch){const R=S.plato==="compas"?(GHOST=GHOST||{az:ROOM.az,man:ROOM.man,roll:ROOM.roll,pitch:ROOM.pitch,elev:ROOM.elev,rs:ROOM.rs}):ROOM;R.roll=clamp(R.roll+roll,-60,60);R.pitch=clamp(R.pitch+pitch,-60,60)}
 
@@ -21666,107 +21703,122 @@ return {on:true,_pos:i=>{const t=S.tracks[i];return [basePos(t,nowBar()),posOf(t
 /* ==== LAB_DJ_UI_FIN ==== */
 
 /* ==== LAB_DJ_EXPORT_INICIO · ORBITAL DJ · el WAV exporta lo que el DJ tocó (solo con ?dj=1) =======
-   Mientras ● REC graba, este módulo registra:
-   - a la tasa del reloj del motor (~40 Hz, tick de 25 ms) la posición FINAL que recibe la voz 8D de cada
-     fila [azimut, elevación, distancia], después de grupo, sala, inclinación, altura, mano y REC MOV
-     (es el último enganche de LAB_DJ._k.HOOKS.pos, así que ve exactamente lo que se programa en la voz);
-   - a 50 Hz el fader (con MUTE/SOLO), el máster, el FILTER, el barrido, el EQ (TRIM/HI/MID/LOW) y BEAT FX.
-   Al terminar la grabación lo guarda en el arreglo (arr.auto, viaja en el .orbitaldj) y, al exportar,
-   renderArr (motor real v10-a) usa esas automatizaciones a través de HOOKS.frames y HOOKS.chain:
-   posiciones interpoladas a 50 Hz y parámetros con setTargetAtTime, la misma constante que en vivo.
+   Mientras ● REC graba, este módulo registra lo que de verdad sonó, con la hora exacta del motor:
+   - POSICIÓN: la posición FINAL que recibe la voz 8D de cada fila [azimut, elevación, distancia], después de
+     grupo, sala (giro, inclinación, altura), mano y REC MOV. Es el último enganche de LAB_DJ._k.HOOKS.pos, que
+     el motor llama en cada tick (25 ms ≈ 40 Hz) con la hora a la que programa la voz.
+   - PARÁMETROS: cada orden que la consola da en vivo a los nodos de la fila (fader y máster = vol; FILTER y
+     barrido = lp/hp; EQ = trim/lo/mid/hi; envío a BEAT FX = send), con su valor, su hora y su constante de
+     tiempo. Se intercepta en el propio AudioParam: sin retraso de muestreo y sin fórmulas copiadas.
+   - BEAT FX: en cada orden de envío se anota el estado del efecto (ON, tipo, división, LEVEL/DEPTH, BPM).
+     El bus común de lab_dj_ui.js (fxBus: eco con realimentación y reverb de 1,8 s, de vuelta al máster SIN 8D)
+     se rehace offline con esos valores; las fórmulas de applyFx/fxRoute están copiadas en onMix (si cambian
+     allí, cambiarlas aquí).
+   Al terminar la grabación lo guarda en el arreglo (arr.auto, viaja en el .orbitaldj). Al exportar, renderArr
+   (motor real v10-a) llama a HOOKS.frames (posiciones, interpoladas a 50 Hz), HOOKS.chain (EQ, fader, filtro),
+   HOOKS.mono (señal de cada fila, para el envío) y HOOKS.mix (retorno estéreo de BEAT FX antes del máster).
    Un arreglo sin «auto» (IAH DJ, Armar por mí, guion, sesiones viejas) se exporta igual que antes.
-   Para quitarlo: borrar este archivo y su línea de build.py (los ganchos de lab_dj.js no hacen nada solos).
+   Para quitarlo: borrar este archivo y su línea de build.py (los cuatro ganchos de lab_dj.js no hacen nada solos).
    ============================================================================================== */
 const LAB_DJ_EXPORT=(()=>{
 if(typeof LAB_DJ==="undefined"||!LAB_DJ.on||!LAB_DJ._k)return {on:false};
-const K=LAB_DJ._k,HZ=50,V=1;
-const dB=x=>Math.pow(10,x/20),clamp=(x,a,b)=>x<a?a:x>b?b:x;
-// mismas fórmulas que lab_dj.js (cadena de fila) y lab_dj_ui.js (EQ y BEAT FX): si cambian allí, cambiarlas aquí
-const lpOf=x=>x<0?20000*Math.pow(180/20000,-x):20000,hpOf=x=>x>0?20*Math.pow(2500/20,x):20,kdb=x=>x<=-25.9?-40:x;
+const K=LAB_DJ._k,V=2,HZ=50;
+const r1=x=>Math.round(x*10)/10,r3=x=>Math.round(x*1000)/1000,r4=x=>Math.round(x*1e4)/1e4,r6=x=>+(+x).toPrecision(6);
+// parámetros de la cadena de una fila que la consola mueve en vivo (lab_dj.js: mkChain; lab_dj_ui.js: chainFor)
+const PAR={vol:c=>c.vol&&c.vol.gain,lp:c=>c.lp&&c.lp.frequency,hp:c=>c.hp&&c.hp.frequency,
+  trim:c=>c.eq&&c.eq.trim.gain,lo:c=>c.eq&&c.eq.lo.gain,mid:c=>c.eq&&c.eq.mid.gain,hi:c=>c.eq&&c.eq.hi.gain,send:c=>c.eq&&c.eq.send.gain};
 const UI=()=>typeof LAB_DJ_UI!=="undefined"&&LAB_DJ_UI.on?LAB_DJ_UI:null;
-const r1=x=>Math.round(x*10)/10,r3=x=>Math.round(x*1000)/1000,r4=x=>Math.round(x*1e4)/1e4;
 
 /* ---------- registro en vivo ---------- */
-let LOG=null,timer=0,lastArrSeen=null;
-function posRec(id,P,t){const d=K.deck;if(!LOG||!d||d.rec!==LOG.rec||!P)return;
-  const b=d.barAt(t)-LOG.b0,L=LOG.pos[id]||(LOG.pos[id]=[]),last=L[L.length-1];
+let LOG=null,timer=0;
+const relBar=t=>{const d=K.deck;return d&&LOG?d.barAt(t)-LOG.b0:0};
+function ensure(){const d=K.deck;if(!d)return;if(LOG&&d.rec!==LOG.rec)finish();if(d.rec&&!LOG)start(d)}
+function parRec(p,m,v,t,tc){const w=p.__ldx;w.last=v;const d=K.deck;ensure();if(!LOG||!d||d.rec!==LOG.rec)return;
+  const b=relBar(t),L=((LOG.par[w.id]||(LOG.par[w.id]={}))[w.k]||(LOG.par[w.id][w.k]=[]));L.push([b,r6(v),m==="setTargetAtTime"?r4(tc):m==="setValueAtTime"?0:-1]);
+  if(w.k==="send")fxSnap(b)}
+// estado de BEAT FX en el instante en que applyFx da las órdenes de envío (la misma llamada, mismo instante)
+function fxSnap(b){const u=UI(),d=K.deck;if(!u||!LOG)return;const f=u.S.fx,e=[r4(b),f.on?1:0,f.type,f.div,r3(f.depth),d?d.bpm:LOG.bpm],l=LOG.fx[LOG.fx.length-1];
+  if(l&&JSON.stringify(l.slice(1))===JSON.stringify(e.slice(1)))return;LOG.fx.push(e)}
+// envuelve los AudioParam de la cadena de una fila (una vez por nodo; si la cadena se rehace, se envuelve la nueva)
+function watch(id,ch){if(!ch)return;for(const [k,f] of Object.entries(PAR)){let p=null;try{p=f(ch)}catch(e){}if(!p||p.__ldx)continue;
+  p.__ldx={id,k,last:p.value};if(LOG&&!(LOG.par0[id]&&k in LOG.par0[id]))(LOG.par0[id]||(LOG.par0[id]={}))[k]=r6(p.value);
+  for(const m of ["setTargetAtTime","setValueAtTime","linearRampToValueAtTime"]){const o=p[m];p[m]=function(v,t,tc){try{parRec(p,m,v,t,tc)}catch(e){}return o.apply(p,arguments)}}}}
+function watchAll(){const d=K.deck;if(!d)return;for(const R of Object.values(d.R))if(R.ch)watch(R.id,R.ch)}
+function posRec(id,P,t){const d=K.deck;if(!d)return;const R=d.R[id];if(R&&R.ch&&(!R.ch.vol.gain.__ldx||(R.ch.eq&&!R.ch.eq.trim.gain.__ldx)))watch(id,R.ch);
+  ensure();if(!LOG||d.rec!==LOG.rec||!P)return;const b=relBar(t),L=LOG.pos[id]||(LOG.pos[id]=[]),last=L[L.length-1];
   if(last&&b<=last[0]+1e-6){if(b>last[0]-1e-6){last[1]=P[0];last[2]=P[1];last[3]=P[2]}return}
   L.push([b,+P[0],+P[1],+P[2]])}
 function hookLast(){const H=K.HOOKS;if(!H)return;H.pos=H.pos||[];const i=H.pos.indexOf(posRec);if(i>=0)H.pos.splice(i,1);H.pos.push(posRec)}
-// guarda un valor solo cuando cambia (los parámetros se aplican en vivo con setTargetAtTime al cambiar)
-function put(L,b,v){const last=L[L.length-1];if(last&&JSON.stringify(last.slice(1))===JSON.stringify(v))return;if(last&&Math.abs(b-last[0])<1e-6){L[L.length-1]=[last[0],...v];return}L.push([b,...v])}
-function sample(){const d=K.deck;if(!d)return;
-  if(d.rec&&(!LOG||LOG.rec!==d.rec))start(d);
-  if(!d.rec&&LOG){finish();return}
-  if(!LOG)return;const b=d.barAt(d.c.currentTime)-LOG.b0,ui=UI();
-  put(LOG.ms,b,[r3(d.master||0)]);put(LOG.sw,b,[r4(d.sweep||0)]);
-  for(const R of Object.values(d.R)){if(!R.ch&&!R.cur&&R.lastLaunch==null)continue;const id=R.id;
-    put(LOG.vol[id]||(LOG.vol[id]=[]),b,[r3(R.vol)]);put(LOG.filt[id]||(LOG.filt[id]=[]),b,[r4(R.filt||0)])}
-  if(ui){const S=ui.S;put(LOG.fx,b,[S.fx.on?1:0,S.fx.type,S.fx.div,r3(S.fx.depth),d.bpm]);
-    for(const t of S.tracks){const R=d.R[t.eng];if(!R)continue;const eq=!!(R.ch&&R.ch.eq);// sin cadena de EQ en vivo, el EQ no sonaba
-      put(LOG.eq[t.eng]||(LOG.eq[t.eng]=[]),b,eq?[r3(t.trim||0),r3(kdb(t.hi||0)),r3(kdb(t.mid||0)),r3(kdb(t.low||0)),1]:[0,0,0,0,0])}}}
-function start(d){hookLast();LOG={rec:d.rec,b0:d.rec.b0,init:d.rec.init,bpm:d.bpm,pos:{},vol:{},filt:{},eq:{},fx:[],sw:[],ms:[]}}
+// el registro de posiciones tiene que ser el ÚLTIMO enganche (después de la sala de lab_dj_ui.js): se reordena fuera del tick
+function poll(){const H=K.HOOKS;if(H&&H.pos&&H.pos[H.pos.length-1]!==posRec)hookLast();const d=K.deck;if(!d)return;watchAll();ensure()}
+function start(d){watchAll();LOG={rec:d.rec,b0:d.rec.b0,init:d.rec.init,bpm:d.bpm,pos:{},par:{},par0:{},fx:[]};fxSnap(-1e-4);
+  for(const R of Object.values(d.R))if(R.ch)for(const k of Object.keys(PAR)){let p=null;try{p=PAR[k](R.ch)}catch(e){}if(p&&p.__ldx)(LOG.par0[R.id]||(LOG.par0[R.id]={}))[k]=r6(p.__ldx.last)}}
 function finish(){const L=LOG;LOG=null;const a=K.lastArr;if(!a||a.init!==L.init||a.auto)return;
-  a.auto=pack(L,a.len);lastArrSeen=a;try{localStorage.setItem("orb_dj_actual",JSON.stringify(K.sessionState()))}catch(e){}}
+  a.auto=pack(L,a.len);try{localStorage.setItem("orb_dj_actual",JSON.stringify(K.sessionState()))}catch(e){}}
 // simplifica la trayectoria: quita puntos que la interpolación lineal ya da con error < 0,25° / 0,005 m
-function simplify(L,tol=[.25,.25,.005]){if(L.length<3)return L;const out=[L[0]];let a=0;
-  const unw=x=>{const o=[x[0].slice()];for(let i=1;i<x.length;i++){const p=x[i].slice();let da=p[1]-o[i-1][1];da=((da%360)+540)%360-180;p[1]=o[i-1][1]+da;o.push(p)}return o},U=unw(L);
+function simplify(L,tol=[.25,.25,.005]){if(L.length<3)return L.slice();const U=[L[0].slice()];
+  for(let i=1;i<L.length;i++){const p=L[i].slice();let da=p[1]-U[i-1][1];da=((da%360)+540)%360-180;p[1]=U[i-1][1]+da;U.push(p)}
+  const out=[L[0]];let a=0;
   for(let j=2;j<U.length;j++){const A=U[a],B=U[j];let bad=false;
     for(let i=a+1;i<j&&!bad;i++){const u=(U[i][0]-A[0])/Math.max(1e-9,B[0]-A[0]);for(let k=1;k<4;k++)if(Math.abs(A[k]+(B[k]-A[k])*u-U[i][k])>tol[k-1]){bad=true;break}}
     if(bad){a=j-1;out.push(L[a])}}
   out.push(L[L.length-1]);return out}
 function pack(L,len){const pos={};for(const [id,x] of Object.entries(L.pos)){const y=simplify(x.filter(p=>p[0]<=len+1));if(y.length)pos[id]=y.map(p=>[r4(p[0]),r1(p[1]),r1(p[2]),r3(p[3])])}
-  const trim=o=>Object.fromEntries(Object.entries(o).filter(([,v])=>v.length).map(([k,v])=>[k,v.map(p=>[r4(p[0]),...p.slice(1)])]));
-  const fxOn=L.fx.some(p=>p[1]&&p[2]!=="filter");// el FILTER de BEAT FX va por el barrido (sw)
-  const eq=Object.fromEntries(Object.entries(trim(L.eq)).filter(([,v])=>v.some(p=>p[1]||p[2]||p[3]||p[4]||(fxOn&&p[5]))));
-  return {v:V,hz:HZ,bpm:L.bpm,pos,vol:trim(L.vol),filt:trim(L.filt),eq,fx:fxOn?L.fx.map(p=>[r4(p[0]),...p.slice(1)]):[],sw:L.sw.map(p=>[r4(p[0]),p[1]]),ms:L.ms.map(p=>[r4(p[0]),p[1]])}}
+  const par={};for(const [id,o] of Object.entries(L.par))for(const [k,v] of Object.entries(o)){const w=v.filter(p=>p[0]<=len+1).map(p=>[r4(p[0]),p[1],p[2]]);if(w.length)(par[id]||(par[id]={}))[k]=w}
+  return {v:V,hz:HZ,bpm:L.bpm,pos,par,par0:L.par0,fx:L.fx.filter(p=>p[0]<=len+1)}}
 
-/* ---------- valor de una curva en el compás b (escalón: valor vigente) ---------- */
-const at=(L,b)=>{let v=L[0];for(const p of L){if(p[0]<=b+1e-9)v=p;else break}return v};
-// posición interpolada (azimut por el camino corto)
+/* ---------- ganchos del render (lab_dj.js → renderArr0) ---------- */
+// posición interpolada en el compás b (azimut por el camino corto)
 function posAt(L,b){if(b<=L[0][0])return L[0].slice(1);const n=L.length;if(b>=L[n-1][0])return L[n-1].slice(1);
   let lo=0,hi=n-1;while(hi-lo>1){const m=(lo+hi)>>1;if(L[m][0]<=b)lo=m;else hi=m}const A=L[lo],B=L[hi],u=(b-A[0])/Math.max(1e-9,B[0]-A[0]);
   let da=B[1]-A[1];da=((da%360)+540)%360-180;const az=A[1]+da*u;return [((az%360)+540)%360-180,A[2]+(B[2]-A[2])*u,A[3]+(B[3]-A[3])*u]}
-
-/* ---------- ganchos del render (lab_dj.js → renderArr0) ---------- */
 function onFrames(arr,id,frames,fr,TM){const L=arr&&arr.auto&&arr.auto.pos&&arr.auto.pos[id];if(!L||!L.length)return;
   const nf=frames.length/3;for(let i=0;i<nf;i++){const P=posAt(L,TM.bAt(i/fr));frames[i*3]=P[0];frames[i*3+1]=P[1];frames[i*3+2]=P[2]}}
-let IR=null;// misma reverb de BEAT FX que lab_dj_ui.js (ruido con semilla fija, 1,8 s)
+let IR=null;// misma reverb de BEAT FX que lab_dj_ui.js (irBuf: ruido con semilla fija, 1,8 s)
 function irBuf(c){if(IR&&IR.sampleRate===c.sampleRate)return IR;const n=Math.round(c.sampleRate*1.8),b=c.createBuffer(2,n,c.sampleRate);
-  for(let ch=0;ch<2;ch++){const x=b.getChannelData(ch);let s=7+ch;for(let i=0;i<n;i++){s=(s*16807)%2147483647;x[i]=(s/1073741823-1)*Math.pow(1-i/n,3)*.5}}return IR=b}
-function onChain(arr,id,ch,oc,TM){const A=arr&&arr.auto;if(!A)return;const T=b=>Math.max(0,TM.tAt(Math.max(0,b)));
-  // fader + máster (vol) y FILTER + barrido: se rehacen con la curva fina grabada en vivo
-  const V_=A.vol[id],F_=A.filt[id];
-  if(V_&&V_.length){const g=ch.vol.gain,ms=A.ms.length?A.ms:[[0,0]],bs=[...new Set([...V_.map(p=>p[0]),...ms.map(p=>p[0])])].sort((a,b)=>a-b);
-    const val=b=>{const v=at(V_,b)[1],m=at(ms,b)[1];return v<=-40?0:dB(v+m)};g.cancelScheduledValues(0);g.value=val(0);
-    for(const b of bs)if(b>0)g.setTargetAtTime(val(b),T(b),.03)}
-  if(F_&&F_.length){const sw=A.sw.length?A.sw:[[0,0]],bs=[...new Set([...F_.map(p=>p[0]),...sw.map(p=>p[0])])].sort((a,b)=>a-b);
-    const lp=b=>Math.min(lpOf(at(F_,b)[1]),lpOf(at(sw,b)[1])),hp=b=>Math.max(hpOf(at(F_,b)[1]),hpOf(at(sw,b)[1]));
-    ch.lp.frequency.cancelScheduledValues(0);ch.hp.frequency.cancelScheduledValues(0);ch.lp.frequency.value=lp(0);ch.hp.frequency.value=hp(0);
-    for(const b of bs)if(b>0){ch.lp.frequency.setTargetAtTime(lp(b),T(b),.03);ch.hp.frequency.setTargetAtTime(hp(b),T(b),.03)}}
-  // EQ de la tira: TRIM → LOW → MID → HI antes del filtro (igual que chainFor de lab_dj_ui.js)
-  const Q=A.eq[id];
-  if(Q&&Q.length){const trim=oc.createGain(),lo=oc.createBiquadFilter(),mid=oc.createBiquadFilter(),hi=oc.createBiquadFilter();
+  for(let ch=0;ch<2;ch++){const x=b.getChannelData(ch);let s=7+ch,e=0;for(let i=0;i<n;i++){s=(s*16807)%2147483647;x[i]=(s/1073741823-1)*Math.pow(1-i/n,3)*.5;e+=x[i]*x[i]}const k=1/Math.sqrt(e||1);for(let i=0;i<n;i++)x[i]*=k}return IR=b}// igual que lab_dj_ui.js: energía 1 por canal
+// repite en el AudioParam offline las órdenes grabadas en vivo (valor inicial en el compás 0 y luego cada cambio)
+function replay(p,v0,L,TM){if(!p)return;try{p.cancelScheduledValues(0)}catch(e){}let init=v0;
+  if(L)for(const q of L)if(q[0]<=0)init=q[1];if(init!=null)p.value=init;
+  if(L)for(const [b,v,tc] of L){if(b<=0)continue;const t=TM.tAt(b);if(tc>0)p.setTargetAtTime(v,t,tc);else if(tc===0)p.setValueAtTime(v,t);else p.linearRampToValueAtTime(v,t)}}
+function onChain(arr,id,ch,oc,TM){const A=arr&&arr.auto;if(!A||!A.par0)return;const P=(A.par&&A.par[id])||{},P0=A.par0[id]||{},has=k=>k in P0||k in P;
+  const vals=k=>[P0[k],...(P[k]||[]).map(q=>q[1])].filter(v=>v!=null);
+  // fader + máster y FILTER + barrido: las mismas órdenes que recibió la cadena en vivo
+  if(has("vol"))replay(ch.vol.gain,P0.vol,P.vol,TM);
+  if(has("lp"))replay(ch.lp.frequency,P0.lp,P.lp,TM);
+  if(has("hp"))replay(ch.hp.frequency,P0.hp,P.hp,TM);
+  // EQ de la tira: TRIM → LOW → MID → HI antes del filtro (como chainFor de lab_dj_ui.js); solo si se movió
+  const eqUsed=vals("trim").some(v=>Math.abs(v-1)>1e-4)||["lo","mid","hi"].some(k=>vals(k).some(v=>Math.abs(v)>1e-4));
+  if(eqUsed){const trim=oc.createGain(),lo=oc.createBiquadFilter(),mid=oc.createBiquadFilter(),hi=oc.createBiquadFilter();
     lo.type="lowshelf";lo.frequency.value=220;mid.type="peaking";mid.frequency.value=1000;mid.Q.value=.7;hi.type="highshelf";hi.frequency.value=3200;
     try{ch.in.disconnect()}catch(e){}ch.in.connect(trim);trim.connect(lo);lo.connect(mid);mid.connect(hi);hi.connect(ch.hp);
-    const p0=at(Q,0);trim.gain.value=dB(p0[1]);hi.gain.value=p0[2];mid.gain.value=p0[3];lo.gain.value=p0[4];
-    for(const p of Q)if(p[0]>0){const t=T(p[0]);trim.gain.setTargetAtTime(dB(p[1]),t,.02);hi.gain.setTargetAtTime(p[2],t,.02);mid.gain.setTargetAtTime(p[3],t,.02);lo.gain.setTargetAtTime(p[4],t,.02)}}
-  // BEAT FX: envío después del fader a eco / reverb / roll y vuelta antes de la voz 8D (el efecto también orbita)
-  if(A.fx&&A.fx.length&&Q&&Q.length){const send=oc.createGain(),dl=oc.createDelay(4),fb=oc.createGain(),cv=oc.createConvolver(),wetD=oc.createGain(),wetR=oc.createGain();
-    send.gain.value=0;fb.gain.value=0;wetD.gain.value=0;wetR.gain.value=0;cv.buffer=irBuf(oc);
-    ch.duck.connect(send);send.connect(dl);dl.connect(fb);fb.connect(dl);dl.connect(wetD);wetD.connect(ch.head);send.connect(cv);cv.connect(wetR);wetR.connect(ch.head);
-    const set=(p,v,t,tc)=>t<=0?(p.value=v):p.setTargetAtTime(v,t,tc);
-    for(const p of A.fx){const [b,on,ty,div,dep,bpm]=p;const en=(at(Q,b)||[])[5]?1:0,t=b<=0?0:T(b),bd=240/(bpm||TM.bpmAt(Math.max(0,b)))/4;
-      set(send.gain,on&&en&&ty!=="filter"?1:0,t,.01);set(dl.delayTime,clamp(bd*div,.02,3.9),t,.01);
-      set(fb.gain,ty==="roll"?.92:ty==="echo"?.35+.4*dep:0,t,.02);set(wetD.gain,ty==="echo"?dep*.8:ty==="roll"?dep:0,t,.02);set(wetR.gain,ty==="reverb"?dep*.9:0,t,.02)}}}
-function hookRender(){const H=K.HOOKS;if(!H)return;H.frames=H.frames||[];H.chain=H.chain||[];if(!H.frames.includes(onFrames))H.frames.push(onFrames);if(!H.chain.includes(onChain))H.chain.push(onChain)}
+    replay(trim.gain,P0.trim??1,P.trim,TM);replay(lo.gain,P0.lo??0,P.lo,TM);replay(mid.gain,P0.mid??0,P.mid,TM);replay(hi.gain,P0.hi??0,P.hi,TM)}}
+// BEAT FX: la señal de cada fila (salida de su cadena, donde lab_dj_ui.js toma el envío) se guarda para el bus común
+const MONO=new WeakMap();
+const fxUsed=A=>A&&A.fx&&A.fx.some(p=>p[1]&&p[2]!=="filter");
+function onMono(arr,id,mono){const A=arr&&arr.auto;if(!fxUsed(A))return;const P=(A.par&&A.par[id])||{},P0=(A.par0&&A.par0[id])||{};
+  if(!(P0.send>1e-4||(P.send||[]).some(q=>q[1]>1e-4)))return;let m=MONO.get(arr);if(!m)MONO.set(arr,m={});m[id]=mono}
+// bus común de BEAT FX offline (lab_dj_ui.js: fxBus + fxRoute + applyFx): envíos → eco (delay con realimentación) o reverb
+// (convolver de 1,8 s, normalize=false) → retorno estéreo al máster, sin pasar por el 8D
+async function onMix(arr,L,R,TM){const A=arr&&arr.auto,m=MONO.get(arr);MONO.delete(arr);if(!fxUsed(A)||!m)return;const N=L.length,SR=48000;
+  const oc=new OfflineAudioContext(2,N,SR),bus=oc.createGain(),gE=oc.createGain(),gR=oc.createGain(),dl=oc.createDelay(4),fb=oc.createGain(),wetD=oc.createGain(),cv=oc.createConvolver(),wetR=oc.createGain(),out=oc.createGain();
+  cv.normalize=false;cv.buffer=irBuf(oc);gE.gain.value=0;gR.gain.value=0;fb.gain.value=0;wetD.gain.value=0;wetR.gain.value=0;dl.delayTime.value=.5;
+  bus.connect(gE);gE.connect(dl);dl.connect(fb);fb.connect(dl);dl.connect(wetD);wetD.connect(out);bus.connect(gR);gR.connect(cv);cv.connect(wetR);wetR.connect(out);out.connect(oc.destination);
+  for(const [id,mono] of Object.entries(m)){const P=(A.par&&A.par[id])||{},P0=(A.par0&&A.par0[id])||{},src=oc.createBufferSource(),g=oc.createGain();src.buffer=mono;src.connect(g);g.connect(bus);replay(g.gain,P0.send??0,P.send,TM);src.start(0)}
+  const T=b=>b<=0?0:TM.tAt(b),set=(p,v,t,tc)=>t<=0?(p.value=v):p.setTargetAtTime(v,t,tc);
+  for(const [b,on,ty,div,dep,bpm] of A.fx){const t=T(b),bd=240/(bpm||TM.bpmAt(Math.max(0,b)))/4,act=on&&ty!=="filter";
+    set(dl.delayTime,Math.min(3.9,Math.max(.02,bd*div)),t,.01);set(fb.gain,ty==="roll"?.92:ty==="echo"?.35+.4*dep:0,t,.02);
+    set(wetD.gain,ty==="echo"?dep*.8:ty==="roll"?dep:0,t,.02);set(wetR.gain,ty==="reverb"?dep*.9:0,t,.02);
+    if(act){const rv=ty==="reverb"?1:0;if(t<=0){gR.gain.value=rv;gE.gain.value=1-rv}else{gR.gain.setValueAtTime(rv,t);gE.gain.setValueAtTime(1-rv,t)}}}// fxRoute: el bus va a uno u otro
+  const o=await oc.startRendering(),l=o.getChannelData(0),r=o.getChannelData(1);for(let i=0;i<N;i++){L[i]+=l[i];R[i]+=r[i]}}
+function hookRender(){const H=K.HOOKS;if(!H)return;for(const [k,f] of [["frames",onFrames],["chain",onChain],["mono",onMono],["mix",onMix]]){H[k]=H[k]||[];if(!H[k].includes(f))H[k].push(f)}}
 
 /* ---------- arranque ---------- */
-function init(){hookRender();if(!timer)timer=setInterval(()=>{try{sample()}catch(e){console.warn("Orbital DJ export",e)}},1000/HZ)}
-init();
-return {on:true,get log(){return LOG},posAt,simplify,pack,onFrames,onChain,
+hookRender();hookLast();timer=setInterval(()=>{try{poll()}catch(e){console.warn("Orbital DJ export",e)}},1000/HZ);
+return {on:true,get log(){return LOG},posAt,simplify,
   // resumen de lo grabado en el último arreglo (para pruebas)
-  info(a=K.lastArr){const A=a&&a.auto;if(!A)return null;return {pos:Object.fromEntries(Object.entries(A.pos).map(([k,v])=>[k,v.length])),eq:Object.keys(A.eq),fx:A.fx.length,vol:Object.keys(A.vol).length,filt:Object.keys(A.filt).length,bytes:JSON.stringify(A).length}}}})();
+  info(a=K.lastArr){const A=a&&a.auto;if(!A)return null;return {pos:Object.fromEntries(Object.entries(A.pos).map(([k,v])=>[k,v.length])),
+    par:Object.fromEntries(Object.entries(A.par).map(([id,o])=>[id,Object.fromEntries(Object.entries(o).map(([k,v])=>[k,v.length]))])),fx:A.fx.length,bytes:JSON.stringify(A).length}}}})();
 /* ==== LAB_DJ_EXPORT_FIN ==== */
 
 </script>
