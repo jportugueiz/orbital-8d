@@ -1317,7 +1317,6 @@ body.vp #ship>header.topbar{display:none}
 #ship #modes>[data-m]:nth-child(4){grid-column:4}
 #ship #modes>button:hover{color:#d6fbff;border-color:#4fa3ae;box-shadow:0 2px 5px #0009,inset 0 1px 0 #bff6ff2e,0 0 12px #5bd8e62e}
 #ship #modes>button.on{color:#c4faff;background:linear-gradient(#2c8393d9,#12333ce6);border-color:#65aebb;box-shadow:inset 0 1px 0 #d9fbff33,0 0 14px #5bb7c359;text-shadow:0 0 7px #5bd8e680}
-#ship #modes>button:not([data-m]):not(#bPlayScr)::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;background:var(--x);box-shadow:0 0 6px var(--x)}
 /* franja de estado: LEDs en un carril empotrado; audífonos y reloj debajo */
 #ship>header.topbar>#leds{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 10px;max-width:none;min-height:32px;margin:0;padding:6px 12px;border-radius:8px;border:1px solid #2f3842;background:var(--rack-well);box-shadow:var(--rack-recess)}
 #ship>header.topbar>.clock{display:flex;align-items:center;justify-content:flex-end;gap:10px;width:auto;margin:0}
@@ -2358,7 +2357,7 @@ body[data-mode="ses"] #ship .left{grid-area:library}
       <button role="tab" data-m="ai" aria-selected="false">AI Creator</button>
       <button role="tab" data-m="sh" aria-selected="false">Sound Healing</button>
       <button role="tab" data-m="ses" aria-selected="false">Mis sesiones</button>
-      <button id="bPlayScr" class="playtab" aria-label="Abrir Mesa en vivo">▶ MESA EN VIVO</button>
+      <button id="bPlayScr" class="playtab" aria-label="Abrir Mesa en vivo">MESA EN VIVO</button>
       <button id="bOrbitalDJ" class="djtab" aria-label="Abrir Orbital DJ" onclick="try{if(typeof LAB_DJ_UI!=='undefined'&&LAB_DJ_UI&&LAB_DJ_UI.on){LAB_DJ_UI.open();return}}catch(e){}var s=window.location.search;window.location.search=(s&&s.length>1?s+'&':'?')+'dj=1'">ORBITAL DJ</button>
       <button id="bFrequencyBath">Baño de frecuencias</button>
       <button id="bListeningAB">Escucha A/B</button>
