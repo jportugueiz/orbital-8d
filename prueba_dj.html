@@ -1803,6 +1803,11 @@ body.ldjx-open .ldj-fab{display:none!important}
 .ldx-row3 .ldx-mov.ldx-mov-xl{width:28px;height:26px}.ldx-row3 .ldx-mando-movs{gap:2px}
 .ldx-row3 .ldx-mando .ldx-knob.ldx-knob-xl{--s:52px;height:66px}.ldx-row3 .ldx-mando-knobs{gap:4px;justify-content:space-between;padding:0 4px}
 @media (min-height:1000px){.ldx-row3 .ldx-mando .ldx-knob.ldx-knob-xl{--s:60px;height:76px}}
+
+.ldx-del{color:#ff8a8a!important}.ldx-del:hover{background:#ff4d4d33!important}
+.ldx-del-big{color:#ff8a8a!important;border-color:#ff6b6b55!important;white-space:nowrap}
+.ldx-add-big{color:#3fe6ee!important;border-color:#3fe6ee66!important;margin-left:auto;white-space:nowrap}
+.ldx-pick-note{margin:0 0 8px;font-size:12px;opacity:.75}
 /* Materiales comunes para el estudio, los modos inmersivos y el mezclador integrado. */
 :root {
   --rack-edge:#535c65;
@@ -20448,7 +20453,7 @@ function pickOwn(row){const i=E("input",{type:"file",accept:"audio/wav,audio/x-w
 async function ownStart(file,row){if(!/\.(wav|mp3|ogg|oga)$/i.test(file.name)&&!/^audio\//.test(file.type)){toast("Usa un audio WAV, MP3 u OGG");return}
   let x;try{x=await decodeMono(await file.arrayBuffer())}catch(e){toast("No pude leer ese audio");return}
   const dur=x.length/SR,bpm=D_().bpm;let best=null;for(const bars of [1,2,4,8,16]){const b=bars*240/dur;if(b<60||b>200)continue;const e=Math.abs(Math.log2(b/bpm));if(!best||e<best.e)best={bars,bpm:b,e}}
-  ownPending={file,row,x,dur,bars:best?.bars||1,srcBpm:best?Math.round(best.bpm*10)/10:null};const dlg=panel.querySelector(".ldj-own");dlg.paint();dlg.showModal()}
+  ownPending={file,row,x,dur,bars:best?.bars||1,srcBpm:best?Math.round(best.bpm*10)/10:null};const dlg=document.querySelector(".ldj-own");if(dlg.parentNode!==document.body)document.body.append(dlg);dlg.paint();dlg.showModal()}// al body: el panel viejo está oculto y el diálogo no se vería
 function buildOwnDialog(){const info=E("p",{class:"ldj-note"}),barsBox=E("div",{class:"ldj-row-btns"}),warn=E("p",{class:"ldj-warn"}),name=E("input",{type:"text",maxlength:30,"aria-label":"Nombre del pad"});
   const dlg=E("dialog",{class:"ldj-dlg ldj-own"},E("h3",{},"Tu sonido"),info,E("p",{class:"ldj-note"},"¿Cuántos compases dura?"),barsBox,warn,E("label",{class:"ldj-note"},"Nombre ",name),
     E("p",{class:"ldj-note"},"Solo sonidos propios o con licencia."),
@@ -20461,7 +20466,7 @@ function buildOwnDialog(){const info=E("p",{class:"ldj-note"}),barsBox=E("div",{
 async function ownSave(n){const o=ownPending;if(!o)return;const id="own_"+Date.now().toString(36),ownId=id;
   await idb.put(ownId,{blob:o.file,name:o.file.name,type:o.file.type});
   const p={id,n:(n||o.file.name).slice(0,30),row:o.row,bars:o.fits?o.bars:Math.max(1,Math.ceil(o.dur*D_().bpm/240)),kind:o.fits?"loop":"shot",own:true,ownId,srcBpm:o.srcBpm,lib:null,file:null};
-  PAD[id]=p;PADS_OF[o.row].push(id);SRC[id]=o.x;OWN[id]=p;ownPending=null;panel.querySelector(".ldj-own").close();
+  PAD[id]=p;PADS_OF[o.row].push(id);SRC[id]=o.x;OWN[id]=p;ownPending=null;document.querySelector(".ldj-own").close();
   const pads=panel.querySelector('[data-row="'+o.row+'"] .ldj-pads');pads.insertBefore(padBtn(id),pads.querySelector(".ldj-add"));bufFor(id,D_().bpm).then(paint);autosave();toast("«"+p.n+"» listo en "+ROW[o.row].n)}
 
 /* ---------- sesiones: localStorage + IndexedDB + archivo .orbitaldj ---------- */
@@ -21280,6 +21285,8 @@ function build(){
       btn("◀",{cls:"ldx-bank",tip:"Banco anterior de pistas (flecha izquierda)",attr:{"aria-label":"Banco anterior"},on:()=>setBank(S.bank-1)}),bankLab,
       btn("▶",{cls:"ldx-bank",tip:"Banco siguiente de pistas (flecha derecha)",attr:{"aria-label":"Banco siguiente"},on:()=>setBank(S.bank+1)}),
       E("span",{class:"ldx-dots"}),
+      btn("＋ SONIDO",{cls:"ldx-sm ldx-add-big",tip:"Agrega un sonido a la pista seleccionada: de los kits, tus sonidos o tu propio audio (WAV, MP3, OGG)",on:()=>addSound(selList()[0])}),
+      btn("✕ PISTA",{cls:"ldx-sm ldx-del-big",tip:"Elimina la(s) pista(s) seleccionada(s): las para y las deja vacías",on:()=>deleteTracks(selList())}),
       btn("STOP ALL",{cls:"ldx-sm ldx-stopall",tip:"Para todos los clips en el próximo compás",on:stopAll})),grid);
   strips=E("section",{class:"ldx-strips","aria-label":"Mezclador: una tira de canal por pista"});
   /* transporte */
@@ -21407,6 +21414,14 @@ function sceneLaunch(r){for(const t of visible())if(t.clips[r]){const R=K.deck?.
   const b=grid.querySelector('.ldx-scene[data-r="'+r+'"]');if(b){b.classList.add("queued");setTimeout(()=>b.classList.remove("queued"),300)}}
 function trackStop(t){const d=K.deck;const R=d&&d.R[t.eng];if(R&&(R.cur||R.pend))R.pend=R.cur?{pad:null,bar:d.nextBar()}:null;syncPads()}
 function stopAll(){for(const t of S.tracks)trackStop(t)}
+// ＋ SONIDO: carga en el primer pad vacío de la pista (si está llena, reemplaza el último)
+function addSound(t){let r=t.clips.findIndex(x=>!x);if(r<0)r=ROWS_N-1;openPicker(t,r)}
+// ELIMINAR PISTA (como en la Mesa): para la pista en el próximo compás y la deja vacía (sonidos, posición, movimiento, EQ y volumen de fábrica)
+function deleteTracks(list){for(const t of list){trackStop(t);const i=S.tracks.indexOf(t);
+    Object.assign(t,{name:"PISTA "+(i+1),role:null,rol:null,rec:null,man:null,clips:Array(ROWS_N).fill(null),trim:0,hi:0,mid:0,low:0,filt:0,vol:.78,cue:false,solo:false,mute:false,mov:{k:"fija",s:1},state:{play:-1,queue:-1}});
+    const R=K.deck&&K.deck.R[t.eng];if(R){R.sel=null;R.mov=movOf(t)}if(K.ROW[t.eng]&&/^x/.test(t.eng))K.ROW[t.eng].n=t.name;
+    try{applyMov(t)}catch(e){}}
+  try{applyAll()}catch(e){}renderGrid();renderStrips();renderMando();syncPads();save()}
 const dbOfFader=x=>x<=0?-60:20*Math.log10(Math.pow(x/.78,2.2));
 function trackDb(t){const anySolo=S.tracks.some(o=>o.solo);if(t.mute||(anySolo&&!t.solo))return -60;return clamp(dbOfFader(t.vol),-60,6)}
 function chainFor(t){const d=K.deck;if(!d||!d.R[t.eng])return null;const ch=d.chain(t.eng);
@@ -21467,7 +21482,7 @@ function setKit(id){S.userKit=true;if(!(LAB_DJ._t?.kits||{})[id]){setTimeout(()=
 /* ---------- cargar un sonido en un pad vacío (del catálogo o tuyo) ---------- */
 let pickDlg=null,pickTo=null;
 function openPicker(t,r){pickTo={t,r};if(!pickDlg){const sel=E("select",{class:"ldx-pick-sel",size:12,"aria-label":"Sonidos"});
-    pickDlg=E("dialog",{class:"ldx-pick","aria-label":"Cargar un sonido en el pad"},E("h3",{},"CARGAR SONIDO"),sel,
+    pickDlg=E("dialog",{class:"ldx-pick","aria-label":"Cargar un sonido en el pad"},E("h3",{},"AGREGAR SONIDO"),E("p",{class:"ldx-pick-note"},"Elige un sonido de los kits o de tus sonidos, o sube tu propio audio con «TU AUDIO…»"),sel,
       E("div",{class:"ldx-pick-row"},btn("CARGAR",{cls:"ldx-pick-ok",on:()=>{const id=sel.value;if(id&&pickTo){assign(pickTo.t,pickTo.r,id)}pickDlg.close()}}),
         btn("TU AUDIO…",{tip:"WAV, MP3 u OGG tuyo o con licencia: detecta compases y BPM",on:()=>{pickDlg.close();ownFor(pickTo.t,pickTo.r)}}),btn("CANCELAR",{on:()=>pickDlg.close()})));
     sel.ondblclick=()=>pickDlg.querySelector(".ldx-pick-ok").click();root.append(pickDlg)}
