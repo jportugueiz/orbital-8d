@@ -21742,10 +21742,13 @@ function roomTilt(roll,pitch){const R=S.plato==="compas"?(GHOST=GHOST||{az:ROOM.
 
 /* ---------- el borde del plato: 4 sectores (lados: scratch e inclinar; frente: sube; atrás: baja) ---------- */
 function plateInit(){const ring=platter;
+  /* sin menú del navegador al tocar/scratchear (clic derecho o mantener apretado) en los platos ni en el DJ */
+  {const root=ring.closest("dialog,section,.ldx,[class*=ldx]")||ring.parentElement||ring;for(const el of new Set([ring,root]))el.addEventListener("contextmenu",e=>e.preventDefault());
+   ring.style.webkitTouchCallout="none";ring.style.userSelect="none";ring.style.webkitUserSelect="none"}
   const geo=e=>{const r=ring.getBoundingClientRect(),dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);return {a:Math.atan2(dy,dx)*180/Math.PI,rr:Math.hypot(dx,dy)/(r.width/2),px:r.width/2}};
   const sectorOf=a=>a>-135&&a<=-45?"f":a>-45&&a<=45?"r":a>45&&a<=135?"b":"l";
   let g0=null,lastTap=0;
-  ring.addEventListener("pointerdown",e=>{const g=geo(e);const rin=parseFloat(root.style.getPropertyValue("--rin"))/100||.8;if(g.rr<rin-.005||g.rr>1.08)return;// solo el anillo de vinilo; adentro manda la Mesa
+  ring.addEventListener("pointerdown",e=>{const g=geo(e);const rin=parseFloat(root.style.getPropertyValue("--rin"))/100||.8;if(e.pointerType==="mouse"&&e.button!==0)return;if(g.rr<rin-.06||g.rr>1.08)return;// solo el anillo de vinilo (incluye el aro punteado); adentro manda la Mesa
     e.preventDefault();e.stopPropagation();try{ring.setPointerCapture(e.pointerId)}catch(_){}
     const now=Date.now();if(now-lastTap<320){API.nivelar(1);lastTap=0}else lastTap=now;
     g0={a:g.a,rr:g.rr,t:performance.now(),sec:sectorOf(g.a),x:e.clientX,y:e.clientY,shift:e.shiftKey||S.shift};plate.touch=true;plate.v=0;plate.sector=g0.sec;ring.dataset.sec=g0.sec;ring.classList.add("touch");
