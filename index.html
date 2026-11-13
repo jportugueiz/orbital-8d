@@ -20921,6 +20921,54 @@ function compile(M){const ev=[];const ord={stop:0,vol:1,filt:1,mov:2,launch:3,bp
     else if(e.type==="stop"&&cur[e.row]){const n=K.padNum(cur[e.row]);if(n>0&&n<100)lines.push((Math.floor(e.b)+1)+" "+String(n).padStart(2,"0")+" detener")}}
   return {v:2,name:"IAH DJ",bpm:M.bpm0,len:M.len,init:{sweep:0,rows},ev,iah:M,guion:lines.join("\n"),sc:M.sc,club:true,lufs:M.lufs??-13}}
 
+/* ---------- versión en vivo: con la música sonando, cambia la energía o la variación y entra al próximo compás ---------- */
+// recorta un arreglo desde el compás «from»: el estado de cada fila en ese punto pasa a init y el resto de eventos se corre a 0
+function sliceArr(a,from){if(from<=0)return a;
+  const rows=JSON.parse(JSON.stringify(a.init?.rows||{}));let sweep=a.init?.sweep??0,bpm=a.bpm;
+  for(const id of RIDS){rows[id]=rows[id]||{};rows[id].pad=null}
+  for(const e of a.ev){if(e.b>=from)break;const r=rows[e.row];
+    if(e.type==="launch"){r.pad=PAD[e.pad]?.kind==="shot"?r.pad:e.pad;if(e.mov)r.mov=K.movCopy(e.mov)}
+    else if(e.type==="stop")r.pad=null;else if(e.type==="vol")r.vol=e.val;else if(e.type==="filt")r.filt=e.val;
+    else if(e.type==="mov")r.mov=K.movCopy(e.val);else if(e.type==="sweep")sweep=e.val;else if(e.type==="bpm")bpm=e.val}
+  return {...a,bpm,from,len:a.len-from,init:{sweep,rows},ev:a.ev.filter(e=>e.b>=from).map(e=>({...e,b:e.b-from}))}}
+const VIVO=[["tranquila","🌙 Suave"],["media","◐ Media"],["peak","⚡ Ataque"]];
+/* armar la canción por tramos: lo que te gusta queda; desde el corte IAH propone otra versión; duplicar un tramo y pegarlo más adelante */
+const LISTS=["sweeps","drops","tempo","says","vols","filts","movs","escenas"],bOf=x=>typeof x==="number"?x:x.b,mvB=(x,d)=>typeof x==="number"?x+d:{...x,b:x.b+d};
+const clone=o=>JSON.parse(JSON.stringify(o));
+function cutModel(A,B,K){const M=clone(B);
+  for(const row of RIDS)M.lanes[row]=[...(A.lanes[row]||[]).filter(g=>g.s<K).map(g=>({...clone(g),e:Math.min(g.e,K)})),...(B.lanes[row]||[]).filter(g=>g.e>K).map(g=>({...clone(g),s:Math.max(g.s,K)}))];
+  for(const n of LISTS)M[n]=[...(A[n]||[]).filter(x=>bOf(x)<K).map(clone),...(B[n]||[]).filter(x=>bOf(x)>=K).map(clone)];
+  M.sections=[...(A.sections||[]).filter(x=>x.b<K).map(x=>({...x,len:Math.min(x.len,K-x.b)})),...(B.sections||[]).filter(x=>x.b+x.len>K).map(x=>({...x,len:x.b+x.len-Math.max(x.b,K),b:Math.max(x.b,K)}))];
+  M.len=Math.max(K,B.len);M.bpm0=A.bpm0;return M}
+function dupModel(M0,a,b,c){const L=b-a;if(L<=0)return M0;const M=clone(M0),src=clone(M0);
+  for(const row of RIDS){const out=[];for(const g of M.lanes[row]){if(g.e<=c)out.push(g);else if(g.s>=c)out.push({...g,s:g.s+L,e:g.e+L});else{out.push({...g,e:c});out.push({...clone(g),s:c+L,e:g.e+L})}}
+    for(const g of src.lanes[row])if(g.e>a&&g.s<b)out.push({...clone(g),s:Math.max(g.s,a)-a+c,e:Math.min(g.e,b)-a+c});
+    M.lanes[row]=out.sort((x,y)=>x.s-y.s)}
+  for(const n of LISTS){M[n]=[...(M[n]||[]).map(x=>bOf(x)>=c?mvB(x,L):x),...(src[n]||[]).filter(x=>bOf(x)>=a&&bOf(x)<b).map(x=>mvB(clone(x),c-a))].sort((x,y)=>bOf(x)-bOf(y))}
+  const sec=[];for(const x of M.sections){if(x.b+x.len<=c)sec.push(x);else if(x.b>=c)sec.push({...x,b:x.b+L});else{sec.push({...x,len:c-x.b});sec.push({...x,b:c+L,len:x.b+x.len-c})}}
+  for(const x of src.sections)if(x.b+x.len>a&&x.b<b){const s0=Math.max(x.b,a);sec.push({...x,b:s0-a+c,len:Math.min(x.b+x.len,b)-s0})}
+  M.sections=sec.sort((x,y)=>x.b-y.b);M.len=M0.len+L;return M}
+let corte=0;const HIST=[];
+function posNow(){const d=K.deck;if(!d||!d.playing||!d.A)return null;return Math.max(0,Math.round(d.nextBar()-d.A.b0+(d.A.arr.from||0)))}
+function aplicar(M,desde,txt){HIST.push(model);if(HIST.length>30)HIST.shift();model=M;arr=compile(model);K.lastArr=arr;const d=K.deck;
+  if(d&&d.playing){const p=posNow()??desde;d.playArr(sliceArr(arr,Math.min(p,Math.max(0,arr.len-1))));msgEl.textContent=txt+" · entra en el próximo compás"}
+  else{const d2=K.ensureLive();d2.playArr(sliceArr(arr,Math.max(0,desde-4)));msgEl.textContent=txt+" · escuchas desde 4 compases antes del corte"}
+  storyEl.textContent=model.story;paintTl();paintVivo();K.paint()}
+function nueva(en){seed++;const p={...model.params,seed};if(en)p.energy=en;energy=p.energy;return compose(p)}
+// botones de energía con la música sonando: desde donde vas (lo anterior queda igual)
+function vivo(en){const d=K.deck,pos=posNow();const name=en?VIVO.find(v=>v[0]===en)[1]:"🎲 Otra variación";
+  if(pos==null){model=nueva(en);arr=compile(model);K.lastArr=arr;msgEl.textContent=name+" lista. «▶ Tocar» para escucharla.";storyEl.textContent=model.story;paintTl();paintVivo();return}
+  aplicar(cutModel(model,nueva(en),Math.max(corte,pos)),pos,name)}
+function cortarAqui(){const pos=posNow();if(pos==null){msgEl.textContent="Dale ▶ Tocar y aprieta ✂ cuando llegues hasta donde te gusta.";return}corte=pos;paintVivo();msgEl.textContent="✂ Guardado: compases 1–"+corte+". Ahora «↻ Otra versión desde el corte» si quieres cambiar lo que sigue."}
+function otraDesdeCorte(){aplicar(cutModel(model,nueva(null),corte),corte,"↻ Otra versión desde el compás "+(corte+1))}
+function duplicar(){const q=id=>Math.round(+vivoEl.querySelector(id).value||0);const a=q("#iahA")-1,b=q("#iahB"),c=q("#iahC")-1;
+  if(!(a>=0&&b>a&&c>=0&&c<=model.len)){msgEl.textContent="Revisa los compases: desde < hasta, y pegar dentro de la canción.";return}
+  HIST.push(model);model=dupModel(model,a,b,c);arr=compile(model);K.lastArr=arr;{const p=posNow();if(p!=null)K.deck.playArr(sliceArr(arr,Math.min(p,arr.len-1)))}paintTl();paintVivo();K.paint();
+  msgEl.textContent="⧉ Copié los compases "+(a+1)+"–"+b+" y los pegué en el "+(c+1)+" (la canción ahora dura "+model.len+" compases). Lo de después se corrió."}
+function deshacer(){const M=HIST.pop();if(!M){msgEl.textContent="Nada que deshacer";return}model=M;arr=compile(model);K.lastArr=arr;{const p=posNow();if(p!=null)K.deck.playArr(sliceArr(arr,Math.min(p,arr.len-1)))}corte=Math.min(corte,model.len);paintTl();paintVivo();K.paint();msgEl.textContent="↶ Deshecho"}
+let vivoEl=null;
+function paintVivo(){if(!vivoEl)return;vivoEl.querySelectorAll("[data-en]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.en===model.params.energy)));
+  const c=vivoEl.querySelector(".ldj-iah-corte");if(c)c.textContent=corte?"Guardado: compases 1–"+corte+" de "+model.len:"Sin corte · canción de "+model.len+" compases"}
 /* ---------- interfaz ---------- */
 let dlg=null,form=null,view=null,tl=null,storyEl=null,msgEl=null,edit=null,model=null,arr=null,raf=0;
 const pick=new Set();let minutes=3,energy="media",seed=1,showPads=false,genre="auto",final="referencia";
@@ -20970,8 +21018,22 @@ function showView(){form.hidden=true;view.hidden=false;view.replaceChildren();ed
       E("button",{type:"button",class:"ldj-btn",onclick:()=>{view.hidden=true;form.hidden=false;paintForm()}},"Cambiar beats"),
       E("button",{type:"button",class:"ldj-btn",title:"Guarda la sesión como archivo .orbitaldj",onclick:()=>{K.lastArr=arr;K.exportFile(false,"IAH DJ "+model.params.minutes+" min "+model.params.energy)}},"Guardar .orbitaldj"),
       E("button",{type:"button",class:"ldj-btn",title:"Descarga la sesión hecha con el motor 8D",onclick:wav},"⬇ WAV")),
+    vivoEl=E("div",{class:"ldj-iah-vivo",role:"group","aria-label":"Cambiar en vivo y armar la canción"},
+      E("div",{class:"ldj-row-btns"},E("span",{class:"ldj-iah-vivo-lab"},"EN VIVO · entra al próximo compás:"),
+        ...VIVO.map(([en,lab])=>E("button",{type:"button",class:"ldj-btn","data-en":en,"aria-pressed":"false",title:"Desde donde vas, con más o menos energía: cambian beats y música",onclick:()=>vivo(en)},lab)),
+        E("button",{type:"button",class:"ldj-btn",title:"Desde donde vas, misma energía, otros beats y otra música",onclick:()=>vivo(null)},"🎲 Otra variación")),
+      E("div",{class:"ldj-row-btns"},E("span",{class:"ldj-iah-vivo-lab"},"ARMAR TU CANCIÓN:"),
+        E("button",{type:"button",class:"ldj-btn ldj-iah-cut",title:"Lo que sonó hasta aquí queda guardado",onclick:cortarAqui},"✂ Me gusta hasta aquí"),
+        E("button",{type:"button",class:"ldj-btn",title:"IAH propone otra versión desde el corte; lo anterior no cambia",onclick:otraDesdeCorte},"↻ Otra versión desde el corte"),
+        E("button",{type:"button",class:"ldj-btn",onclick:deshacer},"↶ Deshacer"),
+        E("span",{class:"ldj-iah-corte"})),
+      E("div",{class:"ldj-row-btns"},E("span",{class:"ldj-iah-vivo-lab"},"DUPLICAR TRAMO:"),"compases",
+        E("input",{type:"number",id:"iahA",min:"1",value:"1",class:"ldj-iah-num","aria-label":"Desde el compás"}),"a",
+        E("input",{type:"number",id:"iahB",min:"1",value:"8",class:"ldj-iah-num","aria-label":"Hasta el compás"}),"· pegar en el compás",
+        E("input",{type:"number",id:"iahC",min:"1",value:"9",class:"ldj-iah-num","aria-label":"Pegar en el compás"}),
+        E("button",{type:"button",class:"ldj-btn",onclick:duplicar},"⧉ Duplicar y pegar"))),
     tl,msgEl);
-  paintTl()}
+  paintTl();paintVivo()}
 const dur=a=>LAB_DJ._k.tmap(a).tAt(a.len);
 function paintTl(){const M=model,N=M.len,px=Math.max(10,Math.min(26,Math.floor(1040/N)));tl.replaceChildren();tl.style.setProperty("--px",px+"px");
   const TM=K.tmap(arr),W=N*px;const inner=E("div",{class:"ldj-iah-inner",style:"width:"+(W+96)+"px"});
@@ -21012,7 +21074,8 @@ let ready=Promise.resolve();
 function init(){if(!K.panel){setTimeout(init,50);return}try{build();ready=loadCatalog();K.HOOKS?.arr.push(a=>{if(a?.iah)rehidratar(a.iah)});if(K.lastArr?.iah)rehidratar(K.lastArr.iah)}catch(e){console.warn("IAH DJ",e)}}
 if(document.readyState==="complete")setTimeout(init,30);else addEventListener("load",()=>setTimeout(init,30));
 
-const CSS=`.ldj-iahbtn{border-color:#9ff3ff88;color:#c9f6ff;font-weight:700}
+const CSS=`.ldj-iah-vivo .ldj-row-btns{align-items:center;gap:6px;margin:3px 0}.ldj-iah-num{width:56px}.ldj-iah-corte{font-size:12px;color:#c9f6ff}.ldj-iah-cut{border-color:#ffd36e;color:#ffe3a0}.ldj-iah-vivo{padding:8px;border:1px solid #9ff3ff55;border-radius:8px;margin:6px 0}.ldj-iah-vivo-lab{font-weight:700;color:#c9f6ff;font-size:12px;letter-spacing:.04em}.ldj-iah-vivo [aria-pressed=true]{background:#9ff3ff;color:#06121a;border-color:#9ff3ff}
+.ldj-iahbtn{border-color:#9ff3ff88;color:#c9f6ff;font-weight:700}
 .ldj-dlg.ldj-iah{width:min(1180px,96vw);max-width:96vw}
 .ldj-iah-head{display:flex;align-items:center;gap:12px;margin-bottom:6px}.ldj-iah-head b{font-size:20px;background:linear-gradient(90deg,#9ff3ff,#ffd38a);-webkit-background-clip:text;background-clip:text;color:transparent}
 .ldj-iah-head span{color:#a9bdd1;font-size:14px}.ldj-iah-head .ldj-close{margin-left:auto}
