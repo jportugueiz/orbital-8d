@@ -4631,7 +4631,7 @@ const IRR={};function irRoom(c,key){const R=ROOMS[key]||ROOMS.sala,sr=c.sampleRa
   return IRR[id]=b}
 function mkConv(m,key,g0){const c=m.ctx,cv=c.createConvolver();cv.normalize=false;cv.buffer=irRoom(c,key);const g=c.createGain();g.gain.value=g0;m.revQ.connect(cv);cv.connect(g);g.connect(m.wet);return {cv,g,key}}
 let M=null,CLIPC=null,deckMasterGain=1;
-function clipCurve(){const n=4097,y=new Float32Array(n),t=Math.pow(10,-4.5/20),cl=Math.pow(10,-2.8/20);for(let i=0;i<n;i++){const x=2*(2*i/(n-1)-1),a=Math.abs(x);y[i]=Math.sign(x)*(a<t?a:t+(cl-t)*Math.tanh((a-t)/(cl-t)))/2}return y}
+function clipCurve(){const n=4097,y=new Float32Array(n),t=Math.pow(10,-2.5/20),cl=Math.pow(10,-1/20);/* 13 nov: rodilla −2,5…−1 dBFS (antes −4,5…−2,8): el recorte de seguridad redondeaba los picos del bajo y se oía distorsión */for(let i=0;i<n;i++){const x=2*(2*i/(n-1)-1),a=Math.abs(x);y[i]=Math.sign(x)*(a<t?a:t+(cl-t)*Math.tanh((a-t)/(cl-t)))/2}return y}
 function buildMaster(c,o={}){const m={ctx:c,rt:!(c instanceof OfflineAudioContext)};
   m.in=c.createGain();m.dry=c.createGain();m.dry.connect(m.in);
   m.space=ROOMS[o.space]?o.space:"sala";m.hyper=clamp(o.hyper==null?1:+o.hyper,1,2);m.iso=o.iso||null;
@@ -4642,7 +4642,7 @@ function buildMaster(c,o={}){const m={ctx:c,rt:!(c instanceof OfflineAudioContex
   m.erL=c.createGain();m.erR=c.createGain();m.er=c.createGain();const emg=c.createChannelMerger(2);m.erL.connect(emg,0,0);m.erR.connect(emg,0,1);m.er.connect(emg,0,0);m.er.connect(emg,0,1);
   m.erLp=c.createBiquadFilter();m.erLp.type="lowpass";m.erLp.frequency.value=ROOMS[m.space].lp;m.erHp=c.createBiquadFilter();m.erHp.type="highpass";m.erHp.frequency.value=90;m.eqE=mkEq(c);emg.connect(m.eqE[0]);for(let i=1;i<m.eqE.length;i++)m.eqE[i-1].connect(m.eqE[i]);m.eqE[m.eqE.length-1].connect(m.erLp);m.erLp.connect(m.erHp);m.erG=c.createGain();m.erHp.connect(m.erG);m.erG.connect(m.in);m.ren=null;setEq(m,renOf(o.ren));
   m.vol=c.createGain();m.vol.gain.value=dB(o.vol_db||0);
-  m.lim=c.createDynamicsCompressor();m.lim.threshold.value=-4;m.lim.knee.value=1;m.lim.ratio.value=20;m.lim.attack.value=.002;m.lim.release.value=.12;/* el umbral va BAJO el recorte de seguridad (rodilla −4,5…−2,8 dBFS): con −1,5 el recorte trabajaba y «clipeaba». Release 120 ms (antes 180) */
+  m.lim=c.createDynamicsCompressor();m.lim.threshold.value=-3;m.lim.knee.value=1;m.lim.ratio.value=20;m.lim.attack.value=.002;m.lim.release.value=.12;/* el umbral va BAJO el recorte de seguridad (rodilla −4,5…−2,8 dBFS): con −1,5 el recorte trabajaba y «clipeaba». Release 120 ms (antes 180) */
   m.limOn=c.createGain();m.limOff=c.createGain();m.limOff.gain.value=0;m.out=c.createGain();
   m.hd=c.createGain();m.hd.gain.value=o.hd==null?1:o.hd;m.agc=c.createGain();m.genius=c.createGain();
   m.in.connect(m.hd);m.hd.connect(m.agc);m.agc.connect(m.genius);m.genius.connect(m.vol);
@@ -21864,7 +21864,7 @@ function layerGc(){const n=performance.now();let ch=false;for(const o of S.track
 /* ---------- dónde aparece un sonido nuevo: graves pegados al cuerpo; el resto en el hueco libre más grande, lejos de la cabeza ---------- */
 const PAS=id=>{try{return (typeof ORB!=="undefined"&&ORB.PASAPORTE&&id&&ORB.PASAPORTE[id])||null}catch(e){return null}};
 function papelOf(t,id){const p=PAS(id);if(p&&p.papel)return /ancla/i.test(p.papel)?"ancla":"viajero";return /^(bombo|bajo|sub)$/.test(t.rol||t.role||"")?"ancla":"viajero"}
-const anchorPos=t=>/^(bajo|sub)$/.test(t.rol||t.role||"")?{az0:0,el0:-12,r:1.05}:{az0:0,el0:-6,r:1.2};/* antes 0,45 / 0,7 m: a esa distancia la ley 1/r los subía +8 / +6 dB y saturaban (13 nov) */
+const anchorPos=t=>/^(bajo|sub)$/.test(t.rol||t.role||"")?{az0:0,el0:-15,r:1.4}:{az0:0,el0:-8,r:1.5};/* antes 0,45 / 0,7 m: a esa distancia la ley 1/r los subía +8 / +6 dB y saturaban (13 nov) */
 function freeGapAz(t){const occ=[],b=nowBar();for(const o of S.tracks){if(o===t||!o.clips.some(Boolean)||!isLive(o))continue;if(papelOf(o,o.clips.find(Boolean))==="ancla")continue;
     const P=basePos(o,b);occ.push(((P[0]%360)+360)%360)}
   if(!occ.length)return Math.round((Math.random()*2-1)*150);
