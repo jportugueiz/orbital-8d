@@ -12273,6 +12273,7 @@ const SOUND_LIBRARY=(()=>{
   const el=id=>panel.querySelector("#"+id);
   const norm=text=>String(text??"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[_-]+/g," ");
   const groups={
+    alberto:{name:"Alberto Plaza",families:{plaza:"Multipista en vivo · 7 pistas"}},
     fondos:{name:"Fondos y ambientes",families:{
       espacio:"Espacio",bosque:"Bosque",mar:"Mar y costa",campo:"Campo y montaña",selva:"Selva",agua:"Agua y ríos",
       lluvia:"Lluvia",tormenta:"Tormenta",noche:"Noche",viento:"Viento",fuego:"Fuego",ciudad:"Ciudad y gente",
@@ -12401,13 +12402,14 @@ const SOUND_LIBRARY=(()=>{
     const landscape=id.match(/^tp(?:v2)?_(mar|ola|gaviota|playa|brisa|dosel|arroyo|ave|rama|hoja|gota|aire_seco|insecto|abeja|arena|viento|trueno|lluvia)/)?.[1];
     const landscapeFamily={mar:"mar",ola:"mar",gaviota:"mar",playa:"mar",brisa:"viento",dosel:"bosque",arroyo:"agua",ave:"bosque",rama:"bosque",hoja:"bosque",gota:"lluvia",aire_seco:"campo",insecto:"campo",abeja:"campo",arena:"campo",viento:"viento",trueno:"tormenta",lluvia:"lluvia"};
     const ambient=ambientSources[id]||landscapeFamily[landscape];
-    const session=/^(?:o128|o2|salsa|plaza)_/.test(id);
+    const session=/^(?:o128|o2|salsa)_/.test(id);
     const scene=/^(?:umbral_|atrae_(?:voz|paso|ropa|semilla|sala))/.test(id);
     const spaceEffect=spacecraft||/^(?:avance_|aurora_|cab90_)/.test(id);
     const effect=instrumentTrack?null:spaceEffect?"nave":session?"sesion":scene?"escena":null;
     const animal=id.startsWith("an_")||/^(ballenas|buhos|pajaros|ranas)$/.test(id);
-    const group=effect?"efectos":ambient?"fondos":animal?"animales":"instrumentos";
-    const family=instrumentTrack?.[1]||effect||ambient||(animal?(entry._info?.libraryFamily||animalFamily(id)):reviewedFamily(ORB.LIB[id].n,reviewFamilies[norm(entry._info?.reviewFamily)]||instrumentFamily(id)));
+    const plaza=/^plaza_/.test(id);/* carpeta propia «Alberto Plaza» (multipista) */
+    const group=plaza?"alberto":effect?"efectos":ambient?"fondos":animal?"animales":"instrumentos";
+    const family=plaza?"plaza":instrumentTrack?.[1]||effect||ambient||(animal?(entry._info?.libraryFamily||animalFamily(id)):reviewedFamily(ORB.LIB[id].n,reviewFamilies[norm(entry._info?.reviewFamily)]||instrumentFamily(id)));
     const detail=(effect?"Pista de audio":ambient?"Fuente ambiental":animal?"Tomas de animal":"Instrumento")+" · "+samples.length+(samples.length===1?" toma":" tomas");
     add(group,family,"sample",id,instrumentTrack?.[0]||ORB.LIB[id].n,detail,[entry._info?.desc,samples.flatMap(s=>[s.tags,s.especie])],null);
   }
