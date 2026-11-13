@@ -4653,7 +4653,7 @@ function buildMaster(c,o={}){const m={ctx:c,rt:!(c instanceof OfflineAudioContex
   m.erL=c.createGain();m.erR=c.createGain();m.er=c.createGain();const emg=c.createChannelMerger(2);m.erL.connect(emg,0,0);m.erR.connect(emg,0,1);m.er.connect(emg,0,0);m.er.connect(emg,0,1);
   m.erLp=c.createBiquadFilter();m.erLp.type="lowpass";m.erLp.frequency.value=ROOMS[m.space].lp;m.erHp=c.createBiquadFilter();m.erHp.type="highpass";m.erHp.frequency.value=90;m.eqE=mkEq(c);emg.connect(m.eqE[0]);for(let i=1;i<m.eqE.length;i++)m.eqE[i-1].connect(m.eqE[i]);m.eqE[m.eqE.length-1].connect(m.erLp);m.erLp.connect(m.erHp);m.erG=c.createGain();m.erHp.connect(m.erG);m.erG.connect(m.in);m.ren=null;setEq(m,renOf(o.ren));
   m.vol=c.createGain();m.vol.gain.value=dB(o.vol_db||0);
-  m.lim=c.createDynamicsCompressor();m.lim.threshold.value=-1.5;m.lim.knee.value=1;m.lim.ratio.value=20;m.lim.attack.value=.002;m.lim.release.value=.12;/* auditoría 8D: antes −3 dBFS / 180 ms (bajaba toda la mezcla cuando algo se acercaba) */
+  m.lim=c.createDynamicsCompressor();m.lim.threshold.value=-4;m.lim.knee.value=1;m.lim.ratio.value=20;m.lim.attack.value=.002;m.lim.release.value=.12;/* el umbral va BAJO el recorte de seguridad (rodilla −4,5…−2,8 dBFS): con −1,5 el recorte trabajaba y «clipeaba». Release 120 ms (antes 180) */
   m.limOn=c.createGain();m.limOff=c.createGain();m.limOff.gain.value=0;m.out=c.createGain();
   m.hd=c.createGain();m.hd.gain.value=o.hd==null?1:o.hd;m.agc=c.createGain();m.genius=c.createGain();
   m.in.connect(m.hd);m.hd.connect(m.agc);m.agc.connect(m.genius);m.genius.connect(m.vol);
@@ -4840,7 +4840,7 @@ function distApply(v,t,P,k,ramp){const m=v.m,I=distInfo(P[2],m.space,m.hyper,P[0
   const wet=iso==="dir"?0:1,fW=clamp((P[2]-1.5)/4,0,1),wE=wet*(v.wsE==null?1:v.wsE+(Math.max(v.wsE,.5)-v.wsE)*fW),wR=wet*(v.wsR==null?1:v.wsR+(Math.max(v.wsR,.5)-v.wsR)*fW);// v9/v10: casi seco cerca (≤ 1,5 m); la sala vuelve poco a poco hasta 5,5 m (lejos = más sala)
   /* AUDITORÍA 8D (13 nov): este for estaba pegado al comentario y nunca corría → las 4 reflexiones sonaban mudas */
   for(let i=0;i<4;i++){const T=I.taps[i]||{dl:.01,g:0};S_(v.tp[i].delayTime,Math.min(.29,T.dl));S_(v.tg[i].gain,T.g*wE*(iso==="late"?0:1))}
-  const back=Math.max(0,-Math.cos(P[0]*D2R)),hyper=/^v1[01]/.test(v.ren)?m.hyper-1:0;
+  const back=Math.max(0,-Math.cos(P[0]*D2R))*Math.cos(P[1]*D2R)/* × cos(el): sobre la cabeza el azimut no existe y no debe saltar */,hyper=/^v1[01]/.test(v.ren)?m.hyper-1:0;
   S_(v.rpd.delayTime,Math.min(.29,I.rev_pre));S_(v.send.gain,I.rev_amp*(1+(.6+hyper)*back*Math.min(1,k))*wR*v.reverb*(iso==="er"?0:1));v.di=I}
 // la dirección va a los renderizadores siempre a la distancia de referencia (1,5 m): su nivel/aire internos quedan fijos y la distancia la pone distApply
 /* CRUCE POR LA CABEZA (Jorge, 12 nov 2026): «la app tiene que pensar que no hay nada ahí, pasa de largo».
@@ -4855,13 +4855,11 @@ function motionBoost(s,v,P,dt){if(!MOVE.on||!P){v.mv=1;return}if(!(dt>0))return;
   let d=P[0]-q[0];d=((d%360)+540)%360-180;const w=Math.hypot(d*Math.cos((P[1]||0)*D2R),P[1]-q[1])/dt,W0=s._mvW||0,a=w>W0?1-Math.exp(-dt/.08):1-Math.exp(-dt/.4);
   const W=s._mvW=W0+(w-W0)*a;v.mv=Math.pow(10,MOVE.db*W*W/(W*W+MOVE.w0*MOVE.w0)/20)}
 function voicePos(v,t,P,k,ramp){
-  {const e=P[1]*D2R,a=P[0]*D2R,x=P[2]*Math.cos(e)*Math.sin(a),y=P[2]*Math.sin(e),z=P[2]*Math.cos(e)*Math.cos(a),q=v._crPrev;v._crPrev=[x,y,z];
-  if(CRUCE.on&&P[2]<CRUCE.r){const R0=CRUCE.r;
-    /* auditoría 8D: si cruza de DELANTE a ATRÁS pasa POR ENCIMA de la cabeza (antes saltaba de golpe al timbre trasero); de lado a lado, como antes */
-    let wf=v._crW??0;if(q){const vx=x-q[0],vz=z-q[2],m2=vx*vx+vz*vz;if(m2>1e-10)wf=wf*.6+.4*(vz*vz/m2)}v._crW=wf;
-    const zz=(z<0?-1:1)*Math.sqrt(Math.max(0,R0*R0-x*x-y*y)),yy=Math.max(y,Math.sqrt(Math.max(0,R0*R0-x*x-z*z)));
-    let X=x,Y=y+(yy-y)*wf,Z=zz+(z-zz)*wf;const n=Math.hypot(X,Y,Z)||1;X*=R0/n;Y*=R0/n;Z*=R0/n;
-    P=[Math.atan2(X,Z)/D2R,Math.asin(clamp(Y/R0,-1,1))/D2R,R0]}}
+  if(CRUCE.on&&P[2]<CRUCE.r){const R0=CRUCE.r,e=P[1]*D2R,a=P[0]*D2R,x=P[2]*Math.cos(e)*Math.sin(a),y=P[2]*Math.sin(e),z=P[2]*Math.cos(e)*Math.cos(a);
+    /* auditoría 8D (v2, 13 nov): dentro de 0,5 m el sonido se levanta sobre la esfera POR ENCIMA de la cabeza, conservando x y z.
+       Es continuo en cualquier dirección (antes, al cruzar en diagonal, el punto saltaba de adelante a atrás → «clic»). Izquierda↔derecha sigue barriendo la ILD sin golpe. */
+    const yy=Math.max(y,Math.sqrt(Math.max(0,R0*R0-x*x-z*z)));const n=Math.hypot(x,yy,z)||1,X=x*R0/n,Y=yy*R0/n,Z=z*R0/n;
+    P=[Math.atan2(X,Z)/D2R,Math.asin(clamp(Y/R0,-1,1))/D2R,R0]}
   // At the listener there is no stable direction. Blend to the centered signal before the azimuth flips.
   const u=clamp((P[2]-.15)/.35,0,1),directional=u*u*(3-2*u);
   const center=1-directional;
