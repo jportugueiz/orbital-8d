@@ -21864,7 +21864,7 @@ function layerGc(){const n=performance.now();let ch=false;for(const o of S.track
 /* ---------- dónde aparece un sonido nuevo: graves pegados al cuerpo; el resto en el hueco libre más grande, lejos de la cabeza ---------- */
 const PAS=id=>{try{return (typeof ORB!=="undefined"&&ORB.PASAPORTE&&id&&ORB.PASAPORTE[id])||null}catch(e){return null}};
 function papelOf(t,id){const p=PAS(id);if(p&&p.papel)return /ancla/i.test(p.papel)?"ancla":"viajero";return /^(bombo|bajo|sub)$/.test(t.rol||t.role||"")?"ancla":"viajero"}
-const anchorPos=t=>/^(bajo|sub)$/.test(t.rol||t.role||"")?{az0:0,el0:-12,r:.45}:{az0:0,el0:-6,r:.7};
+const anchorPos=t=>/^(bajo|sub)$/.test(t.rol||t.role||"")?{az0:0,el0:-12,r:1.05}:{az0:0,el0:-6,r:1.2};/* antes 0,45 / 0,7 m: a esa distancia la ley 1/r los subía +8 / +6 dB y saturaban (13 nov) */
 function freeGapAz(t){const occ=[],b=nowBar();for(const o of S.tracks){if(o===t||!o.clips.some(Boolean)||!isLive(o))continue;if(papelOf(o,o.clips.find(Boolean))==="ancla")continue;
     const P=basePos(o,b);occ.push(((P[0]%360)+360)%360)}
   if(!occ.length)return Math.round((Math.random()*2-1)*150);
