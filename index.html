@@ -20261,7 +20261,7 @@ function Deck(c,destOf,o={}){
     for(const r of Object.values(D.R))if(r.cur&&r.cur.endBar==null&&!(r.pend&&r.pend.bar<=pb.bar))exec(r,r.cur.pad,pb.bar)
     emit("ui")}
   // arreglo (grabado, guion o «Armar por mí»): eventos en compases relativos a A.b0
-  D.playArr=(arr)=>{for(const r of Object.values(D.R)){if(r.cur||r.pend)r.pend=null}
+  D.playArr=(arr)=>{for(const h of HOOKS.play)try{h(arr)}catch(e){console.warn(e)}for(const r of Object.values(D.R)){if(r.cur||r.pend)r.pend=null}
     D.sc=arr.sc===false?null:(arr.sc||SC_DEF);D.mk=arr.club===false?1:dB(arr.makeup_db??4);D.scNext=null;if(!o.offline)CLUB=arr.club===true;
     if(!D.playing){D.bpm=arr.bpm||D.bpm;D.start()}else if(arr.bpm&&arr.bpm!==D.bpm){D.setBpm(arr.bpm)}
     const b0=D.playing&&D.seg.t<c.currentTime?D.nextBar():0;
@@ -20624,7 +20624,7 @@ function setBpm(b){const d=D_();if(deck?.rec){toast("Para cambiar el tempo, term
 let taps=[];function tap(){const t=performance.now();taps=taps.filter(x=>t-x<2500);taps.push(t);if(taps.length>=4){const iv=[];for(let i=1;i<taps.length;i++)iv.push(taps[i]-taps[i-1]);setBpm(60000/(iv.reduce((a,b)=>a+b,0)/iv.length))}else say("Sigue tocando «Tap» al ritmo… ("+taps.length+"/4)")}
 
 /* ---------- grabar, escuchar, exportar ---------- */
-let lastArr=null;const HOOKS={arr:[],escena:[],pos:[],ui:null};// arr: avisos al cargar un arreglo guardado (IAH DJ vuelve a registrar sus sonidos sintéticos)
+let lastArr=null;const HOOKS={arr:[],escena:[],pos:[],play:[],ui:null};// arr: avisos al cargar un arreglo guardado (IAH DJ vuelve a registrar sus sonidos sintéticos)
 function snapshotAt(b0){const rows={};for(const r of Object.values(deck.R)){const cur=r.pend&&r.pend.bar<=b0?r.pend.pad:r.cur?.pad;rows[r.id]={mov:movCopy(r.mov),vol:r.vol,filt:r.filt};if(cur){rows[r.id].pad=cur;rows[r.id].lb=(r.cur&&r.cur.pad===cur?r.cur.launchBar:b0)-b0}}return {sweep:deck.sweep,master:deck.master,rows}}
 function recToggle(){const d=ensureLive();const btn=panel.querySelector(".ldj-rec");
   if(!d.rec){if(!d.playing)d.start();const b0=d.nextBar();d.rec={b0,ev:[],init:null};d.rec.init=snapshotAt(b0);btn.setAttribute("aria-pressed","true");btn.textContent="■ Terminar";say("Grabando desde el próximo compás. Lanza y mueve lo que quieras.");return}
@@ -22371,7 +22371,13 @@ function uiLoad(u){const KI=LAB_DJ._t?.kits||{};const kit=LAB_DJ._t?.kit||S.kit;
 let saveT=0;function save(){if(!Object.keys(ROLMAP).length&&ROLP)return;clearTimeout(saveT);saveT=setTimeout(()=>LSS("orb_dj_ui",uiState()),400)}
 
 /* ---------- abrir / cerrar ---------- */
-function open(){if(!root)build();const first=!!root.hidden||!document.body.classList.contains("ldjx-open");root.hidden=false;document.body.classList.add("ldjx-open");
+/* ---------- sesión IAH → grilla: los sonidos que usa IAH quedan en la pista de su fila (en orden), para verlos sonar y usarlos después ---------- */
+const FAMN={bombo:"BOMBO",perc:"RITMO",bajo:"BAJO",pads:"ATMÓS",lead:"MELODÍA",fx:"EFECTOS"};let adoptOn=0;
+function adoptArr(arr){if(!arr||!arr.iah||!arr.ev)return;const by={};for(const e of arr.ev)if(e.type==="launch"&&e.pad&&K.PAD[e.pad]){const L=by[e.row]=by[e.row]||[];if(!L.includes(e.pad))L.push(e.pad)}
+  let ch=0;for(const row in by){const t=engTrack(row);if(!t)continue;const ids=by[row].slice(0,ROWS_N),nc=ids.concat(t.clips.filter(c=>c&&!ids.includes(c))).slice(0,ROWS_N);while(nc.length<ROWS_N)nc.push(null);
+    if(nc.join()!==t.clips.join()){t.clips=nc;if(FAMN[row])t.name=FAMN[row];ch=1}}
+  if(ch){try{renderGrid();renderStrips()}catch(e){}save();K.toast("La configuración de IAH quedó en tu grilla: después la puedes usar tú")}}
+function open(){if(!adoptOn&&K.HOOKS&&K.HOOKS.play){adoptOn=1;K.HOOKS.play.push(adoptArr)}if(!root)build();const first=!!root.hidden||!document.body.classList.contains("ldjx-open");root.hidden=false;document.body.classList.add("ldjx-open");
   const wasPlayOn=typeof PLAY!=="undefined"&&!!PLAY.on;if(first&&!ISO)isoPause();mountSpace();if(!ISO)isoIn(wasPlayOn);sync();if(!raf)frame()}
 function close(){root.hidden=true;document.body.classList.remove("ldjx-open");try{LAB_DJ.close()}catch(e){}closeMenu();DRAW=null;REC=null;
   const I=isoOut();unmountSpace(I&&I.wasPlayOn)}
