@@ -22313,8 +22313,9 @@ function keyShort(k){const m=/^(Do|Re|Mi|Fa|Sol|La|Si)(♭|#|♯)?\s*(menor|mayo
 // estado de los pads desde el motor: el pad que suena en cada fila del motor se pinta en la pista que lo tiene
 function syncPads(){const d=K.deck;if(!d)return;const at={};for(const t of S.tracks)t.clips.forEach((id,r)=>{if(id&&!at[id])at[id]=[t,r]});
   const play={},queue={},ext={};for(const R of Object.values(d.R)){const own=engTrack(R.id);
-    if(R.cur){const w=own&&own.clips.includes(R.cur.pad)?[own,own.clips.indexOf(R.cur.pad)]:at[R.cur.pad];if(w)play[w[0].id]=w[1];else if(own)ext[own.id]=1}// ext: suena un sonido que no está en la grilla (sesión IAH) → igual se ve en el círculo
-    if(R.pend&&R.pend.pad){const w=own&&own.clips.includes(R.pend.pad)?[own,own.clips.indexOf(R.pend.pad)]:at[R.pend.pad];if(w)queue[w[0].id]=w[1]}}
+    // la fila que suena se muestra SIEMPRE en su propia pista (si el sonido no está en su grilla, igual: «ext»): así el punto del círculo es el que suena y moverlo mueve ese sonido
+    if(R.cur){if(own){const i=own.clips.indexOf(R.cur.pad);if(i>=0)play[own.id]=i;else ext[own.id]=1}else{const w=at[R.cur.pad];if(w)play[w[0].id]=w[1]}}// ext: suena un sonido que no está en la grilla (sesión IAH) → igual se ve en el círculo
+    if(R.pend&&R.pend.pad){if(own){const i=own.clips.indexOf(R.pend.pad);if(i>=0)queue[own.id]=i}else{const w=at[R.pend.pad];if(w)queue[w[0].id]=w[1]}}}
   let ch=false;for(const t of S.tracks){const p=play[t.id]??-1,q=queue[t.id]??-1;t.state.ext=!!ext[t.id];if(p!==t.state.play||q!==t.state.queue){t.state.play=p;t.state.queue=q;ch=true}}if(ch)paintPads()}
 let raf=0,tick=0;
 // un solo bucle liviano: la cola y la sala en cada cuadro; lo visual a 30 fps; vúmetros a 10 fps; nada si la pestaña está oculta
