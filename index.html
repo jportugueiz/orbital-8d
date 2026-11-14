@@ -4617,7 +4617,7 @@ function distInfo(d,key,k,az=90,el=0,ren){d=clamp(d!=null&&Number.isFinite(+d)?+
   const taps=tapsOf(R,p,d),ra=revAmp(R,d,ren),ts=taps.map(t=>t.dl).sort((a,b)=>a-b),rpd=(R.open?ts[0]:.5*(ts[0]+ts[1]))+R.pd0;// la cola arranca entre la 1.ª y la 2.ª reflexión
   const X=ildNF(d)*Math.abs(lat)*nk*(/^v(9|10|11)/.test(ren||"")?.5:1);/* auditoría 8D: ×0,5 con v9/v10/v11 */
   return {d,room:key in ROOMS?key:"sala",k,g,gain_db:20*Math.log10(g),dc:R.dc,drr_teo_db:20*Math.log10(g*(CAL[ren]||.65)/(revAmp(R,d,ren)*WET0)),air_fc:fa,air_db:{1000:-airAlpha(1000)*d*k,4000:-a4,8000:-airAlpha(8000)*d*k,16000:-airAlpha(16000)*d*k},
-    hs_db:hs,body_db:3*nf*nk,pres_db:2*nf*nk,ild_db:X,ild_near:.25*X,ild_far:-.75*X,itd_x:itdNF(d,lat)*nk,width:.2*clamp((1-d)/(1-D_MIN),0,1)*nk,lat,
+    hs_db:hs,body_db:3*nf*nk,pres_db:2*nf*nk,ild_db:X,ild_near:.25*X,ild_far:-.75*X,itd_x:itdNF(d,lat)*nk,width:.2*clamp((1-d)/(1-D_MIN),0,1)*nk*(/^v(9|10|11)/.test(ren||"")?0:1),lat,
     taps,itdg_ms:1000*Math.min(...taps.map(t=>t.dl)),rev_amp:ra,rev_pre:rpd,dop:d/C_SND}}
 // respuesta de sala por preset: ruido determinista, decaimiento por bandas (graves RT, agudos RT·hf), sin pre-retardo propio (lo pone cada voz), energía 1 por canal
 const IRR={};function irRoom(c,key){const R=ROOMS[key]||ROOMS.sala,sr=c.sampleRate,id=key+"|"+sr;if(IRR[id])return IRR[id];
@@ -4657,7 +4657,7 @@ function buildMaster(c,o={}){const m={ctx:c,rt:!(c instanceof OfflineAudioContex
   // capa binaural real (BINL, sonidos_binaural/): estéreo discreto que entra tras headroom/AGC → volumen, limitador y clip la protegen; nada espacial la toca
   m.bin=c.createGain();m.bin.channelCount=2;m.bin.channelCountMode="explicit";m.bin.channelInterpretation="discrete";m.bin.connect(m.vol);
   // seguro tras el limitador (el compresor no es un muro de picos): lineal hasta −4,5 dBFS, rodilla tanh hasta −2,8 dBFS, sobremuestreo 4× (sin él, la rodilla generaba picos entre muestras de +0,9 dBTP con 7–8 voces; QA audio)
-  m.clipI=c.createGain();m.clipI.gain.value=.5;m.clip=c.createWaveShaper();m.clip.curve=CLIPC||(CLIPC=clipCurve());m.clip.oversample="4x";m.clipO=c.createGain();m.clipO.gain.value=2;
+  m.clipI=c.createGain();m.clipI.gain.value=.5*Math.pow(10,-1.53/20);/* descuenta la ganancia automática del compresor de Chrome (+1,53 dB medido) */m.clip=c.createWaveShaper();m.clip.curve=CLIPC||(CLIPC=clipCurve());m.clip.oversample="4x";m.clipO=c.createGain();m.clipO.gain.value=2;
   m.lim.connect(m.clipI);m.clipI.connect(m.clip);m.clip.connect(m.clipO);m.clipO.connect(m.limOn);m.limOn.connect(m.out);limiterInput.connect(m.limOff);m.limOff.connect(m.out);
   m.out.connect(c.destination);
   if(m.rt){m.spl=c.createChannelSplitter(2);m.out.connect(m.spl);m.anL=c.createAnalyser();m.anR=c.createAnalyser();m.anL.fftSize=m.anR.fftSize=2048;m.spl.connect(m.anL,0);m.spl.connect(m.anR,1);
@@ -4722,7 +4722,7 @@ function v9Set(n,t,v,ramp,hyper=1){const [X,Y,Z]=v,r=Math.hypot(X,Y,Z)||1,az=Mat
   const lat=Math.max(-1,Math.min(1,X/r)),th=Math.asin(Math.abs(lat)),itd=P.itd*(V9H/V9C)*(th+Math.sin(th));
   const G=n.ears.map(e=>{const w=Math.max(0,-e.s*lat);return {e,w,g:Math.pow(10,-P.ild*w/20)}});
   const k=Math.min(1.4125,Math.sqrt(2/(G[0].g*G[0].g+G[1].g*G[1].g)));
-  for(const {e,w,g} of G){const f=20000*Math.pow(P.fc/20000,w);S(e.g.gain,g*k);S(e.lp.frequency,f);if(e.l2)S(e.l2.frequency,f);S(e.d.delayTime,w>0?itd:0)}
+  for(const {e,w,g} of G){const f=20000*Math.pow(P.fc/20000,w);S(e.g.gain,g*k);S(e.lp.frequency,f);if(e.l2)S(e.l2.frequency,f);S(e.d.delayTime,w>0?Math.max(0,itd-(e.l2?2:1)/(1.0593*2*Math.PI*f)):0)}
   const back=Math.max(0,-Math.cos(az))*Math.cos(el),up=Math.max(0,Math.sin(el));
   const dn=Math.max(0,-Math.sin(el)),h=P.ev?clamp(hyper-1,0,1):0;
   if(P.ev){S(n.no.frequency,(6000+4800*up-1000*dn)*(1-.12*back));S(n.no.gain,-P.nd*(.45+.55*back));const E=n.E;
@@ -4766,6 +4766,8 @@ function addRenderer(name,impl){if(!impl||typeof impl.build!=="function"||typeof
   if(impl.cal)CAL[name]=impl.cal;if(impl.req)REQ[name]=impl.req;if(impl.req_off!=null)REQ_OFF[name]=impl.req_off;if(impl.lvcal)LVREN[name]=impl.lvcal;return Object.keys(RENDS)}
 /* envío a sala/reflexiones por renderizador: v9/v10 dependen de un oído lejano MUY atenuado; las reflexiones y la cola (iguales en ambos oídos) lo rellenaban
    (sala a 1–1,5 m ≈ distancia crítica 1,2 m → la cola igualaba al directo y la ILD de ±36 dB caía a ±3 dB: «sin orbitalidad», 7 nov). Se bajan para que el directo domine; la perilla Sala sigue actuando. */
+// tope de crecimiento de la sala con la distancia (auditoría 8D, 14-nov): la cola crece ∝ d solo mientras el directo siga ≥ 1 dB sobre la sala
+const WCAP={"v9-medio":2.54,"v9-fuerte":2.54,"v9-maximo":2.54,"v10-a":2.54,"v10-b":2.54,"v11":1.73};
 const WETS={"v9-medio":[.12,.05],"v9-fuerte":[.12,.05],"v9-maximo":[.12,.05],"v10-a":[.12,.05],"v10-b":[.12,.05],"v11":[.3,.1]};/* auditoría 8D: antes [.1,.04] (≈ anecoico) */// [reflexiones tempranas, cola]; medido (dbg_cadena.py): tingsha en órbita a 1 m, sala 0,22 → ILD p5–p95 de ±3 dB (1/1) a ≈ ±25 dB
 const benzaiLoads=new WeakMap(),benzaiReady=new WeakSet();
 function loadBenzai(context=ac()){
@@ -4823,11 +4825,11 @@ function elevCue(v,t,P,ramp){if(!v.eHs)return;const u=clamp(P[1]/75,-1,1),up=Mat
 // distancia de una voz: todo sale de distInfo (la misma función que ve la consola/IAH) y se programa con rampas lineales cortas → sin «zipper»
 function distApply(v,t,P,k,ramp){const m=v.m,I=distInfo(P[2],m.space,m.hyper,P[0],P[1],v.ren),iso=m.iso;
   const S_=(p,x)=>{try{ramp?p.linearRampToValueAtTime(x,t):p.setValueAtTime(x,t)}catch(e){}};
-  const dT=v.labDop?v.labDop(t,P,I,ramp):I.dop;// LAB (gancho): Doppler por fuente; sin él, dT = I.dop
+  const D0=Math.round(D_REF/C_SND*v.dop.context.sampleRate)/v.dop.context.sampleRate,dT=v.labDop?v.labDop(t,P,I,ramp):D0;/* retardo fijo: el Doppler físico es inaudible a estas velocidades y su retardo variable quitaba agudos y desfasaba pistas */// LAB (gancho): Doppler por fuente; sin él, dT = I.dop
   S_(v.dop.delayTime,dT);if(v.lowSplit&&LABV.splitDist)LABV.splitDist(v,S_,I,dT,iso);/* LAB (gancho): divisor de graves */S_(v.dAir.frequency,I.air_fc);const gMv=I.g*(v.mv||1);/* realce de movimiento (auditoría 8D) */S_(v.dG.gain,iso==="wet"?0:gMv);S_(v.oG.gain,v.ab?1:iso==="wet"?0:gMv);S_(v.oD.delayTime,v.ab?0:dT);v.dx={hs:I.hs_db,ls:I.body_db,pr:I.pres_db};
   const nr=I.lat>=0?1:0;S_(v.ls[nr].gain,I.ild_near);S_(v.ls[1-nr].gain,I.ild_far);S_(v.pd[1-nr].delayTime,Math.min(.0025,I.itd_x));S_(v.pd[nr].delayTime,0);
   S_(v.wg[0].gain,I.width);S_(v.wg[1].gain,I.width);
-  const wet=iso==="dir"?0:1,fW=clamp((P[2]-1.5)/4,0,1),wE=wet*(v.wsE==null?1:v.wsE+(Math.max(v.wsE,.5)-v.wsE)*fW),wR=wet*(v.wsR==null?1:v.wsR+(Math.max(v.wsR,.5)-v.wsR)*fW);// v9/v10: casi seco cerca (≤ 1,5 m); la sala vuelve poco a poco hasta 5,5 m (lejos = más sala)
+  const wet=iso==="dir"?0:1,kD=clamp(P[2]/1.5,1,WCAP[v.ren]||1),wE=wet*(v.wsE==null?1:v.wsE*kD),wR=wet*(v.wsR==null?1:v.wsR*kD);// alejar nunca sube el volumen total// v9/v10: casi seco cerca (≤ 1,5 m); la sala vuelve poco a poco hasta 5,5 m (lejos = más sala)
   /* AUDITORÍA 8D (13 nov): este for estaba pegado al comentario y nunca corría → las 4 reflexiones sonaban mudas */
   for(let i=0;i<4;i++){const T=I.taps[i]||{dl:.01,g:0};S_(v.tp[i].delayTime,Math.min(.29,T.dl));S_(v.tg[i].gain,T.g*wE*(iso==="late"?0:1))}
   const back=Math.max(0,-Math.cos(P[0]*D2R))*Math.cos(P[1]*D2R)/* × cos(el): sobre la cabeza el azimut no existe y no debe saltar */,hyper=/^v1[01]/.test(v.ren)?m.hyper-1:0;
@@ -4840,7 +4842,7 @@ function distApply(v,t,P,k,ramp){const m=v.m,I=distInfo(P[2],m.space,m.hyper,P[0
 const CRUCE={on:true,r:.5};
 /* REALCE DE MOVIMIENTO (Jorge: «cuando algo se mueve DEBE subir un poco su volumen para mostrarse»; auditoría 8D, 13 nov):
    según la velocidad angular PROPIA de la fuente (sin el giro de la sala/plato): 0 dB quieta, ≈ +0,5 dB a 30°/s, +1,6 a 120°/s, tope +2 dB. Suave: sube en 80 ms, baja en 400 ms. */
-const MOVE={on:true,db:2,w0:60};
+const MOVE={on:true,db:1,w0:60};
 function motionBoost(s,v,P,dt){if(!MOVE.on||!P){v.mv=1;return}if(!(dt>0))return;/* dos llamadas en el mismo instante: conserva el realce */const q=s._mvP;s._mvP=[P[0],P[1]];if(!q){v.mv=1;return}
   let d=P[0]-q[0];d=((d%360)+540)%360-180;const w=Math.hypot(d*Math.cos((P[1]||0)*D2R),P[1]-q[1])/dt,W0=s._mvW||0,a=w>W0?1-Math.exp(-dt/.08):1-Math.exp(-dt/.4);
   const W=s._mvW=W0+(w-W0)*a;v.mv=Math.pow(10,MOVE.db*W*W/(W*W+MOVE.w0*MOVE.w0)/20)}
@@ -5449,7 +5451,7 @@ async function renderRange(sc,T0,T1,fileBuf,used){const sr=48000,pre=Math.min(8,
       if(s._dr)s._dNow=distAt(s,t);
       const dt=st.i?(s.cue?Math.min(step,Math.max(0,t-s.cue.in)):step):0;
       let P=advance(s,mo,t,dt,g);if(sc.grupos&&typeof GRP!=="undefined")P=GRP.offline(sc,s,P,t);/* GRUPOS (gancho) */
-      if(t>=o-step&&(!s.cue||t<=s.cue.out+.1)){voicePos(v,Math.max(0,t-o),pasFloor(s,P),Math.max(.05,s.depth/.7)*inten,!st.first);st.first=false;if(LABV.objPos)LABV.objPos(sc,s,t,P)/* LAB (gancho): ADM/AmbiX */}}};
+      if(t>=o-step&&(!s.cue||t<=s.cue.out+.1)){motionBoost(s,v,P,dt);voicePos(v,Math.max(0,t-o),pasFloor(s,P),Math.max(.05,s.depth/.7)*inten,!st.first);st.first=false;if(LABV.objPos)LABV.objPos(sc,s,t,P)/* LAB (gancho): ADM/AmbiX */}}};
     posq.push(st)}
   for(const st of posq)st.run(o+2);
   const lenS=(T1-o);for(let k=1;k<lenS-.5;k++){c.suspend(k).then(()=>{for(const st of posq){st.run(o+k+2);if(st.v.h&&!sc.noPrune)hrPrune(st.v.h,k)}c.resume()})}
