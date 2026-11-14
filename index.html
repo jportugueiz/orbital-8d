@@ -20209,13 +20209,19 @@ function padStop(node,at,hard){if(!node)return;try{if(hard){node.n.stop(Math.max
 
 /* ---------- posición en vivo: misma secuencia que voicePos/distApply/elevCue de orb_dsp.js (no exportadas) ----------
    El render offline usa el motor directamente (ORB.render); esto solo mueve las voces en vivo. */
+/* MUTE CONTRARIO (14 nov, elegido por Jorge en la escucha A/B): cuando un sonido que se mueve (ritmo, melodía, efectos, atmósfera) pasa
+   pegado a una oreja (≤ 0,65 m y casi a 90°), el resto de la mezcla baja hasta 6 dB en ESA oreja (sube en 30 ms, vuelve en 250 ms):
+   el protagonista queda solo ahí. Mismo cálculo en vivo y en el render. */
+const DUCK_ROWS=["perc","lead","fx","pads"],DUCK_DB=-6;
+function duckHot(P){const l=Math.sin(P[0]*D2R)*Math.cos(P[1]*D2R),w=clamp((.65-P[2])/.15,0,1)*clamp((Math.abs(l)-.75)/.15,0,1);return [l<0?w:0,l>0?w:0]}
+function duckStep(prev,tgt,dt){return prev.map((v,e)=>v+(tgt[e]-v)*(1-Math.exp(-dt/(tgt[e]<v?.03:.25))))}
 function vPos(v,t,P,k,ramp){const CR=ORB.CRUCE,R0c=CR&&(ORB.cruceR?ORB.cruceR(P):CR.r);if(CR&&CR.on&&P[2]<R0c){/* cruce por la cabeza: pasa de largo, igual que en la Mesa (orb_dsp.js, CRUCE); pegado a la oreja llega a 0,15 m */const R0=R0c,e=P[1]*D2R,a=P[0]*D2R,x=P[2]*Math.cos(e)*Math.sin(a),y=P[2]*Math.sin(e),z=P[2]*Math.cos(e)*Math.cos(a);
   const zz=(z<0?-1:1)*Math.sqrt(Math.max(0,R0*R0-x*x-y*y));P=[Math.atan2(x,zz)/D2R,Math.asin(clamp(y/R0,-1,1))/D2R,R0]}const set=(p,x)=>{try{ramp?p.linearRampToValueAtTime(x,t):p.setValueAtTime(x,t)}catch(e){}};
   const u=clamp((P[2]-.1)/.05,0,1),directional=u*u*(3-2*u),center=1-directional;
   if(!v.ab){const direct=v.originalMix??0;set(v.sp.gain,directional);set(v.orig.gain,direct+(1-direct)*center)}
   const m=v.m,I=ORB.distInfo(P[2],m.space,m.hyper,P[0],P[1],v.ren),iso=m.iso;
   set(v.dop.delayTime,I.dop);set(v.dAir.frequency,I.air_fc);set(v.dG.gain,iso==="wet"?0:I.g);set(v.oG.gain,v.ab?1:iso==="wet"?0:I.g);set(v.oD.delayTime,v.ab?0:I.dop);v.dx={hs:I.hs_db,ls:I.body_db,pr:I.pres_db};
-  const nr=I.lat>=0?1:0;set(v.ls[nr].gain,I.ild_near);set(v.ls[1-nr].gain,I.ild_far);set(v.pd[1-nr].delayTime,Math.min(.0025,I.itd_x));set(v.pd[nr].delayTime,0);
+  const nr=I.lat>=0?1:0,dk=v.duck||[0,0];set(v.ls[nr].gain,I.ild_near+dk[nr]);set(v.ls[1-nr].gain,I.ild_far+dk[1-nr]);set(v.pd[1-nr].delayTime,Math.min(.0025,I.itd_x));set(v.pd[nr].delayTime,0);
   set(v.wg[0].gain,I.width);set(v.wg[1].gain,I.width);
   const wet=iso==="dir"?0:1,fW=clamp((P[2]-1.5)/4,0,1),wR=wet*(v.wsR==null?1:v.wsR+(Math.max(v.wsR,.25)-v.wsR)*fW);
   const back=Math.max(0,-Math.cos(P[0]*D2R)),hyper=/^v10-/.test(v.ren)?m.hyper-1:0;
@@ -20323,7 +20329,9 @@ function Deck(c,destOf,o={}){
         if(hb<=b||hb<K_.cur.launchBar)continue;const t=D.timeAt(hb);for(const [row,db] of Object.entries(D.sc)){const ch=D.R[row]?.ch;if(ch&&D.R[row].cur)duckAt(ch.duck.gain,t,db,bd()/4)}}D.scNext=b1}}
     if(D.metro&&o.click){const bt=bd()/4;let k=Math.max(D.metroNext||0,Math.ceil(D.barAt(now)*4-1e-6));for(;D.timeAt(k/4)<=hor;k++)o.click(D.timeAt(k/4),k%4===0);D.metroNext=k}
     // solo se mueven las pistas que suenan (y IDLE_MOVE s de cola tras parar), no todas las que sonaron alguna vez
-    if(o.move){const t=now+LA,b=D.barAt(t);for(const r of Object.values(D.R)){if(r.cur)r.lastLaunch=r.cur.launchBar;if(r.ch&&r.lastLaunch!=null&&(r.cur||r.pend||r.idle==null||now-r.idle<IDLE_MOVE))o.move(r.id,t,movPos(ROW[r.id],r.mov,b-(r.lastLaunch??0),D.arrBar(b)))}}};
+    if(o.move){const t=now+LA,b=D.barAt(t),PS={},hot={};for(const r of Object.values(D.R)){if(r.cur)r.lastLaunch=r.cur.launchBar;if(r.ch&&r.lastLaunch!=null&&(r.cur||r.pend||r.idle==null||now-r.idle<IDLE_MOVE)){PS[r.id]=movPos(ROW[r.id],r.mov,b-(r.lastLaunch??0),D.arrBar(b));if(DUCK_ROWS.includes(r.id)&&r.cur&&r.vol>-40)hot[r.id]=duckHot(PS[r.id])}}
+      const dt=Math.max(.005,Math.min(.2,now-(D.dkT??now)));D.dkT=now;D.DK=D.DK||{};
+      for(const id in PS){const tg=[0,1].map(e=>DUCK_DB*Math.max(0,...Object.entries(hot).filter(([k])=>k!==id).map(([,h])=>h[e])));D.DK[id]=duckStep(D.DK[id]||[0,0],tg,dt);o.move(id,t,PS[id],D.DK[id])}}};
   D.arrBar=b=>D.A?b-D.A.b0+(D.A.arr.from||0):null;
   D.state=()=>({bpm:D.bpm,sweep:D.sweep,master:D.master,quant:D.quant,metro:D.metro,rows:Object.fromEntries(Object.values(D.R).map(r=>[r.id,{mov:movCopy(r.mov),vol:r.vol,filt:r.filt,sel:r.sel}]))});
   function emit(type,data){try{D.onEvent&&D.onEvent(type,data)}catch(e){console.warn(e)}}
@@ -20375,6 +20383,20 @@ async function renderArr0(arr,opt={}){const prog=opt.onProgress||(()=>{}),T0=per
   TL.kicks=kicks;
   // modo rápido sin pistas separadas: todas las filas en un solo contexto (mismo resultado que sumar, menos trabajo)
   const shared=opt.fast&&!opt.stems?new OfflineAudioContext(1,N,SR):null;
+  const FRM={},DKE={};
+  if(!opt.fast){const fr=50,nf=Math.ceil(dur*fr)+1;
+    for(const id of ids){const R=TL.rows[id],frames=new Array(nf*3),movs=[{b:-1,val:R.mov0},...R.mov].sort((a,b)=>a.b-b.b);
+      for(let i=0;i<nf;i++){const b=TM.bAt(i/fr);let m=movs[0].val;for(const x of movs)if(x.b<=b+1e-9)m=x.val;
+        let lb=0;for(const s of R.segs)if(s.start<=b+1e-9)lb=s.lb;const P=movPos(ROW[id],m,b-lb,b+(arr.from||0));frames[i*3]=P[0];frames[i*3+1]=P[1];frames[i*3+2]=P[2]}
+      for(const h of HOOKS.frames||[])try{h(arr,id,frames,fr,TM)}catch(e){console.warn(e)}// LAB_DJ_EXPORT: posición final grabada en vivo (sala, mano, REC MOV)
+      FRM[id]=frames}
+    if(arr.duck!==false){const HOT={};for(const id of ids)if(DUCK_ROWS.includes(id)){const R=TL.rows[id],h=[new Float32Array(nf),new Float32Array(nf)];
+        const vev=[{b:-1,val:R.vol},...R.par.filter(p=>p.type==="vol")].sort((a,b)=>a.b-b.b);
+        for(let i=0;i<nf;i++){const b=TM.bAt(i/fr);if(!R.segs.some(s=>s.start<=b&&b<s.end))continue;let v=R.vol;for(const x of vev)if(x.b<=b)v=x.val;if(v<=-40)continue;
+          const w=duckHot([FRM[id][i*3],FRM[id][i*3+1],FRM[id][i*3+2]]);h[0][i]=w[0];h[1][i]=w[1]}HOT[id]=h}
+      for(const id of ids){const d=[new Float32Array(nf),new Float32Array(nf)];let st=[0,0];
+        for(let i=0;i<nf;i++){const tg=[0,1].map(e=>{let m=0;for(const k in HOT)if(k!==id)m=Math.max(m,HOT[k][e][i]);return DUCK_DB*m});st=duckStep(st,tg,1/fr);d[0][i]=st[0];d[1][i]=st[1]}
+        if(d[0].some(x=>x<-.05)||d[1].some(x=>x<-.05))DKE[id]=d}}}
   for(const id of ids){const R=TL.rows[id],oc=shared||new OfflineAudioContext(1,N,SR),ch=mkChain(oc,oc.destination);
     ch.vol.gain.value=R.vol<=-40?0:dB(R.vol+(arr.init?.master||0));const sw0=TL.sweep[0].val;ch.lp.frequency.value=Math.min(lpOf(R.filt),lpOf(sw0));ch.hp.frequency.value=Math.max(hpOf(R.filt),hpOf(sw0));
     let filt=R.filt,sw=sw0;const fev=[...R.par.filter(p=>p.type==="filt").map(p=>({b:p.b,f:p.val})),...TL.sweep.slice(1).map(s=>({b:s.b,s:s.val}))].sort((a,b)=>a.b-b.b);
@@ -20394,14 +20416,11 @@ async function renderArr0(arr,opt={}){const prog=opt.onProgress||(()=>{}),T0=per
     const mono=await oc.startRendering();for(const h of HOOKS.mono||[])try{h(arr,id,mono,TM)}catch(e){console.warn(e)}// LAB_DJ_EXPORT: señal de la fila antes del 8D (envío a BEAT FX)
     if(opt.fast){const m=mono.getChannelData(0);for(let i=0;i<Math.min(N,m.length);i++){L[i]+=m[i]*.7;Rr[i]+=m[i]*.7}if(opt.stems)stems[id]=[m.slice(0,N),m.slice(0,N)];prog(++k/(ids.length+1),"Fila "+ROW[id].n);continue}
     // trayectoria a 50 Hz (la misma función de movimiento que en vivo)
-    const fr=50,nf=Math.ceil(dur*fr)+1,frames=new Array(nf*3);
-    const movs=[{b:-1,val:R.mov0},...R.mov].sort((a,b)=>a.b-b.b);
-    for(let i=0;i<nf;i++){const b=TM.bAt(i/fr);let m=movs[0].val;for(const x of movs)if(x.b<=b+1e-9)m=x.val;
-      let lb=0;for(const s of R.segs)if(s.start<=b+1e-9)lb=s.lb;const P=movPos(ROW[id],m,b-lb,b+(arr.from||0));frames[i*3]=P[0];frames[i*3+1]=P[1];frames[i*3+2]=P[2]}
-    for(const h of HOOKS.frames||[])try{h(arr,id,frames,fr,TM)}catch(e){console.warn(e)}// LAB_DJ_EXPORT: posición final grabada en vivo (sala, mano, REC MOV)
+    const fr=50,frames=FRM[id];
     const sc={dur,seed:1,inten:.7,room:.22,vol_db:0,ren:"v10-a",limiter:false,fileBuf:mono,
       sources:[{kind:"file",label:"DJ · "+ROW[id].n,vol_db:0,depth:.7,speed:.45,distance:.35,seed:1,ren:"v10-a",path:{type:"take",frames,fr,loop:false}}]};
     const b2=await ORB.render(sc);const l=b2.getChannelData(0),r=b2.getChannelData(1),n=Math.min(N,l.length);
+    if(DKE[id]){const d=DKE[id],nf=d[0].length;for(const [e,X] of [[0,l],[1,r]])for(let i=0;i<n;i++){const u=i/SR*fr,k=Math.min(nf-2,u|0),f=u-k,db=d[e][k]*(1-f)+d[e][k+1]*f;if(db<-.05)X[i]*=Math.pow(10,db/20)}}
     for(let i=0;i<n;i++){L[i]+=l[i];Rr[i]+=r[i]}if(opt.onStem)opt.onStem(id,l.subarray(0,n),r.subarray(0,n));else if(opt.stems)stems[id]=[l.slice(0,n),r.slice(0,n)];
     prog(++k/(ids.length+1),"Fila "+ROW[id].n)}
   if(shared){const m=(await shared.startRendering()).getChannelData(0);for(let i=0;i<Math.min(N,m.length);i++){L[i]+=m[i]*.7;Rr[i]+=m[i]*.7}}
@@ -20515,8 +20534,8 @@ function ensureLive(){if(deck&&ctx)return deck;ctx=ORB.ac();
     click:(t,acc)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=acc?1500:1000;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(acc?.16:.09,t+.002);g.gain.exponentialRampToValueAtTime(1e-4,t+.05);o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+.06)},
     // consumo: si la posición no cambió (pista fija o ancla), no se programa nada → los filtros de la voz dejan de recalcularse por muestra.
     // Al volver a moverse, primero se fija el valor que tenía (sin salto) y luego la rampa.
-    move:(id,t,P)=>{const x=RV[id];if(!x||!x.v)return;for(const h of HOOKS.pos)try{P=h(id,P,t)||P}catch(e){}const L=x.v.last;
-      if(L&&Math.abs(L[0]-P[0])<.02&&Math.abs(L[1]-P[1])<.02&&Math.abs(L[2]-P[2])<.002){x.held=true;return}
+    move:(id,t,P,dk)=>{const x=RV[id];if(!x||!x.v)return;for(const h of HOOKS.pos)try{P=h(id,P,t)||P}catch(e){}const L=x.v.last,d0=x.v.duck||[0,0];if(dk)x.v.duck=dk;
+      if(L&&Math.abs(L[0]-P[0])<.02&&Math.abs(L[1]-P[1])<.02&&Math.abs(L[2]-P[2])<.002&&!(dk&&(Math.abs(dk[0]-d0[0])>.1||Math.abs(dk[1]-d0[1])>.1))){x.held=true;return}
       try{if(x.held&&L)vPos(x.v,Math.max(ctx.currentTime,x.lt||0),L,x.v.k||.7,false);x.held=false;vPos(x.v,t,P,x.v.k||.7,L!=null);x.lt=t}catch(e){}}});
   Object.assign(deck,{quant:deck0.quant,metro:deck0.metro});
   for(const r of ROWS){const s=deck0.R[r.id];Object.assign(deck.R[r.id],{mov:s.mov,vol:s.vol,filt:s.filt,sel:s.sel})}
