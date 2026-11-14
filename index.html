@@ -1484,6 +1484,7 @@ body.ldjx-open .ldj-fab{display:none!important}
   color:#c9d1d9;font:600 11px/1.2 UI,system-ui,sans-serif;letter-spacing:.04em;overflow:hidden;
   background:radial-gradient(120% 80% at 50% 0%,#151a20 0%,#0a0c0f 60%,#050607 100%)}
 .ldjx[hidden]{display:none}
+.ldjx,.ldj-iah{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}.ldjx button,.ldj-iah button{touch-action:manipulation}.ldjx input,.ldjx textarea,.ldjx select,.ldj-iah input,.ldj-iah select{-webkit-user-select:auto;user-select:auto}
 .ldjx h3{margin:0;font:800 11px/1 UI,system-ui;letter-spacing:.16em;color:#9aa6b2}
 .ldjx small{font-size:11px;letter-spacing:.1em;color:#9aa6b2}
 /* ---------- botones (botonera cian unificada) ---------- */
@@ -21163,9 +21164,9 @@ function showView(){form.hidden=true;view.hidden=false;view.replaceChildren();ed
   tl=E("div",{class:"ldj-iah-tl"});
   view.append(E("div",{class:"ldj-row-btns ldj-iah-back"},E("button",{type:"button",class:"ldj-btn",title:"Vuelve a elegir beats, duración, energía y estilo para armar otra sesión",onclick:()=>{view.hidden=true;form.hidden=false;paintForm()}},"◂ Volver a elegir / nueva sesión")),storyEl,
     E("div",{class:"ldj-row-btns"},
-      E("button",{type:"button",class:"ldj-btn ldj-iah-play",title:"Toca la sesión en vivo",onclick:()=>{K.lastArr=arr;const d=K.ensureLive();if(d.playing)d.stop();d.playArr(arr);msgEl.textContent="Sonando · "+fmt(dur(arr))+" en total";K.paint()}},"▶ Tocar"),
+      E("button",{type:"button",class:"ldj-btn ldj-iah-play",title:"Toca la sesión en vivo",onclick:()=>{try{LAB_DJ_UI.ROOM.yo=false}catch(e){}K.lastArr=arr;const d=K.ensureLive();if(d.playing)d.stop();d.playArr(arr);msgEl.textContent="Sonando · "+fmt(dur(arr))+" en total";K.paint()}},"▶ Tocar"),
       E("button",{type:"button",class:"ldj-btn",onclick:()=>{K.deck?.stop();K.paint()}},"■ Parar"),
-      E("button",{type:"button",class:"ldj-btn ldj-iah-sala",title:"Cierra esta ventana sin parar la música: ves y mueves los sonidos en el círculo. El botón «IAH DJ» de arriba te trae de vuelta",onclick:()=>{if(!K.deck?.playing){K.lastArr=arr;const d=K.ensureLive();d.playArr(arr)}dlg.close();K.paint()}},"◎ Ir a la sala (sigue sonando)"),
+      E("button",{type:"button",class:"ldj-btn ldj-iah-sala",title:"Cierra esta ventana sin parar la música: ves y mueves los sonidos en el círculo. El botón «IAH DJ» de arriba te trae de vuelta",onclick:()=>{if(!K.deck?.playing){K.lastArr=arr;const d=K.ensureLive();d.playArr(arr)}dlg.close();try{document.activeElement?.blur?.()}catch(e){}K.paint()}},"◎ Ir a la sala (sigue sonando)"),
       E("button",{type:"button",class:"ldj-btn",title:"Misma elección, otra versión",onclick:()=>{seed++;model=compose({...model.params,seed});arr=compile(model);K.lastArr=arr;showView();oir()}},"Otra versión"),
       E("button",{type:"button",class:"ldj-btn",onclick:()=>{view.hidden=true;form.hidden=false;paintForm()}},"Cambiar beats"),
       E("button",{type:"button",class:"ldj-btn",title:"Guarda la sesión como archivo .orbitaldj",onclick:()=>{K.lastArr=arr;K.exportFile(false,"IAH DJ "+model.params.minutes+" min "+model.params.energy)}},"Guardar .orbitaldj"),
@@ -21267,7 +21268,7 @@ const CSS=`.ldj-iah-vivo .ldj-row-btns{align-items:center;gap:6px;margin:3px 0}.
    expone PLAY.escena.disparar(nombre, opciones), se llama con el ancla puesta (bombo, bajo y sub fijos) y cuantizado al compás. Si esa API
    no existe todavía o se llama distinto, no pasa nada: los movimientos por fila de la sesión ya hacen la aceleración, el congelado y la
    explosión. Para adaptar el nombre de la función, cambiar solo ESCENA_API. En el WAV estos eventos no se usan (la Mesa no participa). */
-const ESCENA_API=(cue,t)=>{const P=typeof PLAY!=="undefined"?PLAY:null,f=P&&P.escena&&(P.escena.disparar||P.escena.lanzar||P.escena.fire);if(typeof f==="function")f.call(P.escena,cue,{ancla:true,cuantizar:"compas",t})};
+const ESCENA_API=(cue,t)=>{try{if(typeof LAB_DJ_UI!=="undefined"&&document.body.classList.contains("ldjx-open")&&LAB_DJ_UI.iahEscena){LAB_DJ_UI.iahEscena(cue);return}}catch(e){}const P=typeof PLAY!=="undefined"?PLAY:null,f=P&&P.escena&&(P.escena.disparar||P.escena.lanzar||P.escena.fire);if(typeof f==="function")f.call(P.escena,cue,{ancla:true,cuantizar:"compas",t})};
 try{K.HOOKS?.escena?.push((e,t)=>ESCENA_API(e.cue,t))}catch(e){}
 /* ---------- ENGANCHE DEL OÍDO DE IAH (_src/iah_oido.js, otro agente; no se edita desde aquí) ----------
    Ciclo antes de entregar: generar → escuchar (IAH_OIDO.criticar) → corregir → volver a escuchar (máx. 2 vueltas).
@@ -21560,7 +21561,7 @@ const plate={touch:false,v:0,virt:0,sector:null};
 const isMob=()=>innerWidth<=760;
 const PLAYSV=SV('<path d="M2 4l10 8-10 8z" fill="currentColor"/><path d="M14.5 5h2.8v14h-2.8zM19.7 5h2.8v14h-2.8z" fill="currentColor"/>',"0 0 24 24");
 function build(){
-  root=E("div",{id:"ldjx",class:"ldjx"+(S.zurdo?" zurdo":"")+(S.pro?" pro":""),role:"application","aria-label":"DJ Orbital"});
+  root=E("div",{id:"ldjx",class:"ldjx"+(S.zurdo?" zurdo":"")+(S.pro?" pro":""),role:"application","aria-label":"DJ Orbital"});root.addEventListener("contextmenu",e=>{if(!(e.target.closest&&e.target.closest("input,textarea,select")))e.preventDefault()});// sin menú del navegador al mantener apretado en ninguna parte del DJ
   const mVU=[vu("ldx-vu-m"),vu("ldx-vu-m")];
   /* cabecera: ▶ · BPM · compás · kit · movimiento Libre/IAH · IAH DJ · sesiones · listas · grabar · WAV · volumen general · PRO · ✕ */
   disp=E("header",{class:"ldx-disp"},
@@ -22001,7 +22002,9 @@ const ESCF={girar_der:b=>{ROOM.spin=90},girar_izq:b=>{ROOM.spin=-90},frenar:b=>t
     for(const t of S.tracks){delete t.mov.az0;delete t.mov.el0;delete t.mov.r;applyMov(t)}},acelerar:b=>{ROOM.spin=clamp(ROOM.spin?ROOM.spin*1.6:120,-720,720)},/* tope 2 vueltas por compás (auditoría 8D) */
   incl_der:b=>tween("roll",clamp(ROOM.roll-20,-60,60),1,b),incl_izq:b=>tween("roll",clamp(ROOM.roll+20,-60,60),1,b),
   nivelar:b=>{tween("roll",0,1,b);tween("pitch",0,1,b);tween("elev",0,1,b);toGrp("nivelar")},elevar:b=>tween("elev",clamp(ROOM.elev+20,-40,70),1,b),bajar:b=>tween("elev",clamp(ROOM.elev-20,-40,70),1,b)};
-function escena(id,el){if(id==="frenar"&&S.shift){ROOM.spin=0;plate.v=0;for(let i=TW.length-1;i>=0;i--)if(TW[i].k==="spin")TW.splice(i,1);return}
+// sesión IAH sonando: sus cues de sala (implosión, explosión, frenar…) solo mientras el usuario no haya tomado la sala
+function iahEscena(cue){if(ROOM.yo)return false;escena(cue,null,true);return true}
+function escena(id,el,iah){if(!iah)ROOM.yo=true;if(id==="frenar"&&S.shift){ROOM.spin=0;plate.v=0;for(let i=TW.length-1;i>=0;i--)if(TW[i].k==="spin")TW.splice(i,1);return}
   el=el||root.querySelector('[data-esc="'+id+'"]');
   // las pistas DJ siempre las mueve la sala de la consola (ESCF); los sonidos de la Mesa, si hay, reciben el mismo cue por grupos.js
   schedule("escena",at=>{if(ESCF[id])ESCF[id](at);
@@ -22247,7 +22250,7 @@ function plateInit(){const ring=platter;
   ring.addEventListener("pointerdown",e=>{const g=geo(e);const rin=parseFloat(root.style.getPropertyValue("--rin"))/100||.8;if(e.pointerType==="mouse"&&e.button!==0)return;if(g.rr<rin-.06||g.rr>1.08)return;// solo el anillo de vinilo (incluye el aro punteado); adentro manda la Mesa
     // máximo 2 dedos: uno en un LADO (gira) + uno ARRIBA o ABAJO (sube/baja); un segundo dedo del mismo tipo no hace nada
     const ax=s=>s==="r"||s==="l"?"x":"y";if([...G.values()].some(o=>ax(o.sec)===ax(sectorOf(g.a))))return;
-    e.preventDefault();e.stopPropagation();try{ring.setPointerCapture(e.pointerId)}catch(_){}
+    ROOM.yo=true;e.preventDefault();e.stopPropagation();try{ring.setPointerCapture(e.pointerId)}catch(_){}
     if(!G.size&&S.plato==="compas")GHOST={az:ROOM.az,man:ROOM.man,roll:ROOM.roll,pitch:ROOM.pitch,elev:ROOM.elev,rs:ROOM.rs};
     const me={a:g.a,rr:g.rr,t:performance.now(),sec:sectorOf(g.a),x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY,shift:e.shiftKey||S.shift};G.set(e.pointerId,me);
     plate.touch=true;if(me.sec==="r"||me.sec==="l")plate.v=0;plate.sector=me.sec;paintSec();
@@ -22381,7 +22384,7 @@ function init(){try{
     document.addEventListener("click",e=>{const f=e.target.closest&&e.target.closest(".ldj-fab");if(f){e.preventDefault();e.stopImmediatePropagation();open()}},true);
     addEventListener("keydown",onKey,true);addEventListener("keyup",onKey,true);let lastMob=isMob();addEventListener("resize",()=>{const m=isMob();if(m!==lastMob){lastMob=m;S.bank=0;renderGrid();renderStrips()}closeMenu();requestAnimationFrame(fitSpace)})}catch(e){console.warn("Orbital DJ UI",e)}}
 if(document.readyState==="complete")setTimeout(init,60);else addEventListener("load",()=>setTimeout(init,60));
-return {on:true,_pos:i=>{const t=S.tracks[i];return [basePos(t,nowBar()),posOf(t,nowBar()),t.state.play]},get _rol(){return Object.keys(ROLMAP).length},open,close,S,ROOM,API,setKit,styleSet,get _iso(){return ISO},setBank,setTab,escena,uiState,uiLoad,setMovMode,setPro,padPress,selTrack,setMovFor,startDraw,recMov,launchSlot,switchTo,isMoving,IAHS,
+return {on:true,iahEscena,_pos:i=>{const t=S.tracks[i];return [basePos(t,nowBar()),posOf(t,nowBar()),t.state.play]},get _rol(){return Object.keys(ROLMAP).length},open,close,S,ROOM,API,setKit,styleSet,get _iso(){return ISO},setBank,setTab,escena,uiState,uiLoad,setMovMode,setPro,padPress,selTrack,setMovFor,startDraw,recMov,launchSlot,switchTo,isMoving,IAHS,
   _moving:()=>S.tracks.filter(t=>t.clips.some(Boolean)&&isLive(t)&&isMoving(t)).map(t=>t.id),_br:{mkBr,setBr,brGains,BR_LO,BR_HI},
   _demo(o={}){/* solo para capturas sin audio: marca pistas sonando y en cola, y opcionalmente inclina la sala */const T=S.tracks;
     [[0,0],[1,1],[2,0],[3,0],[4,1],[6,0],[7,1],[8,0],[10,0]].forEach(([c,r])=>{if(T[c]&&T[c].clips[r])T[c].state.play=r});[[5,0],[9,1]].forEach(([c,r])=>{if(T[c]&&T[c].clips[r])T[c].state.queue=r});
