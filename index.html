@@ -20247,7 +20247,7 @@ function Deck(c,destOf,o={}){
   D.setFilt=(id,x)=>{const r=D.R[id];r.filt=x;if(r.ch)chFilt(r.ch,x,D.sweep,c.currentTime);emit("param",{row:id,type:"filt",val:x})};
   D.setSweep=x=>{D.sweep=x;for(const r of Object.values(D.R))if(r.ch)chFilt(r.ch,r.filt,x,c.currentTime);emit("param",{type:"sweep",val:x})};
   D.setMaster=db=>{D.master=Math.min(0,db);for(const r of Object.values(D.R))if(r.ch)chVol(r.ch,r.vol,D.master,c.currentTime);emit("param",{type:"master",val:D.master})};
-  D.setMov=(id,mov)=>{D.R[id].mov=movCopy(mov);emit("param",{row:id,type:"mov",val:movCopy(mov)})};
+  D.setMov=(id,mov,own)=>{if(own!==undefined)D.R[id].own=!!own;D.R[id].mov=movCopy(mov);emit("param",{row:id,type:"mov",val:movCopy(mov)})};
   D.drop=()=>{if(!D.playing)return;D.dropAt=D.nextBar()||1;emit("ui")};
   function doDrop(bar){const t=D.timeAt(bar),t2=D.timeAt(bar+1);for(const r of Object.values(D.R)){if(!r.ch)continue;const g=r.ch.drop.gain;g.setValueAtTime(1,t-FO);g.linearRampToValueAtTime(0,t);g.setValueAtTime(0,t2);g.linearRampToValueAtTime(1,t2+FI)}emit("exec",{drop:true,bar})}
   D.setBpm=bpm=>{bpm=clamp(Math.round(bpm*10)/10,70,180);if(bpm===D.bpm)return;
@@ -20274,10 +20274,10 @@ function Deck(c,destOf,o={}){
     for(const T of A.tempo||[])if(!T.done&&!D.pendBpm&&D.timeAt(A.b0+T.b)<=now+1.2){T.done=1;if(T.bpm!==D.bpm)D.pendBpm={bpm:T.bpm,bar:A.b0+T.b}}
     while(A.i<ev.length){const e=ev[A.i],t=D.timeAt(A.b0+e.b),audio=e.type==="launch"||e.type==="stop"||e.type==="drop";
       if(t>(audio?hor:now+LA))break;A.i++;
-      if(e.type==="launch"||e.type==="stop"){const r=D.R[e.row];r.pend={pad:e.type==="launch"?e.pad:null,bar:A.b0+Math.round(e.b*4)/4};if(e.mov)r.mov=movCopy(e.mov);if(e.pad)r.sel=e.pad}
+      if(e.type==="launch"||e.type==="stop"){const r=D.R[e.row];r.pend={pad:e.type==="launch"?e.pad:null,bar:A.b0+Math.round(e.b*4)/4};if(e.mov&&!r.own)r.mov=Object.assign(movCopy(e.mov),{src:"iah"});if(e.pad)r.sel=e.pad}
       else if(e.type==="drop")D.dropAt=A.b0+Math.round(e.b*4)/4;
       else if(e.type==="vol")D.setVol(e.row,e.val);else if(e.type==="filt")D.setFilt(e.row,e.val);else if(e.type==="sweep")D.setSweep(e.val);
-      else if(e.type==="mov")D.R[e.row].mov=movCopy(e.val);else if(e.type==="say")emit("msg",e.text)
+      else if(e.type==="mov"){if(!D.R[e.row].own)D.R[e.row].mov=Object.assign(movCopy(e.val),{src:"iah"})}else if(e.type==="say")emit("msg",e.text)
       else if(e.type==="escena")for(const h of HOOKS.escena)try{h(e,t)}catch(err){console.warn(err)}}// cues de escena 8D (Mesa): solo en vivo; ver LAB_DJ_IAH
     const end=A.b0+(A.arr.len||0);
     if(A.i>=ev.length&&!A.closing&&D.timeAt(end)<=hor){A.closing=true;for(const r of Object.values(D.R))if(r.cur&&(!r.cur.endBar||r.cur.endBar>end))r.pend={pad:null,bar:end}}
@@ -21165,6 +21165,7 @@ function showView(){form.hidden=true;view.hidden=false;view.replaceChildren();ed
     E("div",{class:"ldj-row-btns"},
       E("button",{type:"button",class:"ldj-btn ldj-iah-play",title:"Toca la sesión en vivo",onclick:()=>{K.lastArr=arr;const d=K.ensureLive();if(d.playing)d.stop();d.playArr(arr);msgEl.textContent="Sonando · "+fmt(dur(arr))+" en total";K.paint()}},"▶ Tocar"),
       E("button",{type:"button",class:"ldj-btn",onclick:()=>{K.deck?.stop();K.paint()}},"■ Parar"),
+      E("button",{type:"button",class:"ldj-btn ldj-iah-sala",title:"Cierra esta ventana sin parar la música: ves y mueves los sonidos en el círculo. El botón «IAH DJ» de arriba te trae de vuelta",onclick:()=>{if(!K.deck?.playing){K.lastArr=arr;const d=K.ensureLive();d.playArr(arr)}dlg.close();K.paint()}},"◎ Ir a la sala (sigue sonando)"),
       E("button",{type:"button",class:"ldj-btn",title:"Misma elección, otra versión",onclick:()=>{seed++;model=compose({...model.params,seed});arr=compile(model);K.lastArr=arr;showView();oir()}},"Otra versión"),
       E("button",{type:"button",class:"ldj-btn",onclick:()=>{view.hidden=true;form.hidden=false;paintForm()}},"Cambiar beats"),
       E("button",{type:"button",class:"ldj-btn",title:"Guarda la sesión como archivo .orbitaldj",onclick:()=>{K.lastArr=arr;K.exportFile(false,"IAH DJ "+model.params.minutes+" min "+model.params.energy)}},"Guardar .orbitaldj"),
@@ -21220,13 +21221,14 @@ async function wav(){K.lastArr=arr;msgEl.textContent="Preparo el WAV con el moto
   try{const r=await K.renderArr(arr,{onProgress:(u)=>msgEl.textContent="Preparo el WAV con el motor 8D… "+Math.round(u*100)+" %"});
     EXP.guardar(EXP.wav(r.buf,"pcm24"),"iah_dj_"+model.params.energy+"_"+model.params.minutes+"min.wav");msgEl.textContent="WAV listo · "+fmt(r.buf.duration)}catch(e){console.warn(e);msgEl.textContent="No pude preparar el WAV, prueba otra vez."}}
 async function openIah(){await ready;if(!pick.size)for(const id of (KITS.values().next().value?.pads||[]))pick.add(id);
-  view.hidden=true;form.hidden=false;paintForm();dlg.showModal()}// siempre abre en «elegir»; la última sesión queda a un toque («Ver la última sesión»)
+  if(K.deck?.playing&&model&&view.childElementCount){form.hidden=true;view.hidden=false;paintVivo?.()}else{view.hidden=true;form.hidden=false;paintForm()}dlg.showModal()}// si la sesión suena, vuelve directo a ella// siempre abre en «elegir»; la última sesión queda a un toque («Ver la última sesión»)
 let ready=Promise.resolve();
 function init(){if(!K.panel){setTimeout(init,50);return}try{build();ready=loadCatalog();K.HOOKS?.arr.push(a=>{if(a?.iah)rehidratar(a.iah)});if(K.lastArr?.iah)rehidratar(K.lastArr.iah)}catch(e){console.warn("IAH DJ",e)}}
 if(document.readyState==="complete")setTimeout(init,30);else addEventListener("load",()=>setTimeout(init,30));
 
 const CSS=`.ldj-iah-vivo .ldj-row-btns{align-items:center;gap:6px;margin:3px 0}.ldj-iah-num{width:56px}.ldj-iah-corte{font-size:12px;color:#c9f6ff}.ldj-iah-cut{border-color:#ffd36e;color:#ffe3a0}.ldj-iah-vivo{padding:8px;border:1px solid #9ff3ff55;border-radius:8px;margin:6px 0}.ldj-iah-vivo-lab{font-weight:700;color:#c9f6ff;font-size:12px;letter-spacing:.04em}.ldj-iah-vivo [aria-pressed=true]{background:#9ff3ff;color:#06121a;border-color:#9ff3ff}
 .ldj-iahbtn{border-color:#9ff3ff88;color:#c9f6ff;font-weight:700}
+.ldj-iah-sala{border-color:#9ff3ff;background:#9ff3ff22;color:#e6fdff;font-weight:700}
 .ldj-dlg.ldj-iah{width:min(1180px,96vw);max-width:96vw}
 .ldj-iah-head{display:flex;align-items:center;gap:12px;margin-bottom:6px}.ldj-iah-head b{font-size:20px;background:linear-gradient(90deg,#9ff3ff,#ffd38a);-webkit-background-clip:text;background-clip:text;color:transparent}
 .ldj-iah-head span{color:#a9bdd1;font-size:14px}.ldj-iah-head .ldj-close{margin-left:auto}
@@ -21517,7 +21519,11 @@ function basePos(t,b,ts){if(t.man)return t.man;const d=K.deck,R=d&&d.R[t.eng];
   const mov=R?R.mov:movOf(t);const ll=R&&R.lastLaunch!=null?R.lastLaunch:0;
   if(t.rec&&t.rec.pts&&t.rec.pts.length>1){const n=t.rec.bars,ref=t.rec.b0??ll,u=((((b-ref)%n)+n)%n)/n,pts=t.rec.pts,i=u*(pts.length-1),i0=Math.floor(i),f=i-i0,a=pts[i0],c=pts[Math.min(pts.length-1,i0+1)];
     let da=c[0]-a[0];if(da>180)da-=360;if(da<-180)da+=360;return [a[0]+da*f,a[1]+(c[1]-a[1])*f,a[2]+(c[2]-a[2])*f]}
-  const row=K.ROW[t.eng]||K.ROW[t.role]||{r:.8};try{return K.movPos(row,mov,b-ll)}catch(e){return [0,0,.8]}}
+  const row=K.ROW[t.eng]||K.ROW[t.role]||{r:.8};
+  // sesión IAH: sus distancias vienen del DJ clásico (0.5–0.9 m, dentro de la cabeza) → se llevan a la sala (1.25–2 m) para verlas y no saturar
+  if(mov&&mov.src==="iah"){if(mov.k==="fija"&&mov.az0==null&&/^(bombo|bajo)$/.test(t.eng)){const A=anchorPos({rol:t.eng==="bajo"?"bajo":""});return [A.az0,A.el0,A.r]}
+    let P;try{P=K.movPos(row,mov,b-ll)}catch(e){return [0,0,1.5]}return [P[0],P[1],Math.min(2.2,Math.max(1.15,1.25+(P[2]-.5)*1.25))]}
+  try{return K.movPos(row,mov,b-ll)}catch(e){return [0,0,.8]}}
 const FROZ={};
 // arrastrando (t.man): la mano ya está en coordenadas finales, con la sala aplicada → no se vuelve a rotar
 function posOf(t,b,ts){if(t.man)return FROZ[t.id]=t.man;if(ROOM.frozen&&FROZ[t.id])return FROZ[t.id];const P=roomXform(basePos(t,b,ts),t,b);FROZ[t.id]=P;return P}
@@ -21929,7 +21935,9 @@ function applyEq(t){const ch=chainFor(t);if(!ch)return;const n=ch.c.currentTime;
 function applyVol(t){const d=K.deck;if(!d||!d.R[t.eng])return;try{d.setVol(t.eng,Math.min(0,trackDb(t)))}catch(e){}}
 function applyFilt(t){const d=K.deck;if(!d||!d.R[t.eng])return;try{d.setFilt(t.eng,t.filt)}catch(e){}}
 function applyAll(){for(const t of S.tracks)applyVol(t)}
-function applyMov(t){const d=K.deck;if(d&&d.R[t.eng])try{d.setMov(t.eng,movOf(t))}catch(e){}save()}
+// own: el usuario tomó este sonido → la sesión IAH ya no le cambia el movimiento
+const ownOf=t=>!!(t.pinned||t.rec||t.fling||(S.movMode==="iah"&&t.ctl==="dj"));
+function applyMov(t){const d=K.deck;if(d&&d.R[t.eng])try{d.setMov(t.eng,movOf(t),ownOf(t))}catch(e){}save()}
 function applyFx(){const d=K.deck;if(!d)return;const bd=240/d.bpm/4,n=d.c.currentTime,on=S.fx.on,dep=S.fx.depth,ty=S.fx.type;
   const F=fxBus(d.c),act=on&&ty!=="filter";
   for(const R of Object.values(d.R)){const q=R.ch&&R.ch.eq;if(!q)continue;q.send.gain.setTargetAtTime(act?1:0,n,.01)}
@@ -22136,7 +22144,7 @@ function drawOv(){const g=ov.getContext("2d"),dpr=ov.width/Math.max(1,ov.getBoun
       if(prev){const h=clamp(P[1]/40,-1,1);g.strokeStyle=h>=0?`rgba(63,230,238,${(.45+.55*h)*al})`:`rgba(255,179,71,${(.45-.55*h)*al})`;g.lineWidth=2+3*Math.abs(h);if(R===GHOST)g.setLineDash([4,4]);g.beginPath();g.moveTo(prev[0],prev[1]);g.lineTo(q[0],q[1]);g.stroke();g.setLineDash([])}prev=q}}}
   if(DRAW&&DRAW.scr&&DRAW.scr.length>1){g.strokeStyle=DRAW.t.color;g.lineWidth=3;g.setLineDash([6,4]);g.beginPath();DRAW.scr.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));g.stroke();g.setLineDash([])}
   DOTS.length=0;
-  for(const t of S.tracks){if(t.state.play<0&&t.state.queue<0&&!t.man&&!S.sel.has(t.id))continue;if(!t.clips.some(Boolean))continue;
+  for(const t of S.tracks){if(t.state.play<0&&t.state.queue<0&&!t.state.ext&&!t.man&&!S.sel.has(t.id))continue;if(!t.clips.some(Boolean)&&!t.state.ext)continue;
     const P=posOf(t,b),q=projP(P),h=clamp(P[1]/60,-1,1),rad=(S.sel.has(t.id)?11:9)*(1+.45*h);
     if(GHOST&&!isAncla(t)){const Pg=roomXform(basePos(t,b),t,b,GHOST),qg=projP(Pg);g.strokeStyle=t.color;g.globalAlpha=.6;g.setLineDash([3,3]);g.beginPath();g.arc(qg[0],qg[1],rad,0,Math.PI*2);g.stroke();g.setLineDash([]);g.globalAlpha=1}
     g.shadowColor=t.color;g.shadowBlur=10+10*Math.max(0,h);g.fillStyle=t.color;g.globalAlpha=t.state.play>=0?.55+.45*(1+h)/2:.35;g.beginPath();g.arc(q[0],q[1],rad,0,Math.PI*2);g.fill();g.shadowBlur=0;g.globalAlpha=1;
@@ -22157,7 +22165,7 @@ function stillAt(t,Pf){const B=finalToBase(t,Pf||posOf(t,nowBar()));t.fling=null
 const snapOf=t=>({mov:K.movCopy(t.mov),fling:t.fling?Object.assign({},t.fling):null,rec:t.rec||null});
 // doble toque: en IAH, devuelve el sonido a IAH (o lo toma); en Libre, alterna entre quieto y el movimiento que tenía
 function dblTap(t){const sn=t._snap||snapOf(t);const was=!!(sn.fling||sn.rec||(sn.mov&&sn.mov.k!=="fija"));
-  if(S.movMode==="iah"){if(t.ctl==="dj"){t.ctl="iah";t.pinned=false;t.fling=null;t.rec=null;IAHS.force=true;K.toast("«"+t.name+"» vuelve a IAH")}else{t.ctl="dj";stillAt(t);K.toast("«"+t.name+"» es tuya: quieta")}}
+  if(S.movMode==="iah"){if(t.ctl==="dj"){t.ctl="iah";t.pinned=false;t.fling=null;t.rec=null;IAHS.force=true;{const R=K.deck&&K.deck.R[t.eng];if(R)R.own=false}K.toast("«"+t.name+"» vuelve a IAH")}else{t.ctl="dj";stillAt(t);K.toast("«"+t.name+"» es tuya: quieta")}}
   else if(was){t.lastMov=sn;stillAt(t);K.toast("«"+t.name+"» quieta")}
   else if(t.lastMov){const L=t.lastMov;t.lastMov=null;const B=finalToBase(t,posOf(t,nowBar()));
     if(L.fling)t.fling=Object.assign({},L.fling,{az0:B[0],t0:performance.now()/1000});else if(L.rec)t.rec=L.rec;else{t.mov=K.movCopy(L.mov);if(t.mov.k==="orbita")contOrbit(t,nowBar(),B[0])}
@@ -22301,10 +22309,10 @@ const NOTE={Do:"C",Re:"D",Mi:"E",Fa:"F",Sol:"G",La:"A",Si:"B"};
 function keyShort(k){const m=/^(Do|Re|Mi|Fa|Sol|La|Si)(♭|#|♯)?\s*(menor|mayor)?/i.exec(k||"");if(!m)return k||"—";return NOTE[m[1]]+(m[2]?(m[2]==="♭"?"b":"#"):"")+(m[3]==="menor"?"m":"")}
 // estado de los pads desde el motor: el pad que suena en cada fila del motor se pinta en la pista que lo tiene
 function syncPads(){const d=K.deck;if(!d)return;const at={};for(const t of S.tracks)t.clips.forEach((id,r)=>{if(id&&!at[id])at[id]=[t,r]});
-  const play={},queue={};for(const R of Object.values(d.R)){const own=engTrack(R.id);
-    if(R.cur){const w=own&&own.clips.includes(R.cur.pad)?[own,own.clips.indexOf(R.cur.pad)]:at[R.cur.pad];if(w)play[w[0].id]=w[1]}
+  const play={},queue={},ext={};for(const R of Object.values(d.R)){const own=engTrack(R.id);
+    if(R.cur){const w=own&&own.clips.includes(R.cur.pad)?[own,own.clips.indexOf(R.cur.pad)]:at[R.cur.pad];if(w)play[w[0].id]=w[1];else if(own)ext[own.id]=1}// ext: suena un sonido que no está en la grilla (sesión IAH) → igual se ve en el círculo
     if(R.pend&&R.pend.pad){const w=own&&own.clips.includes(R.pend.pad)?[own,own.clips.indexOf(R.pend.pad)]:at[R.pend.pad];if(w)queue[w[0].id]=w[1]}}
-  let ch=false;for(const t of S.tracks){const p=play[t.id]??-1,q=queue[t.id]??-1;if(p!==t.state.play||q!==t.state.queue){t.state.play=p;t.state.queue=q;ch=true}}if(ch)paintPads()}
+  let ch=false;for(const t of S.tracks){const p=play[t.id]??-1,q=queue[t.id]??-1;t.state.ext=!!ext[t.id];if(p!==t.state.play||q!==t.state.queue){t.state.play=p;t.state.queue=q;ch=true}}if(ch)paintPads()}
 let raf=0,tick=0;
 // un solo bucle liviano: la cola y la sala en cada cuadro; lo visual a 30 fps; vúmetros a 10 fps; nada si la pestaña está oculta
 let lastVis=0,EL=null,lastTxt={},lastBeat=-1,lastPulse=-1;
