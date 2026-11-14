@@ -20043,7 +20043,7 @@ function speedTip(k,s){const c=CYC[k]?.[s];if(c==null)return "";
   if(k==="ping")return ["a corchea","a negra","a blanca","cada compás","cada 4 compases"][s];
   if(k==="mesa")return "dura "+c+(c===1?" compás":" compases");
   return "una vuelta cada "+c+(c===1?" compás":" compases")}
-function movPos(row,mov,b){const r=mov.r||row.r,a0=mov.az0||0,s=mov.s??1;
+function movPos(row,mov,b,ab){if(mov.k==="tramo")return tramoPos(mov,ab);const r=mov.r||row.r,a0=mov.az0||0,s=mov.s??1;
   switch(mov.k){
     case "orbita":{const ph=b/CYC.orbita[s];return [a0+360*ph*(mov.dir||1),(mov.el0||0)+8*Math.sin(TAU*ph),r]}
     case "ping":{const ph=b/CYC.ping[s];return [90*Math.tanh(4*Math.sin(TAU*ph))/Math.tanh(4),0,r]}
@@ -20051,6 +20051,15 @@ function movPos(row,mov,b){const r=mov.r||row.r,a0=mov.az0||0,s=mov.s??1;
     case "subebaja":{const c=CYC.subebaja[s];return [a0+35*Math.sin(TAU*b/(2*c)),10+48*Math.sin(TAU*b/c),r]}
     case "mesa":return mesaPos(row,mov,b);
     default:return [a0,mov.el0||0,r]}}
+// «tramo» (guion espacial de IAH): fotogramas [compás, az, el, r, curva] en compases absolutos del arreglo (az sin envolver); fuera del arreglo queda en el último
+const TRAMOS={};
+function tramoPos(mov,ab){const F=mov.kf||TRAMOS[mov.ref];if(!F||!F.length)return [0,0,1.5];const W=a=>((a%360)+540)%360-180;
+  if(ab==null||ab>=F[F.length-1][0]){const f=F[F.length-1];return [W(f[1]),f[2],f[3]]}
+  if(ab<=F[0][0])return [W(F[0][1]),F[0][2],F[0][3]];
+  let lo=0,hi=F.length-1;while(hi-lo>1){const m=(lo+hi)>>1;if(F[m][0]<=ab)lo=m;else hi=m}
+  const a=F[lo],z=F[hi],d=z[0]-a[0];let u=d>1e-6?(ab-a[0])/d:1;const e=z[4]||0;
+  u=e===1?.5-.5*Math.cos(Math.PI*u):e===2?u*u:e===3?1-(1-u)*(1-u):u;
+  return [W(a[1]+(z[1]-a[1])*u),a[2]+(z[2]-a[2])*u,a[3]+(z[3]-a[3])*u]}
 // movimiento de Mesa (presets, dibujo, cue): se evalúa con ORB.PATHS, ajustado para durar N compases
 function mesaPos(row,mov,b){const p=mov.path;if(!p)return [0,0,row.r];const N=CYC.mesa[mov.s??2],ph=b/N,nat=mov.nat||4;
   const R=p.type==="drawn"?(p.R0||mov.r||row.r):(mov.r||row.r);const pp=Object.assign({az0:0,el:0,dir:1,swing:10},p);
@@ -20263,7 +20272,7 @@ function Deck(c,destOf,o={}){
     for(const r of Object.values(D.R))if(r.cur&&r.cur.endBar==null&&!(r.pend&&r.pend.bar<=pb.bar))exec(r,r.cur.pad,pb.bar)
     emit("ui")}
   // arreglo (grabado, guion o «Armar por mí»): eventos en compases relativos a A.b0
-  D.playArr=(arr)=>{for(const h of HOOKS.play)try{h(arr)}catch(e){console.warn(e)}for(const r of Object.values(D.R)){if(r.cur||r.pend)r.pend=null}
+  D.playArr=(arr)=>{if(arr.tramos)Object.assign(TRAMOS,arr.tramos);for(const h of HOOKS.play)try{h(arr)}catch(e){console.warn(e)}for(const r of Object.values(D.R)){if(r.cur||r.pend)r.pend=null}
     D.sc=arr.sc===false?null:(arr.sc||SC_DEF);D.mk=arr.club===false?1:dB(arr.makeup_db??4);D.scNext=null;if(!o.offline)CLUB=arr.club===true;
     if(!D.playing){D.bpm=arr.bpm||D.bpm;D.start()}else if(arr.bpm&&arr.bpm!==D.bpm){D.setBpm(arr.bpm)}
     const b0=D.playing&&D.seg.t<c.currentTime?D.nextBar():0;
@@ -20303,7 +20312,8 @@ function Deck(c,destOf,o={}){
         if(hb<=b||hb<K_.cur.launchBar)continue;const t=D.timeAt(hb);for(const [row,db] of Object.entries(D.sc)){const ch=D.R[row]?.ch;if(ch&&D.R[row].cur)duckAt(ch.duck.gain,t,db,bd()/4)}}D.scNext=b1}}
     if(D.metro&&o.click){const bt=bd()/4;let k=Math.max(D.metroNext||0,Math.ceil(D.barAt(now)*4-1e-6));for(;D.timeAt(k/4)<=hor;k++)o.click(D.timeAt(k/4),k%4===0);D.metroNext=k}
     // solo se mueven las pistas que suenan (y IDLE_MOVE s de cola tras parar), no todas las que sonaron alguna vez
-    if(o.move){const t=now+LA,b=D.barAt(t);for(const r of Object.values(D.R)){if(r.cur)r.lastLaunch=r.cur.launchBar;if(r.ch&&r.lastLaunch!=null&&(r.cur||r.pend||r.idle==null||now-r.idle<IDLE_MOVE))o.move(r.id,t,movPos(ROW[r.id],r.mov,b-(r.lastLaunch??0)))}}};
+    if(o.move){const t=now+LA,b=D.barAt(t);for(const r of Object.values(D.R)){if(r.cur)r.lastLaunch=r.cur.launchBar;if(r.ch&&r.lastLaunch!=null&&(r.cur||r.pend||r.idle==null||now-r.idle<IDLE_MOVE))o.move(r.id,t,movPos(ROW[r.id],r.mov,b-(r.lastLaunch??0),D.arrBar(b)))}}};
+  D.arrBar=b=>D.A?b-D.A.b0+(D.A.arr.from||0):null;
   D.state=()=>({bpm:D.bpm,sweep:D.sweep,master:D.master,quant:D.quant,metro:D.metro,rows:Object.fromEntries(Object.values(D.R).map(r=>[r.id,{mov:movCopy(r.mov),vol:r.vol,filt:r.filt,sel:r.sel}]))});
   function emit(type,data){try{D.onEvent&&D.onEvent(type,data)}catch(e){console.warn(e)}}
   return D}
@@ -20317,7 +20327,7 @@ function tmap(arr){const chg=[{b:0,bpm:arr.bpm},...arr.ev.filter(e=>e.type==="bp
   for(const c of chg){const p=S[S.length-1];if(p&&c.b===p.b){p.bpm=c.bpm;p.bd=240/c.bpm;continue}if(p&&c.bpm===p.bpm)continue;S.push({b:c.b,t:p?p.t+(c.b-p.b)*p.bd:0,bpm:c.bpm,bd:240/c.bpm})}
   const seg=b=>{let s=S[0];for(const x of S)if(x.b<=b+1e-9)s=x;return s},segT=t=>{let s=S[0];for(const x of S)if(x.t<=t+1e-9)s=x;return s};
   return {S,tAt:b=>{const s=seg(b);return s.t+(b-s.b)*s.bd},bAt:t=>{const s=segT(t);return s.b+(t-s.t)/s.bd},bdAt:b=>seg(b).bd,bpmAt:b=>seg(b).bpm,bpms:[...new Set(S.map(s=>s.bpm))]}}
-function timeline(arr){const bd=240/arr.bpm,rows={},TM=tmap(arr);const T=id=>rows[id]||(rows[id]={segs:[],par:[],mov:[]});
+function timeline(arr){if(arr.tramos)Object.assign(TRAMOS,arr.tramos);const bd=240/arr.bpm,rows={},TM=tmap(arr);const T=id=>rows[id]||(rows[id]={segs:[],par:[],mov:[]});
   for(const [id,st] of Object.entries(arr.init?.rows||{})){const R=T(id);R.vol=st.vol??ROW[id].vol;R.filt=st.filt??0;R.mov0=st.mov?movCopy(st.mov):movCopy(ROW[id].def);
     if(st.pad)R.segs.push({pad:st.pad,start:0,lb:st.lb??0,end:null})}
   const drops=[],sweep=[{b:0,val:arr.init?.sweep||0}];
@@ -20376,7 +20386,7 @@ async function renderArr0(arr,opt={}){const prog=opt.onProgress||(()=>{}),T0=per
     const fr=50,nf=Math.ceil(dur*fr)+1,frames=new Array(nf*3);
     const movs=[{b:-1,val:R.mov0},...R.mov].sort((a,b)=>a.b-b.b);
     for(let i=0;i<nf;i++){const b=TM.bAt(i/fr);let m=movs[0].val;for(const x of movs)if(x.b<=b+1e-9)m=x.val;
-      let lb=0;for(const s of R.segs)if(s.start<=b+1e-9)lb=s.lb;const P=movPos(ROW[id],m,b-lb);frames[i*3]=P[0];frames[i*3+1]=P[1];frames[i*3+2]=P[2]}
+      let lb=0;for(const s of R.segs)if(s.start<=b+1e-9)lb=s.lb;const P=movPos(ROW[id],m,b-lb,b+(arr.from||0));frames[i*3]=P[0];frames[i*3+1]=P[1];frames[i*3+2]=P[2]}
     for(const h of HOOKS.frames||[])try{h(arr,id,frames,fr,TM)}catch(e){console.warn(e)}// LAB_DJ_EXPORT: posición final grabada en vivo (sala, mano, REC MOV)
     const sc={dur,seed:1,inten:.7,room:.22,vol_db:0,ren:"v10-a",limiter:false,fileBuf:mono,
       sources:[{kind:"file",label:"DJ · "+ROW[id].n,vol_db:0,depth:.7,speed:.45,distance:.35,seed:1,ren:"v10-a",path:{type:"take",frames,fr,loop:false}}]};
@@ -20787,7 +20797,7 @@ const _t={
   demoArr,renderArr,timeline,movPos,stretch,kitDemoArr,setKit,loadKits,get kits(){return KITS},get kit(){return KIT}};
 return {on:true,open,close,get deck(){return deck},demoArr,renderArr,PAD,ROWS,_t,sessionState,loadState,
   // piezas internas para módulos de Orbital DJ (IAH DJ, selector de kits): lectura y llamadas, sin copiar código
-  _k:{HOOKS,SYN,KH,BAKE,SC_DEF,kicksOf,clubMaster,clubBake,bandsOf,lufsOf,meterOf,PAD,PADS_OF,ROWS,ROW,CAT,CYC,MOVS,SPEED,ICO,BASE_BPM,movPos,movCopy,speedTip,bufFor,bufNow,libPad,renderArr,timeline,tmap,demoArr,ensureLive,padNum,E,say,toast,paint,exportFile,sessionState,loadState,
+  _k:{TRAMOS,tramoPos,HOOKS,SYN,KH,BAKE,SC_DEF,kicksOf,clubMaster,clubBake,bandsOf,lufsOf,meterOf,PAD,PADS_OF,ROWS,ROW,CAT,CYC,MOVS,SPEED,ICO,BASE_BPM,movPos,movCopy,speedTip,bufFor,bufNow,libPad,renderArr,timeline,tmap,demoArr,ensureLive,padNum,E,say,toast,paint,exportFile,sessionState,loadState,
     get deck(){return deck},get lastArr(){return lastArr},set lastArr(a){lastArr=a},get panel(){return panel}}}})();
 /* ==== LAB_DJ_FIN ==== */
 
@@ -20847,7 +20857,7 @@ const SYNLOG={};// sintéticos usados por la sesión que se está armando → M.
 function synPad(kind,bars,extra){const id="syn_"+kind+"_"+bars+"_"+Object.values(extra||{}).join("_").replace(/[^\w]/g,"");SYNLOG[id]={kind,bars,extra:extra||{}};
   if(!PAD[id])PAD[id]={id,n:{build:"Subida y redoble",impact:"Impacto y crash",revcrash:"Crash al revés",roll:"Loop roll",fill:{caja:"Fill de caja",toms:"Fill de toms",aire:"Barrido corto"}[extra?.t]||"Fill",crash:"Crash"}[kind]||kind,row:extra?.row||"fx",bars,kind:"shot",synth:kind,...(extra||{}),cat:true,syn:true};return id}
 // al abrir una sesión guardada: los sonidos sintéticos (subidas, impactos, fills) y las partes del compositor vuelven a existir
-function rehidratar(M){if(!M||!M.lanes)return;for(const d of Object.values(M.syn||{}))synPad(d.kind,d.bars,d.extra);
+function rehidratar(M){if(!M||!M.lanes)return;if(M.guion&&M.guion.kf)Object.assign(K.TRAMOS,M.guion.kf);for(const d of Object.values(M.syn||{}))synPad(d.kind,d.bars,d.extra);
   const falta=Object.values(M.lanes).some(L=>L.some(g=>/^comp_/.test(g.pad)&&!PAD[g.pad]));
   if(falta&&M.comp)compositor(M.comp)}
 function compose(o){for(const k of Object.keys(SYNLOG))delete SYNLOG[k];
@@ -21004,19 +21014,123 @@ function compose(o){for(const k of Object.keys(SYNLOG))delete SYNLOG[k];
   const sections=plan.map(p=>({b:p.b,len:p.len,kind:p.kind==="drop2"?"drop":p.kind,name:SEC[p.kind],kit:p.kit.n,bpm:p.bpm,key:p.kit.key||"",cam:ES?ES.camStr(p.kit.cam):""}));
   const M={v:2,params:{pads:sel,minutes:o.minutes,energy:o.energy,seed:o.seed,genre:G.id,final:o.final==="club"?"club":"referencia"},genre:{id:G.id,n:G.n},bpm0,len:N,sections,lanes,sweeps,drops,says,tempo,vols,filts,movs,escenas,sc,
     kits:kits.map(k=>({id:k.id,n:k.n,bpm:k.bpm,key:k.key,cam:ES?ES.camStr(k.cam):""})),lufs:o.final==="club"?(R0.lufsClub??-8.4):(R0.lufs??-13),final:o.final==="club"?"club":"referencia",syn:{...SYNLOG},comp:comp.length?compArg:null};
-  if(typeof IAH_COREO!=="undefined"&&o.coreografia!==false&&(o.coreografia===true||IAH_COREO.activo("dj")))IAH_COREO.dj(M);/* ENGANCHE IAH_COREO */M.story=narrate(M,story);return M}
+  if(o.guion!==false)guion(M,plan,rnd);if(!M.guion&&typeof IAH_COREO!=="undefined"&&o.coreografia!==false&&(o.coreografia===true||IAH_COREO.activo("dj")))IAH_COREO.dj(M);/* ENGANCHE IAH_COREO */M.story=narrate(M,story);return M}
+/* ---------- Guion espacial (14 nov): IAH dirige el espacio como un DJ, no como una juguera ----------
+   Cada sonido tiene su lugar en el escenario (bombo y bajo al frente y abajo, ritmo a la derecha, melodía a la izquierda,
+   atmósfera atrás, efectos arriba). Por frase de 8 compases IAH elige 1 protagonista (2 si conviven en llamada y respuesta,
+   3 solo en el éxtasis del drop 2, y lo dice): solo ese se mueve, y se mueve con un gesto escrito a tempo
+   (órbita, cometa que pasa por la oreja, espiral hacia ti, salto, vuelo). La velocidad sigue a la canción: media en el respiro,
+   doble en el éxtasis. Los faders acompañan cada gesto: el sonido aparece de la nada, crece al pasar por tu oreja y se apaga,
+   y al acercarse se compensa la ley de distancia para que el golpe se sienta sin saturar. Bombo y bajo también salen de su
+   lugar, de sorpresa y pocas veces: te pegan desde un lado en el 1 del drop, el bajo aparece atrás en una mezcla.
+   Los sonidos que más impactan (medidos: brillo 1,5–10 kHz y ataques) reciben los mejores gestos. */
+const IMPACTO={"k_bombo":0.37,"k_bombo_live":0.37,"k_profundo":0.36,"k_rumble":0.32,"p_hats":0.81,"p_clap_hats":0.95,"p_shaker":0.95,"p_abiertos":0.81,"p_congas":0.07,"p_tom":1.0,"p_cencerro":0.77,"b_bajo":0.18,"b_armonico":0.13,"b_sub":0.12,"b_movil":0.13,"a_oscuro":0.75,"a_aire":0.74,"a_pad":0.63,"a_brisa":0.6,"a_granular":0.71,"l_arpegio":0.86,"l_stab":0.66,"l_stab2":0.77,"l_lead":0.77,"l_pluck":0.87,"l_teclado":0.65,"f_subida":0.75,"f_reversa":0.69,"f_impacto":0.79,"f_metal":0.75,"f_ruido":0.66,"f_vuelta":0.78,"techhouse_bombo_sint1":0.26,"techhouse_bombo_sint2":0.41,"techhouse_bombo_runway":0.71,"techhouse_perc_clap1":0.82,"techhouse_perc_clap2":0.85,"techhouse_perc_clap3":0.82,"techhouse_perc_perc1":1.0,"techhouse_perc_perc2":1.0,"techhouse_perc_top1":0.98,"techhouse_perc_top2":0.98,"techhouse_bajo_bass1":0.1,"techhouse_bajo_bass2":0.17,"techhouse_bajo_bass3":0.22,"techhouse_bajo_sub":0.08,"techhouse_bajo_sub2":0.2,"techhouse_bajo_sub3":0.2,"techhouse_pads_pad1":0.66,"techhouse_pads_pad2":0.9,"techhouse_pads_sint":0.46,"techhouse_lead_lead1":0.97,"techhouse_lead_lead2":0.96,"techhouse_lead_arp1":0.89,"techhouse_lead_arp2":0.9,"techhouse_lead_arp3":0.91,"techhouse_fx_vox":0.73,"techhouse_fx_riser":0.75,"techhouse_fx_downlifter":0.75,"techhouse_fx_impact":0.66,"techhouse_fx_crash":0.74,"techhouse_fx_noise":0.75,"melodic_bombo_sint1":0.29,"melodic_bombo_sint2":0.38,"melodic_bombo_runway":0.58,"melodic_perc_clap1":0.81,"melodic_perc_clap2":0.85,"melodic_perc_clap3":0.81,"melodic_perc_perc1":1.0,"melodic_perc_perc2":1.0,"melodic_perc_top1":1.0,"melodic_perc_top2":1.0,"melodic_bajo_bass1":0.25,"melodic_bajo_bass2":0.25,"melodic_bajo_bass3":0.25,"melodic_bajo_sub":0.11,"melodic_bajo_sub2":0.0,"melodic_bajo_sub3":0.0,"melodic_pads_pad1":0.46,"melodic_pads_pad2":0.39,"melodic_pads_sint":0.38,"melodic_lead_lead1":0.72,"melodic_lead_lead2":0.72,"melodic_lead_arp1":0.78,"melodic_lead_arp2":0.79,"melodic_lead_arp3":0.82,"melodic_fx_vox":0.56,"melodic_fx_riser":0.75,"melodic_fx_downlifter":0.75,"melodic_fx_impact":0.66,"melodic_fx_crash":0.74,"melodic_fx_noise":0.75,"afro_bombo_sint1":0.24,"afro_bombo_sint2":0.32,"afro_bombo_runway":0.8,"afro_perc_clap1":0.81,"afro_perc_clap2":0.85,"afro_perc_clap3":0.81,"afro_perc_perc1":0.99,"afro_perc_perc2":1.0,"afro_perc_top1":0.98,"afro_perc_top2":0.96,"afro_bajo_bass1":0.38,"afro_bajo_bass2":0.44,"afro_bajo_bass3":0.27,"afro_bajo_sub":0.06,"afro_bajo_sub2":0.13,"afro_bajo_sub3":0.1,"afro_pads_pad1":0.56,"afro_pads_pad2":0.56,"afro_pads_sint":0.45,"afro_lead_lead1":0.71,"afro_lead_lead2":0.64,"afro_lead_arp1":0.88,"afro_lead_arp2":0.88,"afro_lead_arp3":0.9,"afro_fx_vox":0.7,"afro_fx_riser":0.75,"afro_fx_downlifter":0.75,"afro_fx_impact":0.66,"afro_fx_crash":0.74,"afro_fx_noise":0.75,"deephouse_bombo_sint1":0.38,"deephouse_bombo_sint2":0.33,"deephouse_bombo_sint3":0.32,"deephouse_perc_clap1":0.81,"deephouse_perc_clap2":0.85,"deephouse_perc_clap3":0.81,"deephouse_perc_perc1":1.0,"deephouse_perc_perc2":1.0,"deephouse_perc_top1":0.94,"deephouse_perc_top2":0.92,"deephouse_bajo_bass1":0.25,"deephouse_bajo_bass2":0.25,"deephouse_bajo_bass3":0.25,"deephouse_bajo_sub":0.13,"deephouse_bajo_sub2":0.25,"deephouse_bajo_sub3":0.25,"deephouse_pads_pad1":0.14,"deephouse_pads_pad2":0.08,"deephouse_pads_sint":0.55,"deephouse_lead_lead1":0.79,"deephouse_lead_lead2":0.82,"deephouse_lead_arp1":0.81,"deephouse_lead_arp2":0.8,"deephouse_lead_arp3":0.84,"deephouse_fx_vox":0.67,"deephouse_fx_riser":0.75,"deephouse_fx_downlifter":0.75,"deephouse_fx_impact":0.66,"deephouse_fx_crash":0.74,"deephouse_fx_noise":0.75,"progressive_bombo_sint1":0.28,"progressive_bombo_sint2":0.39,"progressive_bombo_sint3":0.4,"progressive_perc_perc1":1.0,"progressive_perc_perc2":1.0,"progressive_perc_top1":1.0,"progressive_perc_top2":1.0,"progressive_bajo_bass1":0.8,"progressive_bajo_bass2":0.87,"progressive_bajo_bass3":0.6,"progressive_bajo_sub":0.18,"progressive_pads_pad1":0.71,"progressive_pads_pad2":0.67,"progressive_pads_sint":0.43,"progressive_lead_lead1":0.85,"progressive_lead_lead2":0.88,"progressive_lead_sint":0.86,"progressive_fx_vox":0.67,"progressive_fx_riser":0.77,"progressive_fx_downlifter":0.75,"progressive_fx_impact":0.66,"progressive_fx_crash":0.74,"progressive_fx_noise":0.75,"hardtechno_bombo_sint1":0.39,"hardtechno_bombo_sint2":0.36,"hardtechno_bombo_sint3":0.43,"hardtechno_perc_clap1":0.83,"hardtechno_perc_clap2":0.87,"hardtechno_perc_clap3":0.83,"hardtechno_perc_perc1":1.0,"hardtechno_perc_perc2":1.0,"hardtechno_perc_top1":1.0,"hardtechno_perc_top2":1.0,"hardtechno_bajo_bass1":0.16,"hardtechno_bajo_bass2":0.2,"hardtechno_bajo_bass3":0.33,"hardtechno_bajo_sub":0.08,"hardtechno_bajo_sub2":0.25,"hardtechno_bajo_sub3":0.25,"hardtechno_pads_pad1":0.55,"hardtechno_pads_pad2":0.56,"hardtechno_pads_sint":0.4,"hardtechno_lead_lead1":0.77,"hardtechno_lead_lead2":0.73,"hardtechno_lead_arp1":0.85,"hardtechno_lead_arp2":0.85,"hardtechno_lead_arp3":0.88,"hardtechno_fx_vox":1.0,"hardtechno_fx_riser":0.75,"hardtechno_fx_downlifter":0.75,"hardtechno_fx_impact":0.66,"hardtechno_fx_crash":0.74,"hardtechno_fx_noise":0.75,"psytrance_bombo_sint1":0.38,"psytrance_bombo_sint2":0.38,"psytrance_bombo_sint3":0.43,"psytrance_perc_clap1":0.82,"psytrance_perc_clap2":0.86,"psytrance_perc_clap3":0.82,"psytrance_perc_perc1":1.0,"psytrance_perc_perc2":1.0,"psytrance_perc_top1":1.0,"psytrance_perc_top2":1.0,"psytrance_bajo_bass1":0.65,"psytrance_bajo_bass2":0.65,"psytrance_bajo_bass3":0.68,"psytrance_bajo_sub":0.25,"psytrance_bajo_sub2":0.25,"psytrance_bajo_sub3":0.0,"psytrance_pads_pad1":0.7,"psytrance_pads_pad2":0.67,"psytrance_pads_sint":0.39,"psytrance_lead_lead1":0.82,"psytrance_lead_lead2":0.88,"psytrance_lead_arp1":0.85,"psytrance_lead_arp2":0.85,"psytrance_lead_arp3":0.88,"psytrance_fx_vox":0.76,"psytrance_fx_riser":0.75,"psytrance_fx_downlifter":0.75,"psytrance_fx_impact":0.66,"psytrance_fx_crash":0.74,"psytrance_fx_noise":0.75,"garage_bombo_sint1":0.34,"garage_bombo_sint2":0.22,"garage_bombo_sint3":0.31,"garage_perc_perc1":1.0,"garage_perc_perc2":1.0,"garage_perc_top1":1.0,"garage_perc_top2":1.0,"garage_bajo_bass1":0.25,"garage_bajo_bass2":0.25,"garage_bajo_bass3":0.06,"garage_bajo_sub":0.17,"garage_pads_pad1":0.09,"garage_pads_pad2":0.08,"garage_pads_sint":0.42,"garage_lead_lead1":0.8,"garage_lead_lead2":0.7,"garage_lead_sint":0.87,"garage_fx_vox":0.73,"garage_fx_riser":0.77,"garage_fx_downlifter":0.75,"garage_fx_impact":0.66,"garage_fx_crash":0.74,"garage_fx_noise":0.75,"bigroom_bombo_sint1":0.26,"bigroom_bombo_sint2":0.4,"bigroom_bombo_sint3":0.31,"bigroom_perc_perc1":1.0,"bigroom_perc_perc2":0.97,"bigroom_perc_top1":1.0,"bigroom_perc_top2":1.0,"bigroom_bajo_bass1":0.49,"bigroom_bajo_bass2":0.56,"bigroom_bajo_bass3":0.57,"bigroom_bajo_sub":0.15,"bigroom_pads_pad1":0.72,"bigroom_pads_pad2":0.72,"bigroom_pads_sint":0.43,"bigroom_lead_lead1":0.81,"bigroom_lead_lead2":0.83,"bigroom_lead_sint":0.87,"bigroom_fx_vox":0.87,"bigroom_fx_riser":0.75,"bigroom_fx_downlifter":0.75,"bigroom_fx_impact":0.66,"bigroom_fx_crash":0.74,"bigroom_fx_noise":0.75,"dubstep_bombo_sint1":0.31,"dubstep_bombo_sint2":0.2,"dubstep_bombo_sint3":0.3,"dubstep_perc_perc1":1.0,"dubstep_perc_perc2":1.0,"dubstep_perc_top1":1.0,"dubstep_perc_top2":1.0,"dubstep_bajo_bass1":0.64,"dubstep_bajo_bass2":0.76,"dubstep_bajo_bass3":0.58,"dubstep_bajo_sub":0.04,"dubstep_pads_pad1":0.58,"dubstep_pads_pad2":0.59,"dubstep_pads_sint":0.38,"dubstep_lead_lead1":0.64,"dubstep_lead_lead2":0.64,"dubstep_lead_sint":0.81,"dubstep_fx_vox":0.94,"dubstep_fx_riser":0.75,"dubstep_fx_downlifter":0.75,"dubstep_fx_impact":0.66,"dubstep_fx_crash":0.74,"dubstep_fx_noise":0.75,"funkbr_bombo_sint1":0.42,"funkbr_bombo_sint2":0.35,"funkbr_bombo_sint3":0.52,"funkbr_perc_perc1":0.98,"funkbr_perc_perc2":0.98,"funkbr_perc_top1":1.0,"funkbr_perc_top2":1.0,"funkbr_bajo_bass1":0.2,"funkbr_bajo_bass2":0.12,"funkbr_bajo_bass3":0.13,"funkbr_bajo_sub":0.2,"funkbr_pads_pad1":0.81,"funkbr_pads_pad2":0.88,"funkbr_pads_sint":0.47,"funkbr_lead_lead1":0.76,"funkbr_lead_lead2":0.8,"funkbr_lead_sint":0.9,"funkbr_fx_vox":0.85,"funkbr_fx_riser":0.75,"funkbr_fx_downlifter":0.75,"funkbr_fx_impact":0.66,"funkbr_fx_crash":0.74,"funkbr_fx_noise":0.75,"nudisco_bombo_sint1":0.39,"nudisco_bombo_sint2":0.33,"nudisco_bombo_sint3":0.33,"nudisco_perc_perc1":0.99,"nudisco_perc_perc2":0.98,"nudisco_perc_top1":1.0,"nudisco_perc_top2":1.0,"nudisco_bajo_bass1":0.61,"nudisco_bajo_bass2":0.62,"nudisco_bajo_bass3":0.66,"nudisco_bajo_sub":0.15,"nudisco_pads_pad1":0.56,"nudisco_pads_pad2":0.59,"nudisco_pads_sint":0.46,"nudisco_lead_lead1":0.88,"nudisco_lead_lead2":0.96,"nudisco_lead_sint":0.89,"nudisco_fx_vox":0.81,"nudisco_fx_riser":0.75,"nudisco_fx_downlifter":0.75,"nudisco_fx_impact":0.66,"nudisco_fx_crash":0.74,"nudisco_fx_noise":0.75,"minimal_bombo_sint1":0.38,"minimal_bombo_sint2":0.42,"minimal_bombo_sint3":0.32,"minimal_perc_perc1":1.0,"minimal_perc_perc2":1.0,"minimal_perc_top1":1.0,"minimal_perc_top2":1.0,"minimal_bajo_bass1":0.25,"minimal_bajo_bass2":0.13,"minimal_bajo_bass3":0.25,"minimal_bajo_sub":0.08,"minimal_pads_pad1":0.67,"minimal_pads_pad2":0.64,"minimal_pads_sint":0.43,"minimal_lead_lead1":0.7,"minimal_lead_lead2":0.83,"minimal_lead_sint":0.87,"minimal_fx_vox":0.84,"minimal_fx_riser":0.75,"minimal_fx_downlifter":0.75,"minimal_fx_impact":0.66,"minimal_fx_crash":0.74,"minimal_fx_noise":0.75,"dnb_bombo_sint1":0.33,"dnb_bombo_sint2":0.3,"dnb_bombo_sint3":0.3,"dnb_perc_perc1":1.0,"dnb_perc_perc2":1.0,"dnb_perc_top1":1.0,"dnb_perc_top2":1.0,"dnb_bajo_bass1":0.16,"dnb_bajo_bass2":0.39,"dnb_bajo_bass3":0.19,"dnb_bajo_sub":0.05,"dnb_pads_pad1":0.39,"dnb_pads_pad2":0.42,"dnb_pads_sint":0.55,"dnb_lead_lead1":0.64,"dnb_lead_lead2":0.68,"dnb_lead_sint":0.81,"dnb_fx_vox":0.95,"dnb_fx_riser":0.75,"dnb_fx_downlifter":0.75,"dnb_fx_impact":0.66,"dnb_fx_crash":0.74,"dnb_fx_noise":0.75,"amapiano_bombo_sint1":0.29,"amapiano_bombo_sint2":0.29,"amapiano_bombo_runway":0.47,"amapiano_perc_perc1":1.0,"amapiano_perc_perc2":1.0,"amapiano_perc_top1":1.0,"amapiano_perc_top2":1.0,"amapiano_bajo_bass1":0.22,"amapiano_bajo_bass2":0.2,"amapiano_bajo_bass3":0.54,"amapiano_bajo_sub":0.12,"amapiano_pads_pad1":0.04,"amapiano_pads_pad2":0.46,"amapiano_pads_sint":0.42,"amapiano_lead_lead1":0.86,"amapiano_lead_lead2":0.37,"amapiano_lead_sint":0.83,"amapiano_fx_vox":0.69,"amapiano_fx_riser":0.75,"amapiano_fx_downlifter":0.75,"amapiano_fx_impact":0.66,"amapiano_fx_crash":0.74,"amapiano_fx_noise":0.75,"ritual_bombo_sint1":0.39,"ritual_bombo_sint2":0.27,"ritual_bombo_sint3":0.39,"ritual_perc_perc1":0.98,"ritual_perc_perc2":0.98,"ritual_perc_top1":0.82,"ritual_perc_top2":0.97,"ritual_bajo_bass1":0.23,"ritual_bajo_bass2":0.22,"ritual_bajo_sub":0.03,"ritual_pads_pad1":0.6,"ritual_pads_pad2":0.62,"ritual_pads_sint":0.39,"ritual_lead_lead1":0.73,"ritual_lead_lead2":0.73,"ritual_lead_sint":0.84,"ritual_fx_vox":0.48,"ritual_fx_riser":0.75,"ritual_fx_downlifter":0.75,"ritual_fx_impact":0.66,"ritual_fx_crash":0.74,"ritual_fx_noise":0.75};
+const imp=id=>IMPACTO[id]??(PAD[id]?.kind==="shot"?.85:.5);
+const HOME={bombo:[0,-8,1.5],bajo:[0,-15,1.4],perc:[30,5,1.6],lead:[-35,10,1.7],pads:[160,18,2.1],fx:[0,32,1.9]};
+let GUION_N=0;
+// los tramos que usa la sesión (también los de un tramo pegado de otra versión) viajan con el arreglo y con la sesión guardada
+function trUsed(M){const o={};for(const r of RIDS)for(const g of M.lanes[r]||[])if(g.mov&&g.mov.ref&&K.TRAMOS&&K.TRAMOS[g.mov.ref])o[g.mov.ref]=K.TRAMOS[g.mov.ref];if(M.guion)M.guion.kf=Object.assign(M.guion.kf||{},o);return Object.keys(o).length?o:undefined}
+function guion(M,plan,rnd){const N=M.len,L=M.lanes,key="tr"+(++GUION_N).toString(36)+((Math.random()*1e6)|0).toString(36);
+  const KF={},ENV={},says=[],usos={orbita:0,cometa:0,espiral:0,salto:0,lado:0,llamada:0,vuelo:0,tres:0};
+  for(const r of RIDS){const h=HOME[r];KF[r]=[[0,h[0],h[1],h[2],0]];ENV[r]=[[0,0]]}
+  const sounding=(row,a,z)=>L[row].some(g=>g.s<z-1e-6&&g.e>a+1e-6);
+  const padAt=(row,b)=>{let p=null;for(const g of L[row])if(g.s<=b+1e-6&&b<g.e-1e-6)p=g.pad;return p};
+  const ev=(r,u)=>{const F=KF[r];let a=F[0];for(const f of F){if(f[0]<=u+1e-9)a=f;else{const d=f[0]-a[0],x=d>1e-6?(u-a[0])/d:1,e=f[4]||0,
+    w=e===1?.5-.5*Math.cos(Math.PI*x):e===2?x*x:e===3?1-(1-x)*(1-x):x;return [a[1]+(f[1]-a[1])*w,a[2]+(f[2]-a[2])*w,a[3]+(f[3]-a[3])*w]}}return [a[1],a[2],a[3]]};
+  const kf=(r,u,az,el,rr,e=0)=>{const F=KF[r];while(F.length>1&&F[F.length-1][0]>u+1e-9)F.pop();F.push([+u.toFixed(4),+az.toFixed(1),+el.toFixed(1),+rr.toFixed(3),e])};
+  const hold=(r,u)=>{const P=ev(r,u);kf(r,u,P[0],P[1],P[2],0);return P};
+  const near=(az,ref)=>az+360*Math.round((ref-az)/360);// mismo ángulo, sin dar la vuelta larga
+  const env=(r,u,db)=>{const A=ENV[r];while(A.length>1&&A[A.length-1][0]>u+1e-9)A.pop();A.push([+u.toFixed(4),+db.toFixed(2)])};
+  const envAt=(r,u)=>{const A=ENV[r];let a=A[0];for(const p of A){if(p[0]<=u+1e-9)a=p;else{const d=p[0]-a[0];return d>1e-6?a[1]+(p[1]-a[1])*(u-a[0])/d:p[1]}}return a[1]};
+  // ---- gestos ----
+  const G=[],Q=(u,f)=>G.push({u,f,i:G.length}),W=(f,k,d=0)=>(...x)=>Q(x[k]+d,()=>f(...x)),envQ=W(env,1);
+  const home=(r,u,dur=.5)=>{const P=hold(r,u),h=HOME[r];kf(r,u+dur,near(h[0],P[0]),h[1],h[2],1)};
+  const orbita=(r,a,z,C,dir,rr,el)=>{const P=hold(r,a),az0=P[0];usos.orbita++;
+    for(let u=a+.25;u<=z+1e-6;u+=.25)kf(r,u,az0+360*dir*(u-a)/C,(el??P[1])+6*Math.sin(2*Math.PI*(u-a)/C),u-a<.5?P[2]+(rr-P[2])*(u-a)/.5:rr,u-a<.3?1:0)};
+  // cometa: desaparece donde está, aparece lejos al frente, pasa rozando la oreja y se va por detrás; vuelve a su lugar desde el silencio
+  const cometa=(r,u,side,dur,fuerza=1)=>{const P=hold(r,u-.125),d=dur;usos.cometa++;
+    env(r,u-.125,envAt(r,u-.125));env(r,u,-24);
+    kf(r,u,side*25,14,2.8,0);kf(r,u+d*.5,side*90,-2,.42,3);kf(r,u+d,side*165,8,2.8,2);
+    env(r,u+d*.15,-14);env(r,u+d*.5,1.5*fuerza);env(r,u+d*.8,-12);env(r,u+d,-30);
+    const h=HOME[r];kf(r,u+d+.001,near(h[0],side*165),h[1],h[2],0);env(r,u+d+.125,-30);env(r,u+d+.5,0)};
+  const salto=(r,u,pos,dur)=>{hold(r,u);usos.salto++;kf(r,u+.001,pos[0],pos[1],pos[2],0);kf(r,u+dur,pos[0],pos[1],pos[2],0);const h=HOME[r];kf(r,u+dur+.001,h[0],h[1],h[2],0)};
+  const espiralIn=(r,a,z,dir)=>{const P=hold(r,a);usos.espiral++;for(let u=a+.25;u<=z+1e-6;u+=.25){const p=(u-a)/(z-a);kf(r,u,P[0]+360*dir*2.5*p*p,P[1]+(0-P[1])*p,P[2]+(.55-P[2])*p,0)}};
+  const explota=(r,u,dir)=>{const P=hold(r,u);kf(r,u+1,P[0]+dir*200,P[1]+12,2.3,3)};
+  const vuelo=(r,a,z)=>{const P=hold(r,a);usos.vuelo++;kf(r,(a+z)/2,P[0]+40,62,P[2],1);kf(r,z,P[0]+80,P[1],P[2],1)};
+  const lado=(rows,u,dir,dur=2)=>{usos.lado++;for(const r of rows){const P=hold(r,u),A=near(dir*85+(r==="pads"?dir*25:0),P[0]);kf(r,u+.25,A,P[1],Math.max(1.2,P[2]),1);kf(r,u+dur,A,P[1],Math.max(1.2,P[2]),0);
+    const h=HOME[r];kf(r,u+dur+.5,near(h[0],dir*85),h[1],h[2],1);env(r,u,envAt(r,u));env(r,u+.25,1);env(r,u+dur,1);env(r,u+dur+.5,0)}};
+  const llamada=(A,B,a,z)=>{usos.llamada++;let s=rnd()<.5?1:-1;hold(A,a);hold(B,a);for(let u=a;u<z-1e-6;u+=2){kf(A,u+.25,-s*70,8,1.35,1);kf(B,u+.25,s*70,4,1.35,1);kf(A,u+2,-s*70,8,1.35,0);kf(B,u+2,s*70,4,1.35,0);s=-s}home(A,z,.5);home(B,z,.5)};
+  const qOrbita=W(orbita,1),qCometa=W(cometa,1,-.125),qSalto=W(salto,1),qEsp=W(espiralIn,1),qExp=W(explota,1),qVuelo=W(vuelo,1),qLado=W(lado,1),qLlam=W(llamada,2),qHome=W(home,1);
+  const say=(b,t)=>says.push({b,text:"IAH: "+t});
+  const top=(rows,b)=>rows.filter(r=>sounding(r,b,b+1)).map(r=>({r,i:imp(padAt(r,b+.01)||padAt(r,b+1))+(r==="lead"?.12:0)})).sort((x,y)=>y.i-x.i).map(x=>x.r);
+  let ladoUsado=0,dirG=1;
+  for(const P of plan){const {b:B,len:Ln,kind}=P,end=B+Ln,C=kind==="break"?8:kind==="drop2"?2:4,ph=Math.ceil(Ln/8);
+    for(let i=0;i<ph;i++){const p=B+i*8,z=Math.min(end,p+8),lastP=i===ph-1;dirG=-dirG;
+      if(kind==="intro"){// el escenario se arma quieto; desde la 2.ª frase un solo protagonista dibuja un arco lento
+        if(i>0){const t=top(["perc","lead"],p)[0];if(t){qOrbita(t,p,z-1,8,dirG,1.5);qHome(t,z-1,1)}}}
+      else if(kind==="build"){// tensión: la melodía da vueltas cada vez más cerca y en la última frase cae en espiral hacia tu oreja; el riser sube por encima
+        const ld=sounding("lead",p,z)?"lead":top(["perc","pads"],p)[0];
+        if(ld){if(lastP){qOrbita(ld,p,p+4,ph>1?2:4,dirG,1.3);qEsp(ld,p+4,z-.5,dirG);if(sounding("fx",p,z)){qVuelo("fx",p,z);usos.tres+=0;say(p,"subida: la melodía cae en espiral hacia ti y el ruido sube por encima de tu cabeza (dos protagonistas, uno abajo y otro arriba)")}else say(p,"subida: la melodía cae en espiral hacia tu oreja")}
+          else{qOrbita(ld,p,z,i===0?4:2,dirG,1.6-.2*i);if(i===0)say(p,"subida: solo se mueve la melodía, el resto espera en su lugar")}}
+        if(lastP&&sounding("perc",p,z)){envQ("perc",p,0);envQ("perc",z-1,-2.5);envQ("perc",z,0)}}
+      else if(kind==="drop"||kind==="drop2"){const ecst=kind==="drop2",T=top(["lead","perc","pads"],p);
+        if(i===0){// el golpe: el bombo te pega desde un lado en el 1 y la melodía explota desde tu oreja hacia afuera
+          const s=rnd()<.5?1:-1;if(sounding("bombo",p,p+1)){qSalto("bombo",p,[s*72,-4,1.3],1);envQ("bombo",p,1);envQ("bombo",p+1,0)}
+          if(sounding("lead",p,p+2)){qExp("lead",p,-s);qOrbita("lead",p+1,z,C,-s,1.5)}
+          if(sounding("perc",p,z)){const pc=imp(padAt("perc",p+.01));if(pc>=.7)qCometa("perc",p+6,-s,1,1)}
+          say(p,(ecst?"éxtasis: ":"drop: ")+"el bombo te pega desde la "+(s>0?"derecha":"izquierda")+" en el 1 y la melodía sale disparada"+(ecst?"; todo va al doble":""))}
+        else if(ecst&&T.length>=3&&i===1){// tres a la vez solo aquí, y con razón: es el pico; giran en capas que no se cruzan
+          usos.tres++;qOrbita(T[0],p,z,2,dirG,1.4);qOrbita(T[1],p,z,2,-dirG,1.8,0);qOrbita(T[2],p,z,4,dirG,2.2,40);
+          for(const r of T.slice(1)){envQ(r,p,-1);envQ(r,z,0)}envQ(T[0],p,1);envQ(T[0],z,0);
+          say(p,"éxtasis: tres protagonistas porque es el pico; "+ROW[T[0]].n.toLowerCase()+" al frente, "+ROW[T[1]].n.toLowerCase()+" en contragiro más lejos y "+ROW[T[2]].n.toLowerCase()+" en lo alto, cada uno en su capa")}
+        else if(T.length>=2&&i%2===1){// llamada y respuesta: dos que conviven, cada uno en un lado, y se cambian cada 2 compases
+          qLlam(T[0],T[1],p,z-.5);say(p,"llamada y respuesta: "+ROW[T[0]].n.toLowerCase()+" y "+ROW[T[1]].n.toLowerCase()+" se reparten los lados")}
+        else if(T.length){const t=T[0];qOrbita(t,p,z-1,C,dirG,1.4);qHome(t,z-1,.75);
+          const c=top(["fx","perc","lead"].filter(r=>r!==t),p+4)[0];if(c&&imp(padAt(c,p+4.01))>=.6&&!(c==="fx"&&!sounding("fx",p+4,p+5)))qCometa(c,p+4,dirG,ecst?1:2);
+          if(i===2&&sounding("bajo",p,p+1)){qSalto("bajo",p,[180,-10,1.6],1);say(p,"el bajo aparece detrás de ti un compás")}}
+        if(lastP&&!ladoUsado&&(ecst||plan.filter(x=>x.kind==="drop").indexOf(P)===0)&&Ln>=16){ladoUsado=1;const rows=RIDS.filter(r=>r!=="fx"&&sounding(r,z-3,z-1));qLado(rows,z-3,dirG,1.5);say(z-3,"de repente todo se va a la "+(dirG>0?"derecha":"izquierda"))}}
+      else if(kind==="break"){// respiro a media velocidad: un solo protagonista lento; la atmósfera flota arriba
+        const t=sounding("lead",p,z)?"lead":"pads";
+        if(i%2===0){qOrbita(t,p,z,8,dirG,1.6);if(t!=="pads"&&sounding("pads",p,z))qVuelo("pads",p,z)}
+        else{qCometa(t,p+2,dirG,2,.6);if(i===1)say(p,"respiro: la melodía pasa lenta por tu oreja y se pierde")}
+        if(i===0)say(p,"respiro: todo a media velocidad, una sola voz se mueve")}
+      else if(kind==="mezcla"){// el ritmo nuevo llega volando desde atrás; el bajo nuevo aparece detrás un compás y vuelve al frente
+        if(i===0&&sounding("perc",p,p+4)){Q(p,()=>{const pc="perc";hold(pc,p);kf(pc,p+.001,180,10,2.8,0);env(pc,p,-18);env(pc,p+4,0);kf(pc,p+4,HOME.perc[0],HOME.perc[1],HOME.perc[2],1)});say(p,"mezcla: el ritmo nuevo llega desde atrás")}
+        if(sounding("bajo",p+8,p+9)&&p+8<end)qSalto("bajo",p+8,[180,-12,1.7],1)}
+      else if(kind==="outro"){// cierre: todo vuelve a su lugar; un último arco del ritmo
+        if(i===0){const t=top(["perc"],p)[0];if(t){qOrbita(t,p,z-1,8,dirG,1.6);qHome(t,z-1,1)}}
+        for(const r of RIDS)if(i===ph-1)qHome(r,p,.5)}}}
+  // fx (golpes de una vez): fills cruzan por delante, el crash al revés llega desde atrás, impactos y crashes arriba al frente
+  const FXK=[];for(const g of L.fx){const s=PAD[g.pad]?.synth||"";FXK.push([g.s,s])}
+  for(const [s,k] of FXK.sort((a,b)=>a[0]-b[0])){if(k==="fill"){const d=dirG=-dirG;Q(s,()=>{hold("fx",s);kf("fx",s+.001,-d*80,10,1.6,0);kf("fx",s+1,d*80,10,1.6,1);kf("fx",s+1.01,HOME.fx[0],HOME.fx[1],HOME.fx[2],0)})}
+    else if(k==="revcrash"){Q(s,()=>{hold("fx",s);kf("fx",s+.001,180,20,2.4,0);kf("fx",s+1,360,25,1.6,2);kf("fx",s+1.01,HOME.fx[0],HOME.fx[1],HOME.fx[2],0)})}}
+  G.sort((a,b)=>a.u-b.u||a.i-b.i);for(const g of G)g.f();
+  // faders: el gesto (aparecer, crecer en la oreja, apagarse) + compensación de distancia (al acercarse queda ~30 % de la subida 1/r)
+  const base={},bev={};for(const r of RIDS){bev[r]=M.vols.filter(v=>v.row===r).sort((a,b)=>a.b-b.b);base[r]=ROW[r].vol}
+  const baseAt=(r,u)=>{let v=ROW[r].vol;for(const x of bev[r]){if(x.b<=u+1e-9)v=x.val;else break}return v};
+  const out=M.vols.filter(v=>!RIDS.includes(v.row));
+  for(const r of RIDS){const H=HOME[r][2],ts=new Set(bev[r].map(x=>x.b));for(let u=0;u<=N;u+=.125)ts.add(+u.toFixed(3));let prev=null;
+    for(const u of [...ts].sort((a,b)=>a-b)){const bv=baseAt(r,u),P=ev(r,u),comp=P[2]<H?-.7*20*Math.log10(H/Math.max(.3,P[2])):0,o=envAt(r,u)+comp;
+      const v=bv<=-40?bv:+(bv+o).toFixed(2);const isB=bev[r].some(x=>Math.abs(x.b-u)<1e-6);if(isB||prev==null||Math.abs(v-prev)>=.3){out.push({b:u,row:r,val:v});prev=v}}}
+  M.vols=out.sort((a,b)=>a.b-b.b);
+  // un solo «tramo» por fila para toda la canción (se guarda una vez, los lanzamientos solo lo nombran)
+  const reg={};for(const r of RIDS){reg[key+"_"+r]=KF[r];const m={k:"tramo",g:1,ref:key+"_"+r,s:1};for(const g of L[r])g.mov=m}
+  if(K.TRAMOS)Object.assign(K.TRAMOS,reg);
+  M.movs=[];M.escenas=[];M.says=[...M.says.map(x=>({...x,text:x.text.replace(": llamada y respuesta y todo girando","").replace("; la melodía sube y baja","").replace(/, con tu movimiento «[^»]*» de la Mesa/,"")})),...says].sort((a,b)=>a.b-b.b);
+  M.guion={v:1,kf:reg,usos,resumen:"Esta vez el espacio va con guion: cada sonido tiene su lugar y en cada frase se mueve uno (dos cuando conversan, tres solo en el pico, y te digo por qué). Bombo y bajo también salen de sorpresa, los sonidos pasan por tu oreja como cometas con el fader, en el respiro todo va a media velocidad y en el éxtasis al doble."};
+  return M}
 const BASE=()=>K.BASE_BPM||128;
 const nm=id=>PAD[id]?"«"+PAD[id].n+"»":"";
 function narrate(M,s){const min=s.minutes,mood=["tranquilos","con energía media","a tope"][s.E],kits=s.kits.map(k=>k.n).join(" y ");
   const p=["¡Listo! Te armé "+min+(min===1?" minuto ":" minutos ")+mood+" de "+s.G.n.toLowerCase()+" a "+M.bpm0+" BPM con "+kits+"."];
   p.push("Abro con "+s.intro+" compases de bombo y hats para que se pueda mezclar"+(s.pads?", y "+nm(s.pads)+" entra filtrado y se va abriendo":"")+".");
   if(s.drops.length)p.push("En cada subida cierro el filtro, sube el ruido"+(s.roll?" y un redoble que acelera de "+(s.E===2?"negras":"corcheas")+" a semicorcheas":"")+(s.quita?"; quito el bombo "+s.quita+(s.quita===1?" compás":" compases")+" antes del drop":"")+", y en el 1 entra el impacto con el crash.");
-  p.push("El bajo y los pads bombean con el bombo, y bombo y bajo quedan siempre fijos al centro mientras lo demás gira cada vez más rápido en las subidas.");
+  p.push(M.guion?M.guion.resumen:"El bajo y los pads bombean con el bombo, y bombo y bajo quedan siempre fijos al centro mientras lo demás gira cada vez más rápido en las subidas.");
   if(s.drops.length>1)p.push("Después del respiro el bombo no vuelve hasta el drop: la subida va solo con ruido, redoble y hats que se abren.");
   if(s.drops.length>1)p.push("El segundo drop llega más fuerte, con llamada y respuesta entre melodías y cambios cada 8 compases.");
   if(s.mezclas)p.push("Paso de kit "+s.mezclas+(s.mezclas===1?" vez":" veces")+" con una mezcla de 16 compases, en tonalidades compatibles, y cambio los graves en el 1 de la frase.");
   if(s.peakBpm>M.bpm0)p.push("En el último drop acelero suave hasta "+s.peakBpm+" BPM.");
-  if(s.cue)p.push("En el respiro uso tu movimiento «"+s.cue+"» de la Mesa.");
+  if(s.cue&&!M.guion)p.push("En el respiro uso tu movimiento «"+s.cue+"» de la Mesa.");
   if(s.comp)p.push(s.tema?"El bajo, los acordes y el gancho los compuse yo, en una sola progresión; el kit pone el ritmo.":"Las melodías nuevas salen de mi compositor.");
   p.push("Lo dejé con sonido de club. Si quieres otra, toca «Otra versión».");
   return p.join(" ")}
@@ -21073,7 +21187,7 @@ function compile(M){const ev=[];const ord={stop:0,vol:1,filt:1,mov:2,launch:3,bp
   const rows=Object.fromEntries(ROWS.map(r=>[r.id,{mov:K.movCopy(r.def),vol:r.vol,filt:0}]));
   const cur={},lines=[];for(const e of ev){if(e.type==="launch"){cur[e.row]=e.pad;const n=K.padNum(e.pad);if(n>0&&n<100)lines.push((Math.floor(e.b)+1)+" "+String(n).padStart(2,"0")+" iniciar")}
     else if(e.type==="stop"&&cur[e.row]){const n=K.padNum(cur[e.row]);if(n>0&&n<100)lines.push((Math.floor(e.b)+1)+" "+String(n).padStart(2,"0")+" detener")}}
-  return {v:2,name:"IAH DJ",bpm:M.bpm0,len:M.len,init:{sweep:0,rows},ev,iah:M,guion:lines.join("\n"),sc:M.sc,club:true,lufs:M.lufs??-13}}
+  return {v:2,name:"IAH DJ",bpm:M.bpm0,len:M.len,init:{sweep:0,rows},ev,iah:M,tramos:trUsed(M),guion:lines.join("\n"),sc:M.sc,club:true,lufs:M.lufs??-13}}
 
 /* ---------- versión en vivo: con la música sonando, cambia la energía o la variación y entra al próximo compás ---------- */
 // recorta un arreglo desde el compás «from»: el estado de cada fila en ese punto pasa a init y el resto de eventos se corre a 0
@@ -21524,9 +21638,9 @@ function basePos(t,b,ts){if(t.man)return t.man;const d=K.deck,R=d&&d.R[t.eng];
     let da=c[0]-a[0];if(da>180)da-=360;if(da<-180)da+=360;return [a[0]+da*f,a[1]+(c[1]-a[1])*f,a[2]+(c[2]-a[2])*f]}
   const row=K.ROW[t.eng]||K.ROW[t.role]||{r:.8};
   // sesión IAH: sus distancias vienen del DJ clásico (0.5–0.9 m, dentro de la cabeza) → se llevan a la sala (1.25–2 m) para verlas y no saturar
-  if(mov&&mov.src==="iah"){if(mov.k==="fija"&&mov.az0==null&&/^(bombo|bajo)$/.test(t.eng)){const A=anchorPos({rol:t.eng==="bajo"?"bajo":""});return [A.az0,A.el0,A.r]}
+  if(mov&&mov.src==="iah"&&!mov.g){if(mov.k==="fija"&&mov.az0==null&&/^(bombo|bajo)$/.test(t.eng)){const A=anchorPos({rol:t.eng==="bajo"?"bajo":""});return [A.az0,A.el0,A.r]}
     let P;try{P=K.movPos(row,mov,b-ll)}catch(e){return [0,0,1.5]}return [P[0],P[1],Math.min(2.2,Math.max(1.15,1.25+(P[2]-.5)*1.25))]}
-  try{return K.movPos(row,mov,b-ll)}catch(e){return [0,0,.8]}}
+  try{return K.movPos(row,mov,b-ll,d&&d.arrBar?d.arrBar(b):null)}catch(e){return [0,0,.8]}}
 const FROZ={};
 // arrastrando (t.man): la mano ya está en coordenadas finales, con la sala aplicada → no se vuelve a rotar
 function posOf(t,b,ts){if(t.man)return FROZ[t.id]=t.man;if(ROOM.frozen&&FROZ[t.id])return FROZ[t.id];const P=roomXform(basePos(t,b,ts),t,b);FROZ[t.id]=P;return P}
