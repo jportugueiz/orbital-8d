@@ -21074,6 +21074,8 @@ function guion(M,plan,rnd){const N=M.len,L=M.lanes,key="tr"+(++GUION_N).toString
   const espiral=(r,a,z,dir,r0,r1,el0,el1,rps0,rps1)=>Q(a,()=>{const P=hold(r,a);usos.espiral++;let az=P[0];for(let u=a+.125;u<=z+1e-6;u+=.125){const p=(u-a)/(z-a),w=dir*dpb(rps0+(rps1-rps0)*p,u);az+=w*.125;kf(r,u,az,el0+(el1-el0)*p,r0+(r1-r0)*p,0)}});
   // explota: en el 1 del drop sale disparado desde la oreja hacia afuera en medio compás
   const explota=(r,u)=>Q(u,()=>{const P=hold(r,u);kf(r,u+.001,P[0]>=0?90:-90,0,.5,0);kf(r,u+.5,(P[0]>=0?90:-90)+(P[0]>=0?160:-160),35,1.1,3)});
+  // recorrido: sale de su lugar, da una vuelta corta alrededor de la cabeza a la velocidad del drop y vuelve en ¼ de compás
+  const recorrido=(r,u,dur,dir,rps,rr,el)=>{giro(r,u,u+dur,rps,dir,rr,20,el,1);Q(u+dur,()=>{const P=hold(r,u+dur),h=HOME[r];kf(r,u+dur+.25,near(h[0],P[0]),h[1],h[2],1);usos.recorrido=(usos.recorrido||0)+1})};
   // latigazo en el giro de frase: media vuelta rapidísima pegada a la oreja en el último medio compás
   const latigo=(r,u,dir)=>Q(u,()=>{const P=hold(r,u);usos.latigo++;kf(r,u+.25,P[0]+dir*200,P[1]+25,.5,3);kf(r,u+.5,P[0]+dir*360,P[1],P[2],1)});
   const lado=(rows,u,dir,dur)=>Q(u,()=>{usos.lado++;for(const r of rows){const P=hold(r,u),A=near(dir*90,P[0]);kf(r,u+.0625,A,0,.55,3);kf(r,u+dur,A,0,.55,0)}});
@@ -21096,16 +21098,23 @@ function guion(M,plan,rnd){const N=M.len,L=M.lanes,key="tr"+(++GUION_N).toString
         lead1();lead2();if(i===0)explota("lead",p);
         if(A){orejas("perc",p,h,.5,.55,false);giro("perc",h,z,v*.8,-d,.6,30,0,ec?2:1)}else{giro("perc",p,h,v*.8,-d,.6,30,0,ec?2:1);orejas("perc",h,z,.5,.55,false)}
         giro("pads",p,z,ec?.5:.35,d,.9,45,30,ec?2:1,.15);
-        respira("bajo",p,z,ec?.5:1,1.15,.62,35,-18);respira("bombo",p,z,1,1.2,.75,30,-8);
+        // de vez en cuando el bajo y el bombo salen a dar un recorrido corto alrededor tuyo y vuelven a su lugar
+        if(i%2===1&&z-p>=8){respira("bajo",p,p+5,ec?.5:1,1.15,.62,35,-18);recorrido("bajo",p+5,2,d,ec?.8:.6,.7,-12);respira("bajo",p+7.25,z,1,1.15,.62,35,-18)}
+        else respira("bajo",p,z,ec?.5:1,1.15,.62,35,-18);
+        if((i===1||(i%2===0&&i>0))&&z-p>=8){const q=i===1?p+2:p+4;respira("bombo",p,q,1,1.2,.75,30,-8);recorrido("bombo",q,1.5,-d,.6,.75,-5);respira("bombo",q+1.75,z,1,1.2,.75,30,-8)}
+        else respira("bombo",p,z,1,1.2,.75,30,-8);
         if(i===0){salto("bombo",p,[s*80,-5,.75],1);Q(p,()=>{env("bombo",p,1);env("bombo",p+1,0)})}
         if(i>0){const c=top(["perc","lead","pads"],p+2)[0];if(c&&imp(padAt(c,p+2.01))>=.5)cometa(c,p+2,d,1,1)}
         if(!lastP&&sounding("lead",z-.5,z))latigo("lead",z-.5,-d);
         if(ec&&lastP&&!ladoUsado&&Ln>=16){ladoUsado=1;lado(RIDS.filter(r=>sounding(r,z-2,z-1)),z-2,d,1.5);say(z-2,"de repente todo se te va a la "+(d>0?"oreja derecha":"oreja izquierda"))}}
       else if(kind==="break"){// respiro: más lento pero nunca quieto; flota arriba y abajo, una pasada lenta por la oreja
-        giro("lead",p,z,.3,d,.7,55,15,1,.1);giro("pads",p,z,.18,-d,.95,40,40,2);giro("perc",p,z,.35,-d,.8,30,20,1);
-        if(i%2===1&&sounding("lead",p+2,p+4))cometa("lead",p+2,d,2,.6);if(i===0)say(p,"respiro: todo flota más lento, arriba y abajo")}
+        // pocos sonidos = más espacio: lo que queda pasa rozando la oreja (0,5 m), por arriba y por abajo; el fader deja más cercanía
+        const A=i%2===0;if(A){orejas("lead",p,h,.5,.5,true);giro("lead",h,z,.7,d,.5,60,10,2,.05)}else{giro("lead",p,h,.7,-d,.5,60,10,2,.05);orejas("lead",h,z,.5,.5,true)}
+        giro("pads",p,z,.35,-d,.6,50,25,2,.08);orejas("perc",p,z,.25,.5,false);
+        const c=top(["lead","pads","perc"],p+4)[0];if(c)cometa(c,p+4,d,1,1);
+        if(i===0)say(p,"respiro: quedan pocos sonidos, así que pasan rozándote las orejas")}
       else if(kind==="mezcla"){giro("lead",p,z,.6,d,.7,40,10);giro("perc",p,z,.6,-d,.65,30,10,2);giro("pads",p,z,.25,d,1,35,30);
-        respira("bajo",p,z,1,1.2,.8,25,-15);respira("bombo",p,z,2,1.25,.9,25,-8);if(sounding("bajo",p+8,p+9))salto("bajo",p+8,[180,-12,.9],1)}
+        respira("bajo",p,p+4,1,1.2,.8,25,-15);recorrido("bajo",p+4,2,d,.5,.75,-12);respira("bajo",p+6.25,z,1,1.2,.8,25,-15);respira("bombo",p,z,2,1.25,.9,25,-8);if(sounding("bajo",p+8,p+9))salto("bajo",p+8,[180,-12,.9],1)}
       else if(kind==="outro"){const v=.5-.25*i/ph;giro("perc",p,z,v,d,.75+.3*i/ph,25,15,2);giro("pads",p,z,.15,d,1.1,20,25);giro("lead",p,z,v,d,.8,30,10);
         respira("bajo",p,z,2,1.25,1,15,-15);respira("bombo",p,z,2,1.3,1,20,-8)}}}
   // efectos: el «chaca chaca» rebota por toda la cabeza golpe a golpe; el riser sube girando en espiral y acelerando; el crash al revés llega desde atrás
@@ -21119,15 +21128,15 @@ function guion(M,plan,rnd){const N=M.len,L=M.lanes,key="tr"+(++GUION_N).toString
   // faders: aparecer/desaparecer de los cometas + el DJ deja ~45 % de la subida por cercanía (a 0,5 m: +3,8 en vez de +8,4 dB)
   const bev={};for(const r of RIDS)bev[r]=M.vols.filter(v=>v.row===r).sort((a,b)=>a.b-b.b);
   const baseAt=(r,u)=>{let v=ROW[r].vol;for(const x of bev[r]){if(x.b<=u+1e-9)v=x.val;else break}return v};
-  const out=M.vols.filter(v=>!RIDS.includes(v.row));
+  const out=M.vols.filter(v=>!RIDS.includes(v.row)),enBreak=u=>plan.some(x=>x.kind==="break"&&x.b<=u&&u<x.b+x.len);
   for(const r of RIDS){const ts=new Set(bev[r].map(x=>x.b));for(let u=0;u<=N;u+=.125)ts.add(+u.toFixed(4));let prev=null;
-    for(const u of [...ts].sort((a,b)=>a-b)){const bv=baseAt(r,u),P=ev(r,u),comp=-.55*20*Math.log10(1.5/Math.max(.5,P[2])),o=envAt(r,u)+comp;
+    for(const u of [...ts].sort((a,b)=>a-b)){const bv=baseAt(r,u),P=ev(r,u),comp=-(enBreak(u)?.45:.55)*20*Math.log10(1.5/Math.max(.5,P[2])),o=envAt(r,u)+comp;
       const v=bv<=-40?bv:+(bv+o).toFixed(2);const isB=bev[r].some(x=>Math.abs(x.b-u)<1e-6);if(isB||prev==null||Math.abs(v-prev)>=1){out.push({b:u,row:r,val:v});prev=v}}}
   M.vols=out.sort((a,b)=>a.b-b.b);
   const reg={};for(const r of RIDS){reg[key+"_"+r]=KF[r];const m={k:"tramo",g:1,ref:key+"_"+r,s:1};for(const g of L[r])g.mov=m}
   if(K.TRAMOS)Object.assign(K.TRAMOS,reg);
   M.movs=[];M.escenas=M.escenas.filter(x=>x.cue==="frenar");M.says=[...M.says.map(x=>({...x,text:x.text.replace(": llamada y respuesta y todo girando","").replace("; la melodía sube y baja","").replace(/, con tu movimiento «[^»]*» de la Mesa/,"")})),...says].sort((a,b)=>a.b-b.b);
-  M.guion={v:2,kf:reg,usos,resumen:"El espacio va con guion y todo se mueve pegado a tu cabeza, con la dinámica de la canción: la subida acelera y se cierra hacia ti, el drop explota a 1 vuelta por segundo, el respiro flota lento. La melodía gira en órbita inclinada y cruza de oreja a oreja por encima, el ritmo va al revés por detrás, los efectos rebotan golpe a golpe por toda la cabeza, el bajo se acerca y se aleja y el bombo te pega desde un lado en el 1 del drop."};
+  M.guion={v:2,kf:reg,usos,resumen:"El espacio va con guion y todo se mueve pegado a tu cabeza, con la dinámica de la canción: la subida acelera y se cierra hacia ti, el drop explota a 1 vuelta por segundo, en el respiro, con pocos sonidos, lo que queda pasa rozándote las orejas. La melodía gira en órbita inclinada y cruza de oreja a oreja por encima, el ritmo va al revés por detrás, los efectos rebotan golpe a golpe por toda la cabeza, el bajo se acerca y se aleja, y bajo y bombo salen de vez en cuando a dar una vuelta corta a tu alrededor; el bombo te pega desde un lado en el 1 del drop."};
   return M}
 const BASE=()=>K.BASE_BPM||128;
 const nm=id=>PAD[id]?"«"+PAD[id].n+"»":"";
