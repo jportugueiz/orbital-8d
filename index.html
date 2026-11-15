@@ -6629,7 +6629,7 @@ void main(){vec4 q=IVP*vec4(uv*2.-1.,1.,1.);vec3 d=normalize(q.xyz/q.w-eye);
     float me=uPx/sin(uMoon.w);float ma=(1.-smoothstep(1.-me,1.+me,mR))*uMoonL.w;vec3 L=uMoonL.xyz;
     if(ma>0.){float mz=sqrt(max(1.-mr2,0.));vec3 nW=mp.x*mr+mp.y*mu-mz*md;
       vec3 T=texture2D(uMoonT,vec2(.5+atan(mp.x,mz)/6.2832,.5-asin(clamp(mp.y,-1.,1.))/3.14159)).rgb;T*=T;
-      float nl=dot(nW,L);float lit=smoothstep(-.08,.12,nl)*(.25+.75*max(nl,0.));
+      float nl=dot(nW,L);float lit=smoothstep(-.08,.12,nl)*min(1.15,2.*max(nl,0.)/(max(nl,0.)+mz+.02));/* 15 nov: Lommel-Seeliger (la Luna real casi no se oscurece en el borde; Lambert dejaba un anillo negro) */
       col=col*(1.-ma)+T*(lit*1.3+.035)*uMoonG.x*ma;}
     float mfr=.5+.5*dot(L,-md);col+=vec3(.72,.78,.95)*exp(-max(mR-1.,0.)*2.4)*step(1.,mR)*.045*mfr*uMoonG.y*uMoonL.w;}}
   // aura: resplandor radial suave alrededor del ser (centro en y=uAura.w), cian-azul al centro y violeta hacia el borde;
