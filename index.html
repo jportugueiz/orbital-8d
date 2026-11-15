@@ -861,7 +861,7 @@ body.playing{overflow:hidden}
 #play .play-master>strong{display:block;min-height:0}
 #play .fd-horizontal .fader .ticks{display:none}
 #play .fd-horizontal .lab{display:none}
-#play #pCueEditor{width:min(440px,92vw);background:#162333;color:#ecf7ff;border:1px solid #588297;border-radius:12px}
+#play #pCueEditor{width:min(1100px,96vw);max-height:94dvh;overflow:auto;background:#162333;color:#ecf7ff;border:1px solid #588297;border-radius:12px}
 #play #pCueEditor::backdrop{background:#05080dc9}
 #play #pCueForm label{display:grid;gap:3px;margin:8px 0}
 #play #pCueForm :is(input,select){width:100%;min-width:0;padding:7px;background:#0a141f;color:#effaff;border:1px solid #537181;border-radius:5px}
@@ -1033,6 +1033,16 @@ body.playing{overflow:hidden}
 }
 #play .fd-horizontal .fader .th::after{display:none}
 #manualLibrary .pbtn{flex:1 1 130px;min-height:42px}
+
+/* Crear cue + Movimientos en una sola página (15 nov 2026) */
+#play #pCueForm .cue-move-layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:14px;margin:6px 0}
+#play #pCueRouteGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:7px;align-content:start;max-height:56dvh;overflow:auto;padding-right:2px}
+#play #pCueRouteGrid .pbtn{min-height:52px;font-size:14px;white-space:normal;line-height:1.15}
+#play #pCueRouteGrid .pbtn[aria-pressed=true]{border-color:#6cebf2;background:#183c4b;color:#d8fdff}
+#play #pCueForm .cue-move-monitor{display:flex;flex-direction:column;gap:6px;min-width:0}
+#play #pCueForm .cue-speed{grid-template-columns:auto 1fr auto;align-items:center}
+@media (max-width:760px){#play #pCueForm .cue-move-layout{grid-template-columns:1fr}#play #pCueRouteGrid{max-height:none}}
+#play #pCueForm label[hidden]{display:none}
 /* SESIONES: consola (música IAH) y Mis sesiones */
 #shMus{margin-top:10px;padding:8px;border:1px solid rgba(120,140,200,.18);border-radius:8px;background:rgba(5,8,14,.35)}
 #shMus .row{gap:8px;align-items:center;flex-wrap:nowrap}#shMus select{flex:1;min-width:0}
@@ -1764,7 +1774,7 @@ body.ldjx-open .ldj-fab{display:none!important}
   .ldjx[data-tab="space"] .ldx-escena .ldx-plat-ctl{display:none}
   .ldjx[data-tab="space"] .ldx-pbar{display:flex;grid-column:2;grid-row:2}
   .ldjx[data-tab="space"] .ldx-escena{display:flex;grid-column:2;grid-row:3}
-  .ldjx[data-tab="space"] .ldx-escena :is(.ldx-mhide,.ldx-esc-head .ldx-sub,.ldx-ucues,.ldx-addcue){display:none}
+  .ldjx[data-tab="space"] .ldx-escena :is(.ldx-mhide,.ldx-esc-head .ldx-sub){display:none}
   .ldjx[data-tab="space"] .ldx-esc-grid{grid-template-columns:1fr 1fr}
   .ldjx[data-tab="pads"] .ldx-launch{display:flex}
   .ldjx[data-tab="mix"] .ldx-strips,.ldjx[data-tab="mix"] .ldx-panel{display:flex}
@@ -1804,6 +1814,29 @@ body.ldjx-open .ldj-fab{display:none!important}
 .ldx-estilo{color:#e2d2ff!important;border-color:#a874ff!important}
 @media (max-height:780px) and (min-width:761px){.ldx-epad{min-height:34px}.ldx-pm,.ldx-ps,.ldx-gesto,.ldx-pm-more{min-height:32px}.ldx-launch{min-height:calc(30px + 24px + 5 * 30px + 4px)}}
 @media (max-width:760px){.ldx-pbar>small{display:none}}
+/* «+ Cue» de ORBITAL DJ: un solo pop-up (pista, nombre, todos los movimientos, velocidad y sala) · 15 nov 2026 */
+.ldx-cue-dlg{width:min(760px,94vw);max-height:92dvh;overflow:auto;background:#121a24;color:#e6f6ff;border:1px solid #3e6476;border-radius:14px;padding:16px 18px;box-shadow:0 20px 60px #000a}
+.ldx-cue-dlg::backdrop{background:#05080dcc}
+.ldx-cue-dlg h3{margin:0 0 10px;font:700 15px UI,system-ui;letter-spacing:.08em}
+.ldx-cue-top{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ldx-cue-top label{display:grid;gap:4px}
+.ldx-cue-top :is(select,input){padding:8px 10px;border-radius:8px;border:1px solid #2f4452;background:#0b1118;color:#e6f6ff;font:500 14px UI,system-ui;min-width:0}
+.ldx-cue-lab{display:block;margin:12px 0 6px;opacity:.75;letter-spacing:.06em}
+.ldx-cue-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:7px}
+.ldx-cue-grid button,.ldx-cue-vel button{min-height:46px;padding:6px 8px;border-radius:9px;border:1px solid #33505f;background:linear-gradient(#26313d,#1a222c);color:#dcefff;font:600 13px UI,system-ui;white-space:normal;line-height:1.15;cursor:pointer}
+.ldx-cue-grid button[aria-pressed=true],.ldx-cue-vel button[aria-pressed=true]{border-color:#6cebf2;background:#183c4b;color:#d8fdff;box-shadow:0 0 12px #4fd5e055}
+.ldx-cue-vel{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.ldx-cue-chk{display:flex;gap:8px;align-items:center;margin:12px 0 4px;font-size:13px}
+.ldx-cue-row{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+@media (max-width:560px){.ldx-cue-top{grid-template-columns:1fr}.ldx-cue-vel{grid-template-columns:repeat(2,1fr)}}
+
+/* PISTA SELECCIONADA ordenada y MIS CUES abajo, con pads grandes como ESCENA 8D (pedido de Jorge, 15 nov 2026) */
+.ldjx .ldx-p-cues{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:start;margin-top:8px;padding-top:8px;border-top:1px solid #ffffff14}
+.ldjx .ldx-p-cues .ldx-p-lab{padding-top:14px}
+.ldjx .ldx-ucues{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:5px;flex:none;overflow:visible}
+.ldjx .ldx-ucues .ldx-epad{min-height:46px;font-size:13px}
+.ldjx .ldx-ucues .ldx-addcue{--h:186;grid-column:span 2;font-weight:800;letter-spacing:.04em;border-style:dashed}
+@media (max-width:760px){.ldjx .ldx-p-cues{grid-template-columns:1fr}.ldjx .ldx-p-cues .ldx-p-lab{padding-top:0}.ldjx .ldx-ucues .ldx-epad{min-height:50px}}
 /* Materiales comunes para el estudio, los modos inmersivos y el mezclador integrado. */
 :root {
   --rack-edge:#535c65;
@@ -2892,15 +2925,22 @@ body[data-mode="ses"] #ship .left{grid-area:library}
       <h2 id="pCueTitle">Crear cue</h2>
       <label>Pad <select id="pCuePad"></select></label>
       <label>Nombre o número <input id="pCueName" maxlength="40" placeholder="Ej. 01 · Cuenco"></label>
-      <label>Familia <select id="pCueFamily"></select></label>
+      <label hidden>Familia <select id="pCueFamily"></select></label>
       <label>Sonido <select id="pCueSound"></select></label>
-      <label>Recorrido <select id="pCueRoute"></select></label>
+      <label hidden>Recorrido <select id="pCueRoute"></select></label>
+      <!-- Crear cue + Movimientos en una sola página (pedido de Jorge, 15 nov 2026): todos los recorridos en botones -->
+      <div class="cue-move-layout">
+        <div id="pCueRouteGrid" role="group" aria-label="Movimiento del cue"></div>
+        <section class="cue-move-monitor"><strong id="pCueRouteTitle"></strong>
       <div id="pCueDrawSteps" hidden>
         <button class="pbtn sm" type="button" id="pCueDraw">1 · Dibujar en el visor</button>
         <button class="pbtn sm" type="button" id="pCueAppend" disabled>Añadir tramo dibujado</button>
         <button class="pbtn sm" type="button" id="pCueHeight" disabled>2 · Dibujar altura</button>
       </div>
       <div id="pCuePreview" class="play-route-preview" hidden></div>
+      <label class="cue-speed">Velocidad <input id="pCueSpeed" type="range" min="2" max="100" value="45"> <output id="pCueSpeedValue">45 %</output></label>
+        </section>
+      </div>
       <fieldset id="pCueTiming" hidden>
         <legend>Tiempo y pausas</legend>
         <p>Marca un punto del recorrido en X o Y. Los tiempos se cuentan desde el punto anterior.</p>
@@ -4834,7 +4874,7 @@ function distApply(v,t,P,k,ramp){const m=v.m,I=distInfo(P[2],m.space,m.hyper,P[0
   const S_=(p,x)=>{try{ramp?p.linearRampToValueAtTime(x,t):p.setValueAtTime(x,t)}catch(e){}};
   const D0=Math.round(D_REF/C_SND*v.dop.context.sampleRate)/v.dop.context.sampleRate,dT=v.labDop?v.labDop(t,P,I,ramp):D0;/* retardo fijo: el Doppler físico es inaudible a estas velocidades y su retardo variable quitaba agudos y desfasaba pistas */// LAB (gancho): Doppler por fuente; sin él, dT = I.dop
   S_(v.dop.delayTime,dT);if(v.lowSplit&&LABV.splitDist)LABV.splitDist(v,S_,I,dT,iso);/* LAB (gancho): divisor de graves */S_(v.dAir.frequency,I.air_fc);const gMv=I.g*(v.mv||1);/* realce de movimiento (auditoría 8D) */S_(v.dG.gain,iso==="wet"?0:gMv);S_(v.oG.gain,v.ab?1:iso==="wet"?0:gMv);S_(v.oD.delayTime,v.ab?0:dT);v.dx={hs:I.hs_db,ls:I.body_db,pr:I.pres_db};
-  const nr=I.lat>=0?1:0;S_(v.ls[nr].gain,I.ild_near);S_(v.ls[1-nr].gain,I.ild_far);S_(v.pd[1-nr].delayTime,Math.min(.0025,I.itd_x));S_(v.pd[nr].delayTime,0);
+  const nr=I.lat>=0?1:0,dk=v.duck||[0,0];/* mute contrario (Mesa) */S_(v.ls[nr].gain,I.ild_near+dk[nr]);S_(v.ls[1-nr].gain,I.ild_far+dk[1-nr]);S_(v.pd[1-nr].delayTime,Math.min(.0025,I.itd_x));S_(v.pd[nr].delayTime,0);
   S_(v.wg[0].gain,I.width);S_(v.wg[1].gain,I.width);
   const wet=iso==="dir"?0:1,kD=clamp(P[2]/1.5,1,WCAP[v.ren]||1),wE=wet*(v.wsE==null?1:v.wsE*kD),wR=wet*(v.wsR==null?1:v.wsR*kD);// alejar nunca sube el volumen total// v9/v10: casi seco cerca (≤ 1,5 m); la sala vuelve poco a poco hasta 5,5 m (lejos = más sala)
   /* AUDITORÍA 8D (13 nov): este for estaba pegado al comentario y nunca corría → las 4 reflexiones sonaban mudas */
@@ -4853,6 +4893,17 @@ const cruceR=P=>{const l=Math.abs(Math.sin(P[0]*D2R)*Math.cos(P[1]*D2R));return 
 /* REALCE DE MOVIMIENTO (Jorge: «cuando algo se mueve DEBE subir un poco su volumen para mostrarse»; auditoría 8D, 13 nov):
    según la velocidad angular PROPIA de la fuente (sin el giro de la sala/plato): 0 dB quieta, ≈ +0,5 dB a 30°/s, +1,6 a 120°/s, tope +2 dB. Suave: sube en 80 ms, baja en 400 ms. */
 const MOVE={on:true,db:1,w0:60};
+/* MUTE CONTRARIO en la Mesa (15 nov; copiado de ORBITAL DJ, lab_dj.js, 14 nov, elegido por Jorge en la escucha A/B): cuando un sonido de la Mesa
+   (pads de sonido, no Fondo/Música ni el ancla bombo/bajo/sub) pasa pegado a una oreja (≤ 0,65 m y casi a 90°), el resto de los sonidos de la Mesa
+   baja hasta 6 dB en ESA oreja (sube en 30 ms, vuelve en 250 ms). Mismo cálculo que el DJ (duckHot/duckStep). Solo en vivo y solo en la Mesa
+   (fuentes con deckChannel); sin nadie pegado a la oreja no se toca nada. DUCK.on=false → como antes. */
+const DUCK={on:true,db:-6};
+function duckHot(P){const l=Math.sin(P[0]*D2R)*Math.cos(P[1]*D2R),w=clamp((.65-P[2])/.15,0,1)*clamp((Math.abs(l)-.75)/.15,0,1);return [l<0?w:0,l>0?w:0]}
+function duckStep(prev,tgt,dt){return prev.map((v,e)=>v+(tgt[e]-v)*(1-Math.exp(-dt/(tgt[e]<v?.03:.25))))}
+const duckAnc=s=>{try{return typeof GRP!=="undefined"&&!!GRP.isAnchor&&GRP.isAnchor(s)}catch(e){return false}};
+function duckHotMap(list){const H=new Map();if(!DUCK.on)return H;for(const s of list){if(!(s.deckChannel>2)||!s._v||!s._P||(s.vol_db??0)<=-40||duckAnc(s)||!gainOf(s,list))continue;const h=duckHot(pasFloor(s,s._P));if(h[0]>0||h[1]>0)H.set(s,h)}return H}
+function duckFor(s,v,H,dt){if(!(s.deckChannel>2)||(!v.duck&&!H.size))return;const tg=[0,1].map(e=>{let m=0;for(const [k,h] of H)if(k!==s)m=Math.max(m,h[e]);return DUCK.db*m});
+  const d=dt>0?duckStep(v.duck||[0,0],tg,dt):(v.duck||[0,0]);v.duck=(tg[0]===0&&tg[1]===0&&Math.abs(d[0])<.01&&Math.abs(d[1])<.01)?null:d}
 function motionBoost(s,v,P,dt){if(!MOVE.on||!P){v.mv=1;return}if(!(dt>0))return;/* dos llamadas en el mismo instante: conserva el realce */const q=s._mvP;s._mvP=[P[0],P[1]];if(!q){v.mv=1;return}
   let d=P[0]-q[0];d=((d%360)+540)%360-180;const w=Math.hypot(d*Math.cos((P[1]||0)*D2R),P[1]-q[1])/dt,W0=s._mvW||0,a=w>W0?1-Math.exp(-dt/.08):1-Math.exp(-dt/.4);
   const W=s._mvW=W0+(w-W0)*a;v.mv=Math.pow(10,MOVE.db*W*W/(W*W+MOVE.w0*MOVE.w0)/20)}
@@ -5339,6 +5390,7 @@ function ctl(){const c=cctx;if(!c)return;const now=c.currentTime;const gap=S.las
   // Background tabs can batch JS timers. Queue audio events on the audio clock before that happens.
   const scheduleUntil=now+(document.hidden?2.5:.6);
   const solo=S.sources.some(s=>s.solo&&!s.waiting);
+  const DH=duckHotMap(S.sources);/* mute contrario (Mesa): quién está pegado a una oreja (posición del ciclo anterior, 25 ms) */
   for(const s of S.sources){
     if(deckClosed(s)||deckIdle(s,solo)){
       if(s._v){
@@ -5361,7 +5413,7 @@ function ctl(){const c=cctx;if(!c)return;const now=c.currentTime;const gap=S.las
     if(s._dr){s._dNow=distAt(s,T);if(T<s._dr.pts[s._dr.pts.length-1][0]+.05)s._dirty=true;else{s._dNow=null;s._dr=null}}
     let P;if(s.live){P=liveStep(s,dt)}else if(S.playing){P=advance(s,s._mo,time,s.cue?Math.min(dt,Math.max(0,time-s.cue.in)):dt,g)}else{if(s._P&&!s._dirty)continue;P=advance(s,s._mo,time,0,g);s._dirty=false}
     if(!(isFinite(P[0])&&isFinite(P[1])&&isFinite(P[2]))){try{window.__nan=window.__nan||{live:JSON.stringify(s.live),path:JSON.stringify(s.path),P:String(P)}}catch(e){}if(s.live){const L=s.live;for(const k of ["az","el","r","w","saz","sel","sr"])if(L[k]!=null&&!isFinite(L[k]))L[k]=k==="r"||k==="sr"?1.5:0}P=s._P&&isFinite(s._P[0])?s._P:[0,0,1.5]}
-    if(typeof GRP!=="undefined"&&GRP.on&&!(s.live&&s.live.mode==="take")){s._Po=P;P=GRP.live(s,P,time)}/* GRUPOS (gancho): grupo y sala sobre el movimiento propio */motionBoost(s,v,(typeof GRP!=="undefined"&&GRP.on&&s._Po)||P,dt);s._P=P;voicePos(v,T,pasFloor(s,P),v.k,v.last!=null);
+    if(typeof GRP!=="undefined"&&GRP.on&&!(s.live&&s.live.mode==="take")){s._Po=P;P=GRP.live(s,P,time)}/* GRUPOS (gancho): grupo y sala sobre el movimiento propio */motionBoost(s,v,(typeof GRP!=="undefined"&&GRP.on&&s._Po)||P,dt);s._P=P;duckFor(s,v,DH,dt);voicePos(v,T,pasFloor(s,P),v.k,v.last!=null);
     const audible=cueAudible(s,time);
     if((v.cueAudible??true)!==audible){
       v.cueAudible=audible;
@@ -5495,7 +5547,7 @@ function meters(){if(!M||!M.anL)return null;M.anL.getFloatTimeDomainData(MB.l);M
   let lev=0;for(let i=2;i<200;i++)lev+=MB.f[i];lev/=198*255;
   return {pl,pr,ild,cor,itd:bl/M.ctx.sampleRate*1e6,lufs,lev,gr:M.lim.reduction||0,l:MB.l,r:MB.r,fft:MB.f}}
 
-return {cruceR,nfDb,MOVE,cueEnded,setDist,setDistPath,getDist,setPos,setRoom,setHyperreal,ROOMS,distInfo,airAlpha,airFc,critDist,lvlOf,ildNF,itdNF,CRUCE,DIST:{MIN:D_MIN,MAX:D_MAX,REF:D_REF,C:C_SND,G_MAX_DB:12},get space(){return S.space},get hyper(){return S.hyper},
+return {DUCK,duckHot,cruceR,nfDb,MOVE,cueEnded,setDist,setDistPath,getDist,setPos,setRoom,setHyperreal,ROOMS,distInfo,airAlpha,airFc,critDist,lvlOf,ildNF,itdNF,CRUCE,DIST:{MIN:D_MIN,MAX:D_MAX,REF:D_REF,C:C_SND,G_MAX_DB:12},get space(){return S.space},get hyper(){return S.hyper},
   v9Node,v9Set,V9P,onTransport(f){TRL.push(f);return()=>{const i=TRL.indexOf(f);if(i>=0)TRL.splice(i,1)}},gainOf,hdOf,MAXV,DECK_CHANNELS,BANCO,BANCO_IDS,REN,RENDS,HRK,addRenderer,renOf,LVREN,HR,LIC,atribucion,renderAll,renderRange,setPrefCC0(v){PREF_CC0=!!v},get prefCC0(){return PREF_CC0},genEvents,ac,_master,get M(){return M},S,LIB,LIB_IDS,PATHS,PATH_IDS,PRESET01,BEDS,BANDS,revS,radio,xyz,aer,wrap,rng,newSource,addSource,removeSource,setSources,applyMix,play,pause,stop,seek,pos,render,meters,setLim,setVol,setDeckMaster,
   recStart,recStop,takeAt,breathK,advance,mkMotion,libCargar,libSmp,bedLoad,stopBed,stopBin,binStart,bedStart,loadBenzai,clamp,lerp,dB,onEnd:null,ctl,loop,killVoice,rtVoice,
   startExtras(){const c=ac();startLiveBed(c);if(S.binCfg.on&&!S.bin)S.bin=binStart(c,M,S.binCfg,c.currentTime+.05);loop()}};
@@ -6799,7 +6851,7 @@ const ENVS={
        tam = múltiplo del tamaño angular real (~0,53°). La fase de la Luna sale de la posición del Sol; «fase» (elongación en grados) solo se usa si el Sol está apagado. «ilum» (0..1) fuerza la fracción iluminada, con la luz del lado del Sol.
        Por defecto Sol y Luna están en oposición (az +180°, elevación espejada): Luna llena; en 3D se ve el Sol y la Luna al girar o mirar atrás.
        Sol: brillo, respira (amplitud de la corona, ciclo ~8 s), vida (filamentos y brillo en los arcos). off:true desactiva cada uno. */
-    luna:{az:188,el:14,tam:3.2,fase:120,ilum:.98,brillo:1.5,halo:1,img:"visuales/pano/luna_1k.webp",imgMovil:"visuales/pano/luna_512.webp"},
+    luna:{az:188,el:14,tam:22,fase:120,ilum:.98,brillo:1.5,halo:1,img:"visuales/pano/luna_2k.webp",imgMovil:"visuales/pano/luna_1k.webp"},/* 15 nov: más cerca (×22 el tamaño real) y con el mapa LRO de 2048 px para que se vea nítida (pedido de Jorge) */
     sol:{az:8,el:-14,tam:3,brillo:1.8,respira:.12,vida:1,img:"visuales/pano/sol_512.webp",imgMovil:"visuales/pano/sol_256.webp"},
     credit:"ESA/Gaia/DPAC; CC BY-SA 3.0 IGO. Acknowledgement: A. Moitinho."},
   nebulosa_profunda:{n:"Nebulosa profunda",c1:[.2,.32,.95],c2:[.45,.22,.9],bri:.9,warm:-.2,emo:["tristeza","melancolia","misterio"]},
@@ -10209,13 +10261,13 @@ function close(keep){
   PLAY_DESK.close(keep!==true);
   GLV.V.ok=!!GLV.V.has;$("#play").hidden=true;document.body.classList.remove("playing");PT.clear();twist=null;
   syncSharedViewer();
-  const screen=cv.closest(".play-stage");
+  const screen=cv.closest(".play-stage")||$("#play .play-stage");
   if(screen.classList.contains("pseudofs")||document.fullscreenElement===screen)GLV.fullscreen(screen);
   syncFullscreen();
   MAN.icons();APP.autosave();
 }
 function syncFullscreen(){
-  const screen=cv.closest(".play-stage"),button=$("#pFull");
+  const screen=cv.closest(".play-stage")||$("#play .play-stage"),button=$("#pFull");
   const active=document.fullscreenElement===screen||screen.classList.contains("pseudofs");
   button.setAttribute("aria-pressed",String(active));
   button.textContent=active?"✕ Salir de pantalla completa":"⤢ Pantalla completa";
@@ -10272,7 +10324,7 @@ function initHoverDelete(){
 function init(){cv=$("#pc");PLAY_DESK.init();PLAY_GRUPOS.init();initScript();axesUI();initHoverDelete();cv.addEventListener("pointerdown",down);cv.addEventListener("pointermove",move);cv.addEventListener("pointerup",up);cv.addEventListener("pointercancel",up);
   $("#orbArmCue").onclick=()=>armCue(S.sources.find(s=>s.id===$("#orbCueSource").value));
   $("#orbCueSource").onchange=syncCues;
-  const screen=cv.closest(".play-stage");
+  const screen=cv.closest(".play-stage")||$("#play .play-stage");
   $("#pFull").onclick=()=>{cancelDrawing();GLV.fullscreen(screen);syncFullscreen()};
   $("#pView3D").onclick=()=>{setView(VIEW==="3D"?"X":"3D")};
   document.addEventListener("fullscreenchange",syncFullscreen);
@@ -10999,8 +11051,12 @@ const PLAY_DESK=(()=>{
     const previous=trackAt(index);
     if(previous)ORB.removeSource(previous.id);
     if(Object.hasOwn(ORB.BANCO,id)){
+      // Círculo como en ORBITAL DJ (15 nov): los sonidos nuevos aparecen a 1,3 m (EDGE_R del DJ; antes 2,6 m en los pads 9–18 → ≈ 6 dB más bajos),
+      // en huecos libres del círculo; los graves (bombo, bajo, sub) con el ancla puesta van al centro, abajo y adelante (anchorPos del DJ: 1,4–1,5 m)
+      const grave=typeof GRP!=="undefined"&&GRP.O&&GRP.O.ancla&&GRP.isAnchor&&GRP.isAnchor({inst:id,label:""})&&!/bajo_agua/.test(id),low=grave&&/(bajo|bass|sub|808)/i.test(id);
+      const az=index<=8?(index-1)*45:index<=16?(index-9)*45+22.5:(index-17)*45;
       const added=ORB.addSource({id:"deck"+index,deckChannel:index,kind:"inst",inst:id,continuousInstrument:SOUND_LIBRARY.isInstrument(id),vol_db:-60,speed:ORB.PRESET01.speed,compression:0,
-        path:{type:"still",az0:(index-1)*45,el:0},dist:index<=8?1.35:2.6});
+        path:grave?{type:"still",az0:0,el:low?-15:-8}:{type:"still",az0:az,el:0},dist:grave?(low?1.4:1.5):1.3});
       if(added&&typeof PASAPORTE!=="undefined")PASAPORTE.aplicar(added,"mesa");// PASAPORTE: velocidad, distancia, elevación y nivel natural de este sonido
     }
     syncLayerMix();select(index);render();save();
@@ -11362,8 +11418,10 @@ const PLAY_DESK=(()=>{
         points:draft.pts.map(([x,z,el])=>[x,-z,Math.hypot(x,z)*Math.tan(el*Math.PI/180)]),
         closed:draft.closed
       }:null;
-      preview(cuePreview,path,value.startsWith("banco:")?motions[Number(value.slice(6))]:null,
-        voice?.cuePreset?.speed??voice?.speed??.45,marks);
+      for(const b of routeGrid.querySelectorAll("[data-route]"))b.setAttribute("aria-pressed",String(b.dataset.route===value));
+      el("pCueRouteTitle").textContent=[...cueRoute.options].find(o=>o.value===value)?.textContent||"";
+      cuePreview.hidden=false;
+      preview(cuePreview,path,value.startsWith("banco:")?motions[Number(value.slice(6))]:null,Number(cueSpeed.value)/100,marks);
     }
     cueRoute.onchange=showCueRoute;
     function drawCue(append){
@@ -11392,10 +11450,18 @@ const PLAY_DESK=(()=>{
       if(draft)editHeight(draft,path=>{draft=path;showCueRoute()});
     };
     const option=(value,label)=>h("option",{value},label);
-    function syncCueSound(){
-      cueSound.replaceChildren(...(groups.find(group=>group.id===cueFamily.value)?.sources||[])
-        .map(sound=>option(sound.id,sound.title)));
+    function syncCueSound(){// todos los sonidos, agrupados por familia (ya no hay selector de familia)
+      const keep=cueSound.value;
+      cueSound.replaceChildren(...groups.map(group=>h("optgroup",{label:group.name},...group.sources.map(sound=>option(sound.id,sound.title)))));
+      if(keep&&[...cueSound.options].some(o=>o.value===keep))cueSound.value=keep;
     }
+    // grilla de movimientos dentro del cue: un botón por recorrido (las mismas opciones de antes, ahora a la vista)
+    const routeGrid=el("pCueRouteGrid"),cueSpeed=el("pCueSpeed"),cueSpeedOut=el("pCueSpeedValue");
+    function buildRouteGrid(){
+      routeGrid.replaceChildren(...[...cueRoute.options].filter(o=>!o.hidden).map(o=>h("button",{class:"pbtn",type:"button","data-route":o.value,"aria-pressed":"false",
+        onclick:()=>{cueRoute.value=o.value;showCueRoute()}},(o.value.startsWith("banco:")&&/^[^·]+ · Lazo vertical$/.test(o.textContent)?o.textContent:o.textContent.replace(/^[^·]+ · /,"")))));
+    }
+    cueSpeed.oninput=()=>{cueSpeedOut.textContent=cueSpeed.value+" %";showCueRoute()};
     function syncCuePad(editSaved=false){
       const voice=trackAt(Number(cuePad.value));
       const family=groups.find(group=>group.sources.some(sound=>sound.id===voice?.inst));
@@ -11409,6 +11475,7 @@ const PLAY_DESK=(()=>{
         pts:path.pts.map(([x,z,height])=>[x,z,height??path.el??0])}:null;
       bankCue=null;marking=false;
       cueRoute.value=draft?"drawn":voice?"actual":"orbit";
+      cueSpeed.value=Math.round(100*(voice?.cuePreset?.speed??voice?.speed??.45));cueSpeedOut.textContent=cueSpeed.value+" %";
       showCueRoute();
     }
     cueFamily.onchange=syncCueSound;
@@ -11425,6 +11492,7 @@ const PLAY_DESK=(()=>{
         h("option",{value:"guardado",hidden:true},"Cue del banco"),
         ...paths.filter(id=>id!=="drawn").map(id=>option(id,ORB.PATHS[id].n)),
         ...motions.map((motion,i)=>option("banco:"+i,motion[0]+" · "+motion[1])));
+      buildRouteGrid();
       cuePad.value=channel();
       syncCuePad(editSaved);
       syncCueBank();
@@ -11452,6 +11520,7 @@ const PLAY_DESK=(()=>{
       else if(cueRoute.value!=="actual")PLAY.setMovement(voice,cueRoute.value);
       else if(previousCue&&voice.waiting&&voice.path.type==="still"){Object.assign(voice,{path:previousCue.path,speed:previousCue.speed,dist:previousCue.dist,live:null})}
       if(voice.vol_db<=-60)adjustVolume(voice,-18);
+      if(cueRoute.value!=="guardado")voice.speed=ORB.clamp(Number(cueSpeed.value)/100,.02,1);
       PLAY.armCue(voice);
       if(!voice.armedCue)return;
       voice.cuePreset={...voice.armedCue,name:cueName.value.trim()||"Cue "+index};
@@ -22728,8 +22797,8 @@ function build(){
   /* ESCENA 8D (toques al próximo compás) + EFECTOS ESPACIALES (mantener apretado): todo pasa por el 8D */
   escGrid=E("div",{class:"ldx-esc-grid"});fxGrid=E("div",{class:"ldx-esc-grid ldx-fx2-grid"});
   const esc=E("section",{class:"ldx-escena","aria-label":"Escena 8D y efectos espaciales"},
-    E("div",{class:"ldx-esc-head"},E("h3",{},"ESCENA 8D"),E("small",{class:"ldx-sub"},"toca = próximo compás"),E("span",{class:"ldx-ucues"}),
-      btn("+ Cue",{cls:"ldx-sm ldx-addcue",tip:"Guarda cómo está la sala ahora (giro, inclinación, altura) como un cue tuyo",on:addUserCue})),escGrid,
+    E("div",{class:"ldx-esc-head"},E("h3",{},"ESCENA 8D"),E("small",{class:"ldx-sub"},"toca = próximo compás")),escGrid,
+
     E("div",{class:"ldx-esc-head ldx-fx2-head"},E("h3",{},"EFECTOS ESPACIALES"),E("small",{class:"ldx-sub"},"mantén apretado")),fxGrid);
   mando=E("div",{class:"ldx-mando","aria-label":"Canal de la pista seleccionada"});
   proBox=buildPro();
@@ -22891,11 +22960,11 @@ function renderPanel(){if(!panel)return;const L=selList(),t=L[0];if(!t)return;co
     E("div",{class:"ldx-p-head"},E("h3",{},"PISTA SELECCIONADA"),...L.slice(0,3).map(o=>E("b",{class:"ldx-chip",style:"--c:"+o.color},o.name)),L.length>3?E("small",{},"+"+(L.length-3)):null,ctl),
     E("div",{class:"ldx-p-row"},E("small",{class:"ldx-p-lab"},"Movimiento"),E("div",{class:"ldx-p-btns"},...MOVK.map(x=>mv(x,MOVN[x])),mv("p:fig8","Ocho"),more,
       E("button",{type:"button",class:"ldx-pm ldx-draw"+(DRAW&&DRAW.t===t?" on":""),"aria-pressed":String(!!(DRAW&&DRAW.t===t)),title:"Dibuja un recorrido con el dedo dentro del círculo: la pista lo repite al compás",onclick:()=>startDraw(t)},E("i",{html:MOVI.dibujo}),E("span",{},"Dibujar")))),
-    E("div",{class:"ldx-p-row"},E("small",{class:"ldx-p-lab"},"Velocidad"),E("div",{class:"ldx-p-btns"},...spd,E("span",{class:"ldx-p-sep"}),
-      btn("● Gesto 4",{cls:"ldx-gesto"+(REC&&REC.t===t&&REC.bars===4?" on":""),tip:"Grabar gesto: mueve el sonido con el dedo durante 4 compases y luego lo repite solo",on:e=>recMov(t,e.currentTarget,4)}),
-      btn("● Gesto 8",{cls:"ldx-gesto"+(REC&&REC.t===t&&REC.bars===8?" on":""),tip:"Grabar gesto de 8 compases",on:e=>recMov(t,e.currentTarget,8)}))),
-    E("div",{class:"ldx-p-sliders"},dist,alt,br));
-  renderPbar();if(bfad)bfad.sync()}
+    E("div",{class:"ldx-p-row"},E("small",{class:"ldx-p-lab"},"Velocidad"),E("div",{class:"ldx-p-btns ldx-p-vel"},...spd)),
+    E("div",{class:"ldx-p-sliders"},dist,alt,br),
+    // MIS CUES dentro de la pista seleccionada (pedido de Jorge, 15 nov 2026): pads grandes, «＋ Crear cue» primero, los que quepan
+    E("div",{class:"ldx-p-cues"},E("small",{class:"ldx-p-lab"},"Mis cues"),E("div",{class:"ldx-ucues"})));
+  renderUserCues();renderPbar();if(bfad)bfad.sync()}
 // barra «Pista» del celular (pestaña ESPACIO)
 function renderPbar(){if(!pbar)return;const t=selList()[0];if(!t)return;const k=movKeyT(t);
   pbar.replaceChildren(E("small",{},"Pista"),E("button",{type:"button",class:"ldx-pb-name",style:"--c:"+t.color,title:"Pasar a la siguiente pista que suena",onclick:nextSel},t.name),
@@ -23131,9 +23200,35 @@ const API={rotar:(g)=>{ROOM.man+=g},inclinar:(roll,pitch,bars=1)=>schedule("esce
   cue:id=>escena(id),get sala(){return Object.assign({},ROOM)}};
 
 /* cues del usuario: foto de la sala; se disparan en el próximo compás */
-function addUserCue(){const u=S.ucues||(S.ucues=[]);if(u.length>=6)u.shift();u.push({n:"C"+(u.length+1),az:ROOM.az+ROOM.man,roll:ROOM.roll,pitch:ROOM.pitch,elev:ROOM.elev,rs:ROOM.rs,spin:ROOM.spin});u.forEach((c,i)=>c.n="C"+(i+1));renderUserCues();save()}
-function renderUserCues(){const box=root&&root.querySelector(".ldx-ucues");if(!box)return;box.replaceChildren(...(S.ucues||[]).map(c=>btn(c.n,{cls:"ldx-sm ldx-ucue",tip:"Tu cue: giro "+Math.round(c.az)+"°, inclinación "+Math.round(c.roll)+"°, altura "+Math.round(c.elev)+"° · entra en el próximo compás",
-  on:e=>schedule("escena",b=>{ROOM.az=ROOM.az+ROOM.man;ROOM.man=0;tween("az",c.az,1,b);for(const k of ["roll","pitch","elev","rs"])tween(k,c[k],1,b);ROOM.spin=c.spin},e.currentTarget)})))}
+// «+ Cue» (pedido de Jorge, 15 nov 2026): un solo pop-up para crear el cue, como en la Mesa: pista, nombre, TODOS los
+// movimientos en botones, velocidad y, si quieres, la foto de la sala (giro, inclinación, altura). Entra en el próximo compás.
+let cueDlg=null;
+function addUserCue(){const T=S.tracks.filter(t=>t.clips.some(Boolean));if(!cueDlg){
+    const MOVS=[...MOVK.map(k=>[k,MOVN[k]]),...MESAK.map(([id,n])=>["p:"+id,n])];
+    const pista=E("select",{class:"ldx-cue-pista","aria-label":"Pista"}),nom=E("input",{class:"ldx-cue-nom",maxlength:"24",placeholder:"Ej. Giro del bajo","aria-label":"Nombre"});
+    const grid=E("div",{class:"ldx-cue-grid",role:"group","aria-label":"Movimiento"},...MOVS.map(([k,n])=>E("button",{type:"button",class:"ldx-cue-mov","data-k":k,"aria-pressed":"false",onclick:e=>{cueDlg._k=cueDlg._k===k?null:k;paint()}},n)));
+    const vel=E("div",{class:"ldx-cue-vel",role:"group","aria-label":"Velocidad"},...SPD.map(([v,n])=>E("button",{type:"button","data-s":v,"aria-pressed":"false",onclick:()=>{cueDlg._s=v;paint()}},n)));
+    const sala=E("input",{type:"checkbox",class:"ldx-cue-sala"});
+    const paint=()=>{grid.querySelectorAll("[data-k]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.k===cueDlg._k)));vel.querySelectorAll("[data-s]").forEach(b=>b.setAttribute("aria-pressed",String(+b.dataset.s===cueDlg._s)))};
+    cueDlg=E("dialog",{class:"ldx-cue-dlg","aria-label":"Crear cue"},E("h3",{},"CREAR CUE"),
+      E("div",{class:"ldx-cue-top"},E("label",{},E("small",{},"Pista"),pista),E("label",{},E("small",{},"Nombre"),nom)),
+      E("small",{class:"ldx-cue-lab"},"Movimiento"),grid,E("small",{class:"ldx-cue-lab"},"Velocidad"),vel,
+      E("label",{class:"ldx-cue-chk"},sala,E("span",{},"Guardar también cómo está la sala ahora (giro, inclinación, altura)")),
+      E("div",{class:"ldx-cue-row"},btn("Cancelar",{cls:"ldx-sm",on:()=>cueDlg.close()}),btn("Guardar cue",{cls:"ldx-sm ldx-cue-ok",on:()=>{
+        const t=S.tracks.find(x=>x.id===pista.value),k=cueDlg._k;if(!k&&!sala.checked){K.toast("Elige un movimiento o marca la sala");return}
+        const u=S.ucues||(S.ucues=[]);if(u.length>=12)u.shift();const c={n:(nom.value.trim()||"C"+(u.length+1)).slice(0,24)};
+        if(k&&t){c.tid=t.id;c.tn=t.name;c.key=k;c.s=cueDlg._s}
+        if(sala.checked)Object.assign(c,{az:ROOM.az+ROOM.man,roll:ROOM.roll,pitch:ROOM.pitch,elev:ROOM.elev,rs:ROOM.rs,spin:ROOM.spin});
+        u.push(c);renderUserCues();save();cueDlg.close();K.toast("Cue «"+c.n+"» guardado en MIS CUES")}})));
+    cueDlg._paint=paint;cueDlg._pista=pista;cueDlg._nom=nom;cueDlg._sala=sala;(root||document.body).append(cueDlg)}
+  if(!T.length){K.toast("Carga un sonido en alguna pista primero");return}
+  const sel=[...S.sel][0];cueDlg._pista.replaceChildren(...T.map(t=>E("option",{value:t.id,selected:t.id===sel?"":null},t.name)));
+  const t0=T.find(t=>t.id===sel)||T[0];cueDlg._k=movKey(t0.mov)||null;cueDlg._s=t0.mov.s??3;cueDlg._nom.value="";cueDlg._sala.checked=false;cueDlg._paint();cueDlg.showModal()}
+function fireUserCue(c,el){schedule("escena",b=>{
+  if(c.key){const t=S.tracks.find(x=>x.id===c.tid);if(t){applyKey(t,c.key,b);if(c.s!=null){const P=basePos(t,b);t.mov.s=c.s;if(t.mov.k==="orbita")contOrbit(t,b,P[0])}t.pinned=true;if(S.movMode==="iah")t.ctl="dj";applyMov(t);renderStrips();renderMando()}}
+  if(c.az!=null){ROOM.az=ROOM.az+ROOM.man;ROOM.man=0;tween("az",c.az,1,b);for(const k of ["roll","pitch","elev","rs"])tween(k,c[k],1,b);ROOM.spin=c.spin}},el)}
+function renderUserCues(){const box=root&&root.querySelector(".ldx-ucues");if(!box)return;box.replaceChildren(E("button",{type:"button",class:"ldx-epad ldx-addcue",title:"Crea un cue: elige pista, movimiento y velocidad (y si quieres la foto de la sala)",onclick:addUserCue},E("span",{},"＋ Crear cue")),
+  ...(S.ucues||[]).map((c,i)=>E("button",{type:"button",class:"ldx-epad ldx-ucue",style:"--h:"+(28+i*23)%360,onclick:e=>fireUserCue(c,e.currentTarget),title:"Tu cue"+(c.key?": «"+(c.tn||"pista")+"» · "+(MOVN[c.key]||(MESAK.find(x=>"p:"+x[0]===c.key)||[])[1]||c.key):"")+(c.az!=null?" · sala: giro "+Math.round(c.az)+"°, inclinación "+Math.round(c.roll)+"°, altura "+Math.round(c.elev)+"°":"")+" · entra en el próximo compás"},E("span",{},c.n))))}
 
 /* ---------- GRABAR GESTO: mueve el sonido con el dedo 4 u 8 compases y queda en bucle (arranca en el próximo compás) ---------- */
 let REC=null;
