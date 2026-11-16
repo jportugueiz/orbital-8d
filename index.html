@@ -23183,6 +23183,7 @@ function build(){
       btn("IAH",{cls:"ldx-mm",press:S.movMode==="iah",attr:{"data-mm":"iah"},tip:"IAH, operador 8D: el bajo, la armonía y el ritmo se mueven juntos y lento; la melodía vuela sola; el bombo queda fijo al frente. Toca un sonido para tomarlo.",on:()=>setMovMode("iah")}))),
     E("span",{class:"ldx-flex"}),
     btn("IAH DJ",{cls:"ldx-iah",tip:"IAH arma una sesión con los sonidos que elijas",on:openIah}),
+    btn("🎧 IAH DJ creations",{cls:"ldx-creations",tip:"Las canciones que creó IAH en 8D: tócalas aquí mismo",on:e=>abrirCreations(e.currentTarget)}),
     btn("💾 Guardar sesión",{cls:"ldx-save-ses",tip:"Guarda TODO en una sesión: sonidos de cada pista, cues (los 30), presets, movimientos, sala, tempo y kit",on:guardarSesion}),
     btn("Sesiones",{cls:"ldx-hide-m ldx-ses",tip:"Guardar, abrir o compartir sesiones .orbitaldj",on:openSessions}),
     btn("Listas",{cls:"ldx-hide-m ldx-slots-btn",press:false,tip:"Sesiones listas: cambia de sesión sin parar la música (entra en la próxima frase)",on:toggleSlots}),
@@ -23568,6 +23569,14 @@ function nudgeBpm(n){K.panel?.querySelector(n<0?'.ldj-tempo [aria-label="Bajar t
 function setQuant(v){S.quant=v;const d=K.deck;if(d)d.quant=quantVal();save()}
 function toggleMetro(){K.panel?.querySelector(".ldj-metro")?.click();S.metro=!S.metro;root.querySelectorAll(".ldx-metro").forEach(b=>b.setAttribute("aria-pressed",String(S.metro)))}
 function toggleRec(){K.panel?.querySelector(".ldj-rec")?.click();S.rec=!!K.deck?.rec;root.querySelectorAll(".ldx-rec").forEach(b=>{b.setAttribute("aria-pressed",String(S.rec));b.classList.toggle("on",S.rec);b.textContent=S.rec?"■ Terminar":"● Grabar"})}
+// IAH DJ CREATIONS dentro de ORBITAL DJ (pedido de Jorge, 15 nov): sus canciones se escuchan aquí; al tocar una se detiene el beat
+let CREA=null,CREA_ID="";
+function abrirCreations(anchor){const L=(ORB.BEDS||[]).filter(b=>b&&b.cat==="dj"&&b.file);if(!L.length){K.toast("No encontré canciones IAH DJ creations");return}
+  const tocar=b=>{try{if(CREA){CREA.pause();if(CREA_ID===b.id){CREA=null;CREA_ID="";K.toast("■ Detenida");return}}
+    const d=K.deck;if(d&&d.playing){d.stop();K.paint();sync()}
+    CREA=new Audio(b.file);CREA_ID=b.id;CREA.play().then(()=>K.toast("▶ "+b.t+" · "+Math.round(b.bpm||0)+" BPM · audífonos")).catch(e=>K.toast("No pude reproducir: "+(e.message||e)));CREA.onended=()=>{CREA=null;CREA_ID=""}}
+    catch(e){K.toast("No pude reproducir: "+(e.message||e))}};
+  popMenu(anchor,[...(CREA?[mi("■ Detener la que suena",()=>{CREA.pause();CREA=null;CREA_ID=""})]:[]),...L.map(b=>mi((CREA_ID===b.id?"■ ":"▶ ")+b.t,()=>tocar(b)))],E("b",{class:"ldx-menu-t"},"IAH DJ creations · "+L.length+" canciones"))}
 // GUARDAR SESIÓN (pedido de Jorge, 15 nov): un toque guarda todo (estado del motor + consola: pistas, cues, presets, movimientos, sala)
 function guardarSesion(){const kitN=((LAB_DJ._t?.kits||{})[S.kit]||{}).n||S.kit||"DJ";const def=kitN+" · "+new Date().toLocaleString("es",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
   const n=(prompt("Nombre de la sesión",def)||"").trim();if(!n)return;save();
