@@ -7139,7 +7139,7 @@ function init(canvas){cv=canvas;try{gl=cv.getContext("webgl",{antialias:false,al
   cv.addEventListener("webglcontextlost",e=>{e.preventDefault();V.ok=false;V.lost=true});
   cv.addEventListener("webglcontextrestored",()=>{try{setup();V.ok=true;V.lost=false;resize(true)}catch(e){console.warn(e)}});
   try{setup()}catch(e){console.warn("GLV:",e);V.ok=false;return false}
-  V.q=MOBILE?1:2;V.ok=true;V.has=true;resize(true);addEventListener("resize",()=>resize());
+  V.q=0/* 15 nov (Jorge): «lo importante es el audio, no el cielo»: cielo en su calidad más liviana */;V.ok=true;V.has=true;resize(true);addEventListener("resize",()=>resize());
   try{document.addEventListener("fullscreenchange",()=>setTimeout(()=>resize(),60))}catch(e){}
   requestAnimationFrame(loop);return true}
 function setup(){MAXTEX=gl.getParameter(gl.MAX_TEXTURE_SIZE);PTMAX=gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE)[1]||256;
@@ -7242,7 +7242,7 @@ function fftRings(fft,lev,red){if(!fft||!fft.length)return;const n=128,R0=3.4,T=
    Fiel y sutil: sin filamentos, polvo ni capa media procedurales; estrellas procedurales tenues; giro muy lento (drift, °/s). */
 const ENV_DEF="cielo_gaia";
 const ENVS={
-  cielo_gaia:{n:"Cielo Gaia",c1:[.2,.32,.95],c2:[.45,.22,.9],bri:.62,warm:0,emo:[],img:"visuales/pano/cielo_gaia_2k.webp",maxRes:"4k",maxResMobile:"2k",bank:true,humo:0,aura:{a:.3,r:2.8,pulso:.12,y:-.7},stars:.3,drift:.12,grainK:.3,
+  cielo_gaia:{n:"Cielo Gaia",c1:[.2,.32,.95],c2:[.45,.22,.9],bri:.62,warm:0,emo:[],img:"visuales/pano/cielo_gaia_2k.webp",maxRes:"2k",maxResMobile:"2k",bank:true,humo:0,aura:{a:.3,r:2.8,pulso:.12,y:-.7},stars:.3,drift:.12,grainK:.3,
     /* Luna real (NASA SVS CGI Moon Kit, LRO) y Sol real (NASA/SDO AIA 171 Å). az/el en grados en el marco del cielo (az 0 = frente, + = derecha; giran con el cielo);
        tam = múltiplo del tamaño angular real (~0,53°). La fase de la Luna sale de la posición del Sol; «fase» (elongación en grados) solo se usa si el Sol está apagado. «ilum» (0..1) fuerza la fracción iluminada, con la luz del lado del Sol.
        Por defecto Sol y Luna están en oposición (az +180°, elevación espejada): Luna llena; en 3D se ve el Sol y la Luna al girar o mirar atrás.
@@ -7337,7 +7337,7 @@ function project(p){const m=pv,x=p[0],y=p[1],z=p[2];const w=m[3]*x+m[7]*y+m[11]*
 function toPlane(sx,sy,h=0){const nx=sx/V.w*2-1,ny=1-sy/V.h*2;const inv=inv4(pv);if(!inv)return null;const a=tf(inv,[nx,ny,-1]),b=tf(inv,[nx,ny,1]);const d=[b[0]-a[0],b[1]-a[1],b[2]-a[2]];if(Math.abs(d[1])<1e-6)return null;const k=(h-a[1])/d[1];if(k<0)return null;return [a[0]+d[0]*k,h,a[2]+d[2]*k]}
 /* ---------- tamaño y FBO ---------- */
 function resize(force){if(!cv||!gl)return;const r=cv.getBoundingClientRect();const qt=QT[V.q]||QT[0];
-  const dpr=V.fixed?V.fixed.dpr:Math.min(devicePixelRatio||1,qt.dpr,1.5);/* rendimiento (15 nov): tope 1,5 — el cielo es suave y a dpr 2–3 con bloom y 4 FBO el GPU se ahogaba */V.dpr=dpr;V.w=V.fixed?V.fixed.w/dpr:r.width;V.h=V.fixed?V.fixed.h/dpr:r.height;
+  const dpr=V.fixed?V.fixed.dpr:Math.min(devicePixelRatio||1,qt.dpr,1);/* rendimiento (15 nov): tope 1,5 — el cielo es suave y a dpr 2–3 con bloom y 4 FBO el GPU se ahogaba */V.dpr=dpr;V.w=V.fixed?V.fixed.w/dpr:r.width;V.h=V.fixed?V.fixed.h/dpr:r.height;
   const W=V.fixed?V.fixed.w:Math.max(2,Math.round(r.width*dpr)),H=V.fixed?V.fixed.h:Math.max(2,Math.round(r.height*dpr));
   if(W!==cv.width||H!==cv.height||force||!V.FB){cv.width=W;cv.height=H;if(V.FB)for(const k in V.FB){gl.deleteTexture(V.FB[k].t);gl.deleteFramebuffer(V.FB[k].f);if(V.FB[k].rb)gl.deleteRenderbuffer(V.FB[k].rb)}
     V.FB={s:fbo(W,H,true),a:fbo(W,H),b:fbo(W,H),c:fbo(W,H)};V.fboOk=V.FB.s.ok&&V.FB.a.ok&&V.FB.b.ok&&V.FB.c.ok}}
@@ -7361,10 +7361,10 @@ function tapado(now){if(now-(V.covT||0)<250)return V.cov;V.covT=now;let c=false;
 function loop(now){requestAnimationFrame(loop);if(!V.ok||V.offline||document.hidden)return;
   if(V.rawT){const ri=now-V.rawT;if(ri>0&&ri<200)V.rawIv=V.rawIv?V.rawIv*.9+ri*.1:ri}V.rawT=now;
   if(!V.fixed&&tapado(now)){if(V.provider&&now-(V.covP||0)>33){V.covP=now;try{V.frameSources=V.provider().sources}catch(e){}}last=now;V.lastDraw=0;V.wk=[];return}
-  V.fc=(V.fc||0)+1;if(V.busy&&(V.fc%4))return;const sk=Math.max(V.skip||1,V.rawIv?Math.round(30/V.rawIv):1);if(sk>1&&(V.fc%sk))return;
+  V.fc=(V.fc||0)+1;if(V.busy&&(V.fc%4))return;const sk=Math.max(V.skip||1,V.rawIv?Math.round(50/V.rawIv):1);if(sk>1&&(V.fc%sk))return;
   const dt=Math.min(.1,(now-last)/1000);last=now;if(!cv.offsetWidth)return;const w0=performance.now();
   const D=V.provider?V.provider():{sources:[],events:[],lev:0};V.frameSources=D.sources;tick((now-V.t0)/1000,dt,D);const w=performance.now()-w0;
-  if(w>80&&!V.lockQ&&V.q>-1){V.q--;V.wk=[];V.up=0;resize();V.lastDraw=now;return}const iv=V.lastDraw?now-V.lastDraw:16.7;V.lastDraw=now;V.wk.push([w,iv/Math.max(V.skip||1,V.rawIv?Math.round(30/V.rawIv):1)]);V.ftAvg=V.ftAvg?V.ftAvg*.95+w*.05:w;
+  if(w>80&&!V.lockQ&&V.q>-1){V.q--;V.wk=[];V.up=0;resize();V.lastDraw=now;return}const iv=V.lastDraw?now-V.lastDraw:16.7;V.lastDraw=now;V.wk.push([w,iv/Math.max(V.skip||1,V.rawIv?Math.round(50/V.rawIv):1)]);V.ftAvg=V.ftAvg?V.ftAvg*.95+w*.05:w;
   if(V.wk.length>=12){const m=V.wk.reduce((a,b)=>a+b[0],0)/V.wk.length,r=V.wk.reduce((a,b)=>a+b[1],0)/V.wk.length;V.wk=[];V.work=m;V.rafMs=r;fps=1000/Math.max(1,r);
     if(V.lockQ)return;const slow=m>9||r>34;if(slow&&V.q>-1){V.q--;V.up=0;resize()}else if(slow){V.skip=Math.min(30,Math.ceil((V.skip||1)*1.6))}else if(m<4&&r<20&&V.skip>1){V.skip--}
     else if(m<4.5&&r<18&&V.skip<=1&&V.q<(MOBILE?2:3)&&++V.up>8){V.q++;V.up=0;resize()}}}
