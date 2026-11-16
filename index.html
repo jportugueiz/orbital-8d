@@ -23768,7 +23768,7 @@ function iahStop(){for(const g of IAHS.g)if(g.started)try{g.fin()}catch(e){}IAHS
 // MARGEN AUTOMÁTICO (15 nov, Jorge: «clipea cuando sumas muchos sonidos»): con más de 4 pistas sonando baja el conjunto
 // 10·log10(n/4) dB (6 → −1,8; 8 → −3; 12 → −4,8; 16 → −6), suave; el limitador queda de seguridad y no trabaja de más
 let AUTO_DB=0;function autoMargen(){const d=K.deck;if(!d||!d.setAuto)return;const n=S.tracks.filter(t=>t.clips.some(Boolean)&&isLive(t)).length;
-  const db=+(-10*Math.log10(Math.max(1,n/4))).toFixed(1);if(Math.abs(db-AUTO_DB)>=.5){AUTO_DB=db;d.setAuto(db)}}
+  const db=n<=2?0:+(-1.5-13*Math.log10(Math.max(1,n/3))).toFixed(1);/* v2 (Jorge: «todavía clipea un poco»): desde 3 pistas, −1,5 dB y 13·log10(n/3): 4 → −3,1; 6 → −5,4; 8 → −7; 12 → −9,3 */if(Math.abs(db-AUTO_DB)>=.5){AUTO_DB=db;d.setAuto(db)}}
 function iahStep(){if(S.movMode!=="iah")return;const d=K.deck;if(!d||!d.playing)return;const b=nowBar();
   for(const g of IAHS.g)if(!g.started&&b>=g.b0-.02){g.started=true;try{g.start()}catch(e){console.warn(e)}}
   for(const g of IAHS.g)if(!g.done&&b>=g.b1-.02){g.done=true;try{g.fin()}catch(e){console.warn(e)}}IAHS.g=IAHS.g.filter(g=>!g.done);
