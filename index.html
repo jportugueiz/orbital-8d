@@ -6594,7 +6594,41 @@ function par(f,E,kind,bars,spb,rnd){const rit=kind==="drop"||kind==="build",secs
 const sm=u=>{u=clamp(u,0,1);return u*u*(3-2*u)};
 function punto(f,P,u,bars,spb){if(f==="distancia"){const a=P.psi,rr=P.lejos?1.2+2.3*sm(u):1.4-1.0*Math.sin(Math.PI*u);return [rr*Math.sin(a),.1,rr*Math.cos(a)]}
   const G={f:f==="orbita"?"elipse":f,par:f==="orbita"?Object.assign({},P,{tau:0,ratio:1}):P};return e8aForma(G,u,u*bars*4,u*bars*spb)}
-return {e8aForma,E8A_FIT,E8A_TGT,E8A_NOM,E8A_N,E8A_BLOQUE,E8A_RIT,E8A_SEC,e8aNomT,par,punto}})();
+/* ELEGIR (15 nov 2026, Jorge: «SIEMPRE TIENE QUE SER EL MISMO CRITERIO»): la selección de gestos de las canciones IAH DJ creations
+   (e8aPlan, lab_dj.js) vive aquí y la usan TAMBIÉN IAH en vivo de ORBITAL DJ y la Mesa (IAH8D.planear). Imposible que diverjan.
+   o={secs:[{kind,b,len,inicio?}], nb, E:[energía 0..1 por compás], pres:{fila:[dB por compás], bloque:[…]}, rnd, lanes?, previos?:[gestos ya elegidos], desde?, hasta?} */
+const E8A_PRI={intro:.3,build:.55,drop:1,break:.12,outro:.35};
+function elegir(o){const {secs,nb,E,pres,rnd}=o,lanes=o.lanes||{},prev=o.previos||[],desde=o.desde??-1e9,hasta=o.hasta??1e9;
+  const secAt=b=>secs.find(s=>b>=s.b&&b<s.b+s.len)||{kind:"drop",b:0,len:nb};
+  const tg=t=>t==="bloque"?["bombo","bajo","perc","pads"]:t==="bombo_bajo"?["bombo","bajo"]:t.split("+");
+  const presW=(st,b0,b1)=>{let m=1;for(const s of st){if(!pres[s])return 0;let a=0;for(let b=b0;b<b1;b++)a+=pres[s][b];m=Math.min(m,clamp((a/(b1-b0)+18)/18,0,1))}return m};
+  const C=[];const add=(f,t,b0,len,mot)=>{const b1=Math.min(nb,b0+len);if(b1-b0<1||b0<0)return;C.push({f,t,b0,b1,mot})};
+  for(const S of secs){const k=S.kind,z=S.b+S.len;
+    if(k==="drop"){if(S.inicio!==false)add("explosion","bloque",S.b,2,"la entrada del drop");for(let b=S.b;b<z;b+=4){for(const L of [2,4])add("giro_rapido","bloque",b,L,"drop");
+        for(const f of ["zigzag","pingpong","ocho","elipse","rayado","rebote","espejo","orbita","parabola","espiral"])for(const t of E8A_TGT[f])add(f,t,b+(rnd()<.5?0:2),[1,2,2,4][Math.floor(rnd()*4)],"drop")}
+      add("vuelo","lead",S.b+Math.max(0,Math.floor(S.len/2)-2),4,"mitad del drop");add("vuelo","lead",S.b+4,4,"drop");
+      for(let b=S.b+7;b<z;b+=8){add("pingpong","bombo_bajo",b,1,"fin de frase (fill)");add("rayado","bombo_bajo",b,1,"fin de frase (fill)");add("zigzag","perc",b,1,"fin de frase (fill)")}}
+    else if(k==="build"){const L=1+(rnd()<.5?1:0);add("congelar","bloque",z-L,L,"justo antes del drop");
+      for(let b=S.b;b<z-1;b+=2)for(const f of ["espiral","elipse","ocho","pingpong","zigzag","rayado","rebote","espejo"])for(const t of E8A_TGT[f])add(f,t,b,[2,2,4][Math.floor(rnd()*3)],"subida")}
+    else{for(let b=S.b;b<z;b+=4)for(const f of ["elipse","ocho","parabola","pendulo","distancia","orbita","espiral","rayado","espejo"])for(const t of E8A_TGT[f])add(f,t,b,[4,4,8,2][Math.floor(rnd()*4)],E8A_SEC[k]||k);
+      if(k==="break")add("vuelo","lead",S.b,4,"inicio del respiro")}}
+  // entradas de elementos (de los carriles del arreglo)
+  for(const [row,Ls] of Object.entries(lanes||{}))if(["perc","pads","lead"].includes(row))for(const g of Ls)if(g.s>0&&g.s<nb)for(const f of ["parabola","espiral","ocho"])add(f,row,g.s,2,"entra "+E8A_N[row]);
+  // puntaje base
+  for(const c of C){const st=tg(c.t),sec=secAt(c.b0);c.fit=E8A_FIT[c.f]?.[sec.kind]??.2;let e=0;for(let b=c.b0;b<c.b1;b++)e+=E[b];c.E=e/(c.b1-c.b0);c.sec=sec;
+    c.pres=["giro_rapido","congelar","explosion"].includes(c.f)?1:presW(c.t==="bloque"?["bloque"]:st,c.b0,c.b1);
+    let on=0;for(const s of st)if(pres[s]&&c.b0>0)on=Math.max(on,pres[s][c.b0]-pres[s][c.b0-1]);c.on=on;
+    c.sync=Math.min(1,(c.b0%8===0?1:c.b0%4===0?.8:c.b0%2===0?.55:.35)+(on>6?.35:0)+(/entra|fill|antes del drop|entrada/.test(c.mot)?.3:0));c.riesgo=rnd();c.st=st}
+  C.sort((a,b)=>a.b0-b.b0||(b.fit+b.riesgo*.3)-(a.fit+a.riesgo*.3));
+  const ok=prev.slice(),desc=[],THR=.74;
+  for(const c of C){if(c.b0<desde||c.b0>=hasta)continue;if(c.pres<.3){if(c.fit>.8&&desc.length<6&&!desc.some(d=>d.t===c.t&&Math.abs(d.b0-c.b0)<8))desc.push(c);continue}
+    let nov=1,ult=null;for(const g of ok){if(g.f===c.f&&c.b0-g.b0<12){nov-=.5;ult=g}if(g.f===c.f&&g.t===c.t)nov-=.25;if(g.t===c.t&&c.b0-g.b1<4)nov-=.2}nov=clamp(nov,0,1);c.nov=nov;c.ult=ok.filter(g=>g.f===c.f).pop()||null;
+    c.score=.3*c.fit+.2*c.E+.2*c.pres+.12*nov+.1*c.sync+.08*c.riesgo;if(c.score<THR)continue;
+    const sol=ok.filter(g=>g.b0<c.b1&&c.b0<g.b1);if(c.f==="explosion"?sol.length:sol.some(g=>g.f==="explosion"))continue;
+    if(sol.length>=2||(sol.length===1&&c.score<THR+.06))continue;if(!['giro_rapido','congelar','explosion'].includes(c.f)&&ok.some(g=>!['giro_rapido','congelar','explosion'].includes(g.f)&&Math.abs(g.b0-c.b0)<2))continue;if(sol.some(g=>g.st.some(s=>c.st.includes(s))||(["giro_rapido","congelar"].includes(g.f)&&["giro_rapido","congelar"].includes(c.f))))continue;
+    if(["giro_rapido","congelar"].includes(c.f)&&sol.some(g=>g.t==="bloque"))continue;{let fu=0;for(const g of ok)if(g.t!=="bloque")fu+=Math.max(0,Math.min(c.b0,g.b1)-Math.max(c.b0-8,g.b0));if(c.t!=="bloque"&&fu>4)continue}ok.push(c)}
+  return {ok:ok.slice(prev.length),desc,C}}
+return {e8aForma,E8A_FIT,E8A_TGT,E8A_NOM,E8A_N,E8A_BLOQUE,E8A_RIT,E8A_SEC,e8aNomT,par,punto,elegir,PRI:E8A_PRI}})();
 
 /* =====================================================================
    IAH8D — EL CEREBRO ÚNICO DE IAH COMO OPERADOR 8D (pedido de Jorge, 15 nov 2026):
@@ -6614,7 +6648,13 @@ const norm=x=>String(x??"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase(
 const RAPIDAS=["giro_rapido","explosion","congelar","zigzag","pingpong","rebote","rayado","ocho","espejo"];
 const REGLAS={
   version:"1 · 15 nov 2026",
-  identidad:"IAH es el operador 8D de ORBITAL. Su criterio de movimiento es uno solo y es el mismo en todos los formatos (club/DJ, Mesa en vivo, canción y sound healing): solo cambian el tempo y la intensidad.",
+  identidad:"IAH es el operador 8D de ORBITAL. Su criterio es UNO SOLO: el de las canciones IAH DJ creations (el que Jorge aprobó 9/10). Es el mismo en ORBITAL DJ en vivo, en la Mesa en vivo y en las creaciones (Armar sesión). Solo el Sound Healing usa reglas lentas.",
+  criterio_canciones:{fuente:"E8A_FORMAS.elegir (e8a_formas.js): la misma función en e8aPlan (render de canciones), IAH en vivo de ORBITAL DJ y la Mesa",
+    bloque:"El BLOQUE = bombo + bajo + percusión + pads se mueve JUNTO, el bombo incluido (como en las canciones).",
+    secciones:{drop:"explosión al entrar el drop, giros rápidos del bloque, formas rítmicas (zigzag, ping-pong, rayado, rebote, ocho, espejo…) de 1–2–2–4 compases, vuelo de la melodía y fills de bombo y bajo al final de frase",build:"espirales, elipses, ocho, ping-pong, zigzag… de 2–4 compases y congelar justo antes del drop",resto:"intro, respiro y cierre: elipse, ocho, parábola, péndulo, distancia, órbita, espiral, rayado o espejo de 4–4–8–2 compases"},
+    max_gestos:2,velocidad:"sin tope de °/s: la velocidad la da la forma y el tempo (como en las canciones)",
+    audibilidad:"lo que se mueve tiene que oírse: en las canciones sube hasta +11 dB en la oreja cercana si queda < −24 dB del RMS de la mezcla (ventanas de 75 ms); en vivo la pista que se mueve sube +3 a +8 dB (más cuanto más lejos o más atrás), con rampas ≥150 ms y dentro del margen automático",
+    sala:{intro:1.4,build:1.25,drop:1,respiro:1.5,cierre:1.5,regla:"la sala (envío de reverb) cambia por sección con fundido, en las canciones y en vivo"}},
   bloque:{
     quien:["bajo","armonia","ritmo"],
     regla:"El bajo, la armonía (pads, acordes, drones) y el ritmo/percusión se mueven JUNTOS, como un solo bloque, y LENTO.",
@@ -6667,17 +6707,17 @@ const REGLAS={
       para_8d:"Nosotros agregamos el 8D: los cuencos y su cola viajan lento alrededor; el drone queda quieto y grave; nada rápido ni brillante."}
   },
   formatos:{
-    club:{nombre:"Club / ORBITAL DJ en vivo",unidad:"compases",compas_s:"240/BPM",decide_cada_compases:2,bloque_compases:[8,16],melodia_compases:[4,8],respiro_compases:2,vel_max:12},
-    mesa:{nombre:"Mesa en vivo",unidad:"compases",compas_s:"240/BPM de la escena (sin BPM: 4 s por compás)",compas_s_defecto:4,decide_cada_compases:2,bloque_compases:[8,16],melodia_compases:[4,8],respiro_compases:2,vel_max:12},
-    cancion:{nombre:"Canción (render offline)",unidad:"compases",compas_s:"240/BPM",bloque_compases:[8,16],melodia_compases:[4,8],respiro_compases:2,vel_max:12,
-      estado:"El render de las canciones IAH DJ creations (lab_dj.js, e8aPlan) todavía usa su plan propio a tempo; pendiente unificar con escucha de Jorge."},
+    club:{nombre:"Club / ORBITAL DJ en vivo",unidad:"compases",compas_s:"240/BPM",decide_cada_compases:2,criterio:"canciones",vel_max:null},
+    mesa:{nombre:"Mesa en vivo",unidad:"compases",compas_s:"240/BPM de la escena (sin BPM: 4 s por compás)",compas_s_defecto:4,decide_cada_compases:2,criterio:"canciones",vel_max:null},
+    cancion:{nombre:"Canción (render offline, IAH DJ creations y Armar sesión)",unidad:"compases",compas_s:"240/BPM",criterio:"canciones",vel_max:null,
+      estado:"e8aPlan (lab_dj.js) usa E8A_FORMAS.elegir: la misma función que IAH en vivo y la Mesa."},
     healing:{nombre:"Sound healing",unidad:"segundos",compas_s_defecto:4,bloque_s:[20,40],melodia_s:[20,30],pasada_s:[20,34],respiro_s:8,vel_max:12}
   },
-  criterio:"IAH cambia tempo e intensidad según el formato, NO su criterio."
+  criterio:"IAH cambia el tempo según el formato, NUNCA su criterio: el de las canciones IAH DJ creations en vivo, en la Mesa y en las creaciones; lento solo en Sound Healing."
 };
 const API={REGLAS,permitirRapidos:false};
 const fmt=f=>REGLAS.formatos[f]?f:(/heal|sanac|bano|sesion/.test(norm(f))?"healing":/mesa|play/.test(norm(f))?"mesa":/cancion|render|song/.test(norm(f))?"cancion":"club");
-const velMax=f=>{const F=REGLAS.formatos[fmt(f)];return API.permitirRapidos?Infinity:(F.vel_max||REGLAS.velocidad.max_grados_s)};
+const velMax=f=>{const F=REGLAS.formatos[fmt(f)];return API.permitirRapidos||F.criterio==="canciones"?Infinity:(F.vel_max||REGLAS.velocidad.max_grados_s)};
 function formas(formato,tipo){tipo=tipo==="bloque"?"bloque":"melodia";const base=(tipo==="bloque"?REGLAS.bloque.formas:REGLAS.melodia.formas).slice();
   if(API.permitirRapidos){const extra=tipo==="bloque"?["giro_rapido","explosion","congelar"]:["zigzag","pingpong","rebote","rayado","ocho"];for(const f of extra)if(!base.includes(f))base.push(f)}
   return base}
@@ -6724,7 +6764,8 @@ function respiroCompases(formato,compas_s){const F=REGLAS.formatos[fmt(formato)]
    o = {formato, compas_s, ahora (compás donde empezarían), pistas:[{id, rol|clase, nombre, sonando, largo, ocupada, sub}],
         historia (IAH8D.anotar la llena), en_curso:{bloque, melodia} (si falta se deduce de la historia), rnd}
    → [{tipo:"bloque"|"melodia", quien:"bloque"|id, ids, forma, compases, b0, b1, desfase:{id:°}, velocidad_max}] */
-function planear(o){o=o||{};const rnd=o.rnd||Math.random,f=fmt(o.formato),b0=+o.ahora||0,H=o.historia||[],cs=o.compas_s||4;
+function planear(o){o=o||{};if(fmt(o.formato)!=="healing"&&typeof E8A_FORMAS!=="undefined"&&E8A_FORMAS.elegir)return planearClub(o);return planearLento(o)}
+function planearLento(o){o=o||{};const rnd=o.rnd||Math.random,f=fmt(o.formato),b0=+o.ahora||0,H=o.historia||[],cs=o.compas_s||4;
   const curso=o.en_curso||{bloque:H.some(h=>h.tipo==="bloque"&&h.b1>b0),melodia:H.some(h=>h.tipo==="melodia"&&h.b1>b0)};
   const nCurso=(curso.bloque?1:0)+(curso.melodia?1:0),out=[],resp=respiroCompases(f,cs),vm=velMax(f);
   if(nCurso>=REGLAS.simultaneos.max_gestos)return out;
@@ -6749,7 +6790,51 @@ function planear(o){o=o||{};const rnd=o.rnd||Math.random,f=fmt(o.formato),b0=+o.
     if(c){const fo=corto?pick(["distancia","parabola"],rnd):elegir("melodia"),n=corto?compases(f,"melodia",cs,()=>0):compases(f,"melodia",cs,rnd);
       out.push({tipo:"melodia",quien:c.id,ids:[c.id],forma:fo,compases:n,b0,b1:b0+n,desfase:{[c.id]:0},velocidad_max:vm,corto})}}
   return out}
-function anotar(historia,g){if(!historia||!g)return;historia.push({tipo:g.tipo,forma:g.forma,quien:g.quien,b0:g.b0,b1:g.b1,corto:!!g.corto});while(historia.length>32)historia.shift()}
+
+/* ---------- CRITERIO DE LAS CANCIONES (club/DJ, Mesa, canción): E8A_FORMAS.elegir, la misma función de e8aPlan ----------
+   o = {formato, compas_s, ahora, pistas:[{id, rol|fila|clase…, sonando}], seccion:{kind:"drop"|"build"|"break"|"intro"|"outro", b},
+        energia (0..1, medida en vivo), historia (los gestos elegidos: IAH8D.anotar), rnd}
+   → [{tipo, quien, ids, filas:{id:fila}, forma, objetivo, st, compases, b0, b1, par, E, kind, velocidad_max:Infinity, desfase:{}}] */
+const FILAS=["bombo","bajo","perc","pads","lead"];
+function fila(p){if(!p)return "lead";if(FILAS.includes(p.fila))return p.fila;const r=norm(p.rol||p.role||"").trim();if(FILAS.includes(r))return r;if(r==="fx")return "lead";
+  const q=p.clase?{clase:p.clase,sub:p.sub||null}:parte(p);if(q.clase==="bombo")return "bombo";
+  if(q.clase==="bloque")return q.sub==="bajo"||q.sub==="drone"?"bajo":q.sub==="ritmo"?"perc":"pads";return "lead"}
+function seccionVivo(o){/* o={bombo:bool, n:pistas sonando, fx:bool, desde_inicio:compases, antes:kind} */const n=o.n||0;
+  if(o.bombo)return n>=4?"drop":o.desde_inicio<16?"intro":"build";return o.fx||o.antes==="drop"&&n>=3?"build":o.desde_inicio<8&&n<=2?"intro":"break"}
+function planearClub(o){const F=E8A_FORMAS,rnd=o.rnd||Math.random,b0=Math.round(+o.ahora||0),cs=o.compas_s||2,kind=(o.seccion&&o.seccion.kind)||"drop",sb=Math.min(b0,Math.round(o.seccion&&o.seccion.b!=null?o.seccion.b:b0));
+  const wb=sb+8*Math.floor((b0-sb)/8),nb=wb+8,H=(o.historia||[]).filter(c=>c&&c.st&&c.b1>b0-16);
+  const P=(o.pistas||[]).map(p=>Object.assign({},p,{fila:fila(p)})),suena=P.filter(p=>p.sonando!==false);
+  const e0=clamp(o.energia!=null?+o.energia:.6,0,1),Ev=.5*e0+.5*(F.PRI[kind]??.5),E=new Array(nb).fill(Ev),pres={};
+  for(const s of FILAS)if(suena.some(p=>p.fila===s))pres[s]=new Array(nb).fill(0);
+  if(["bombo","bajo","perc","pads"].some(s=>pres[s]))pres.bloque=new Array(nb).fill(0);
+  const r=F.elegir({secs:[{kind,b:wb,len:8,inicio:wb===sb}],nb,E,pres,rnd,previos:H,desde:b0,hasta:b0+2});const out=[];
+  for(const c of r.ok){const ids=P.filter(p=>c.st.includes(p.fila)&&(!p.ocupada||(p.hasta!=null&&p.hasta>=0&&p.hasta<=c.b0))).map(p=>p.id);if(!ids.length)continue;const bars=c.b1-c.b0;
+    const par=F.par(c.f,c.E,kind,bars,cs,rnd),filas={};for(const p of P)if(ids.includes(p.id))filas[p.id]=p.fila;
+    out.push({tipo:c.st.some(s=>s!=="lead")?"bloque":"melodia",quien:c.t==="bloque"?"bloque":ids[0],ids,filas,forma:c.f,objetivo:c.t,st:c.st,compases:bars,b0:c.b0,b1:c.b1,par,E:c.E,kind,motivo:c.mot,velocidad_max:Infinity,desfase:{},c})}
+  return out}
+/* recorrido de UNA fila en un gesto del criterio de las canciones (la misma geometría que e8aEspacio en lab_dj.js):
+   la forma es absoluta alrededor de la cabeza, con fundido desde/hacia la casa; el bloque entero dibuja la misma forma (junto).
+   casa=[az°, el°, r m] → {pts:[[az, el, r]…], segundos} */
+const EXP={bombo:-35,bajo:35,perc:115,pads:-115,lead:180};
+function recorrido(g,fl,casa,cs){const F=E8A_FORMAS,bars=Math.max(1,g.compases),secs=bars*cs,P=g.par||{},n=Math.max(96,Math.round(bars*64)),out=[];
+  const sm=u=>{u=clamp(u,0,1);return u*u*(3-2*u)},wrap=d=>((d%360)+540)%360-180,Fb=(F.E8A_RIT.has(g.forma)||g.forma==="explosion")?.15:Math.min(.5,bars/4);
+  const wOf=bb=>sm(Math.min(bb/Fb,(bars-bb)/Fb)),sg=g.forma==="espejo"&&g.st&&g.st[1]===fl?-1:1,rmin=fl==="bombo"||fl==="bajo"?.6:.4;
+  let kG=1;if(g.forma==="giro_rapido"){let tot=0;for(let i=1;i<=n;i++)tot+=(P.vel||.3)*wOf(i/n*bars)*secs/n;kG=tot>0?Math.max(1,Math.round(tot))/tot:0}
+  let acc=0,paz=null;
+  for(let i=0;i<=n;i++){const u=i/n,bb=u*bars,ww=wOf(bb);let az=casa[0],el=casa[1],r=casa[2];
+    if(g.forma==="explosion"){const sh=Math.min(1,bb*4)*(1-sm((bb-1)/Math.max(.5,bars-1)));az+=(EXP[fl]||0)*sh*(P.side||1);r*=1-(fl==="perc"||fl==="pads"?.45:.2)*sh}
+    else if(g.forma==="giro_rapido"){if(i)acc+=(P.vel||.3)*ww*secs/n*kG;az+=360*acc*(P.dir||1)}
+    else if(g.forma==="congelar"){az+=wrap(-casa[0])*ww;el*=1-ww;r+=(1-r)*ww}
+    else{let pt=null;if(g.forma==="espejo"){const th=2*Math.PI*(P.cyc||1)*u*(P.dir||1),aa=casa[0]*D2R+sg*th,R=P.R||.9;pt=[R*Math.sin(aa),.25*Math.sin(th),R*Math.cos(aa)]}
+      else pt=F.punto(g.forma,P,u,bars,cs);
+      if(pt){const rr=Math.hypot(pt[0],pt[1],pt[2]),gr=clamp(Math.max(rmin,rr),rmin,3.5),gz=Math.atan2(pt[0],pt[2])*R2D,ge=clamp(Math.asin(clamp(pt[1]/Math.max(1e-6,rr),-1,1))*R2D,-40,70);
+        az=casa[0]+ww*wrap(gz-casa[0]);el=el+(ge-el)*ww;r=r+(gr-r)*ww}}
+    if(paz!=null)az=paz+wrap(az-paz);paz=az;out.push([az,el,r])}
+  return {pts:out,segundos:secs}}
+/* audibilidad en vivo (como la corrección de las canciones): cuánto sube una pista que se mueve, según cuánto se aleja / queda atrás */
+function audibilidad(pos,casa){if(!pos)return 0;const back=Math.max(0,-Math.cos(pos[0]*D2R)),lejos=clamp((pos[2]-1.1)/1.6,0,1),sale=casa?clamp(Math.abs(((pos[0]-casa[0])%360+540)%360-180)/120,0,1):.5;
+  return +(3+5*Math.max(back,lejos,.6*sale)).toFixed(2)}
+function anotar(historia,g){if(!historia||!g)return;if(g.c){historia.push(g.c);while(historia.length>32)historia.shift();return}historia.push({tipo:g.tipo,forma:g.forma,quien:g.quien,b0:g.b0,b1:g.b1,corto:!!g.corto});while(historia.length>32)historia.shift()}
 /* ---------- velocidad: medir y limitar (°/s, por ángulo real entre direcciones) ---------- */
 const dir=p=>{const a=p[0]*D2R,e=p[1]*D2R;return [Math.cos(e)*Math.sin(a),Math.sin(e),Math.cos(e)*Math.cos(a)]};
 const ang=(u,v)=>Math.acos(clamp(u[0]*v[0]+u[1]*v[1]+u[2]*v[2],-1,1));
@@ -6796,20 +6881,20 @@ function acentoFrente(az,el){const A=REGLAS.acento_frente,fr=Math.max(0,Math.cos
 const rng=a=>a[0]+"–"+a[1],N={elipse:"elipse",orbita:"órbita",pendulo:"péndulo",parabola:"parábola",distancia:"distancia (acercar/alejar)",espiral:"espiral",vuelo:"vuelo",
   giro_rapido:"giro rápido",explosion:"explosión",congelar:"congelar",zigzag:"zigzag",pingpong:"ping-pong",rebote:"rebote",rayado:"rayado",ocho:"ocho",espejo:"espejo"};
 const lista=a=>{a=a.map(x=>N[x]||x);return a.length>1?a.slice(0,-1).join(", ")+" y "+a[a.length-1]:a.join("")};
-function texto(){const R=REGLAS,B=R.bloque,M=R.melodia,F=R.formatos,Hh=R.healing,A=R.acento_frente;
+function texto(){const R=REGLAS,C=R.criterio_canciones,Hh=R.healing,B=R.bloque,M=R.melodia;
   return ["# IAH · operador 8D (identidad permanente)",
   R.identidad,
-  "1. BLOQUE: "+B.regla+" Gestos de "+rng(B.compases)+" compases (en calma/healing, "+rng(B.healing_s)+" s por vuelta), con un pequeño desfase entre ellos (bajo "+B.desfase_az.bajo+"°, armonía +"+B.desfase_az.armonia+"°, ritmo "+B.desfase_az.ritmo+"°). Formas: "+lista(B.formas)+". "+B.bombo+" "+B.graves,
-  "2. MELODÍA Y EFECTOS: "+M.regla+" Gestos de "+rng(M.compases)+" compases (healing "+rng(M.healing_s)+" s). Formas: "+lista(M.formas)+".",
-  "3. CALMA: "+R.simultaneos.regla+" Respiro de al menos "+R.simultaneos.respiro_compases+" compases entre gestos del mismo tipo y nunca la misma forma dos veces seguidas. "+R.velocidad.regla+" "+R.prohibidas.regla,
-  "4. "+R.recorre.regla+" Para mover elige: "+R.recorre.preferir.join(", ")+".",
-  "5. ACENTO AL FRENTE (propuesta, pendiente de aprobación de Jorge): "+A.regla+" "+A.ganancia_db+" y presencia en "+(A.presencia_hz/1000).toLocaleString("es")+" kHz de +"+A.presencia_db_por_frente+" dB·frente ("+A.frente+").",
-  "6. SOUND HEALING: "+Hh.afinacion+" "+Hh.drone+" "+Hh.cuencos.regla+" "+Hh.pasadas+" Sin procesos de club ("+Hh.sin_club.join(", ")+"); sala "+Hh.sala+".",
-  "7. FORMATOS: club/DJ en vivo a tempo ("+F.club.compas_s+" por compás, decide cada "+F.club.decide_cada_compases+" compases); Mesa en vivo ("+F.mesa.compas_s+"); canción (render offline, mismos límites); healing en segundos y en calma. "+R.criterio].join("\n")}
-function saber(){const t=texto().split("\n");return {t:"IAH · operador 8D (identidad permanente)",kw:["operador 8d","identidad de iah","reglas de iah","como mueves","como mueve iah","bloque","mueve el bloque","melodia vuela","bombo fijo","te recorre","acento al frente","12 grados","velocidad maxima","formas permitidas","giro rapido","explosion","modo iah","iah lento","criterio 8d"],
+  "1. UN SOLO CRITERIO: el de las canciones IAH DJ creations. Es exactamente el mismo en ORBITAL DJ en vivo, en la Mesa en vivo y en las creaciones (Armar sesión): una sola función elige los gestos ("+C.fuente+"), así nunca se separan.",
+  "2. BLOQUE: "+C.bloque+" La melodía y los efectos tienen sus propios gestos. Como máximo "+C.max_gestos+" gestos a la vez.",
+  "3. POR SECCIÓN: drop → "+C.secciones.drop+"; subida → "+C.secciones.build+"; "+C.secciones.resto+". Velocidad: "+C.velocidad+".",
+  "4. AUDIBILIDAD: "+C.audibilidad+". Sala dinámica: intro 1,4 · subida 1,25 · drop 1 · respiro 1,5 · cierre 1,5 (envío de sala, con fundido).",
+  "5. "+R.recorre.regla,
+  "6. SOUND HEALING (lo único lento): "+B.regla+" ("+rng(B.healing_s)+" s por vuelta); "+M.regla+" Máx. 2 gestos, ≤"+R.velocidad.max_grados_s+"°/s, sin giros rápidos ni explosiones. "+Hh.afinacion+" "+Hh.drone+" "+Hh.cuencos.regla+" "+Hh.pasadas+" Sin procesos de club ("+Hh.sin_club.join(", ")+"); sala "+Hh.sala+".",
+  "7. "+R.criterio].join("\n")}
+function saber(){const t=texto().split("\n");return {t:"IAH · operador 8D (identidad permanente)",kw:["operador 8d","identidad de iah","reglas de iah","como mueves","como mueve iah","bloque","mueve el bloque","melodia vuela","bombo fijo","te recorre","acento al frente","12 grados","velocidad maxima","formas permitidas","giro rapido","explosion","modo iah","iah lento","criterio 8d","mismo criterio","criterio de las canciones","en vivo","mesa","audibilidad","sala dinamica"],
   txt:t.slice(1).join("\n\n"),p:{simple:t.slice(1,3).join(" ")+" "+t[4],tecnico:t.slice(2).join("\n")}}}
 function json(){return JSON.stringify(Object.assign({},REGLAS,{permitirRapidos:API.permitirRapidos}),null,2)}
-return Object.assign(API,{clasificar,parte,esLargo,formas,velMax,compases,planear,anotar,trayecto,seguir,limitarVelocidad,velocidad,acentoFrente,texto,saber,json,formato:fmt})})();
+return Object.assign(API,{clasificar,parte,esLargo,formas,velMax,compases,planear,planearClub,planearLento,fila,seccionVivo,recorrido,audibilidad,anotar,trayecto,seguir,limitarVelocidad,velocidad,acentoFrente,texto,saber,json,formato:fmt})})();
 try{window.IAH8D=IAH8D}catch(e){}
 if(typeof module!=="undefined"&&module.exports)module.exports=IAH8D;
 
@@ -12205,8 +12290,9 @@ return {init,sync,key,fire,release,runLine,deskOpen,deskClose,load,manualState:(
    MODO IAH EN LA MESA EN VIVO (pedido de Jorge, 15 nov 2026). Botón «IAH» (toggle) en «Grupos y escena» y en la fila
    de la vista espacial. El CRITERIO es el de IAH8D (iah_8d.js), el cerebro único de IAH operador 8D: el mismo de
    ORBITAL DJ (lab_dj_ui.js), las canciones y el healing. Aquí solo se ejecuta con los pads cargados:
-   · BLOQUE = bajo + armonía (+ ritmo): se mueven JUNTOS y lento (8–16 compases). El bombo queda fijo al frente; con el
-     ancla puesta, los graves anclados quedan quietos al centro.
+   · (15 nov, Jorge: «SIEMPRE EL MISMO CRITERIO») criterio de las canciones IAH DJ creations: IAH8D.planear → E8A_FORMAS.elegir
+     (la misma función de e8aPlan) y IAH8D.recorrido; BLOQUE = bombo + bajo + ritmo + armonía JUNTOS; con el ancla puesta, los
+     graves anclados quedan quietos al centro. Lo de abajo (lento) quedó solo para Sound Healing.
    · La melodía, los efectos y las texturas vuelan solos (4–8 compases) con formas suaves (elipse, órbita, péndulo,
      parábola, distancia, espiral, vuelo); se prefieren los sonidos largos que están sonando.
    · Cuantizado a compases (BPM de Grupos y escena; sin BPM, 4 s por compás), decide cada 2 compases, máx. 2 gestos, ≤12°/s,
@@ -12278,28 +12364,26 @@ function tablaBloque(f,P,bars){const secs=bars*spb(),cap=IAH8D.velMax("mesa"),N=
 const lerpT=(A,u)=>{const N=A.length-1,x=clamp(u,0,1)*N,i=Math.min(N-1,Math.floor(x)),f=x-i;return A[i]+(A[i+1]-A[i])*f};
 // g = gesto de IAH8D.planear
 function iniciar(g){const now=performance.now(),byId=id=>pads().find(s=>s.id===id);
-  if(g.tipo==="bloque"){const mem=g.ids.map(byId).filter(s=>s&&enBloque(s)&&libre(s,now)&&!own(s));if(!mem.length)return false;
-    const P=F.par(g.forma,.3,"break",g.compases,spb(),rnd);const T=tablaBloque(g.forma,P,g.compases);if(!T)return false;
-    ST.g.push({f:g.forma,tipo:"bloque",tg:"bloque",b0:g.b0,b1:g.b1,bars:g.compases,P,T,m:[],pend:mem,nom:"todo el bloque"});return true}
-  const s=byId(g.quien);if(!s||own(s)||!libre(s,now))return false;
-  const R=IAH8D.trayecto(g.forma,{compases:g.compases,compas_s:spb(),rnd,vel_max:g.velocidad_max,formato:"mesa"});if(!R)return false;
-  ST.g.push({f:g.forma,tipo:"melodia",tg:s.id,b0:g.b0,b1:g.b1,bars:g.compases,R,m:[],pend:[s],nom:nombre(s)});return true}
+  const mem=g.ids.map(byId).filter(s=>s&&!anclado(s)&&libre(s,now)&&!own(s));if(!mem.length)return false;
+  ST.g.push({f:g.forma,tipo:g.tipo,tg:g.objetivo,b0:g.b0,b1:g.b1,bars:g.compases,G:g,m:[],pend:mem,nom:g.objetivo==="bloque"?"todo el bloque (bombo incluido)":mem.map(nombre).join(" y ")});return true}
 function nombre(s){const I=info(s);return (s.label||I.i.n||s.inst||"sonido").replace(/^.*·\s*/,"")}
 function mover(g,b){const u=clamp((b-g.b0)/g.bars,0,1),ramp=Math.min(.5,g.bars*.25),w=sm(Math.min(1,(b-g.b0)/ramp))*sm(Math.min(1,(g.b1-b)/ramp));
   if(g.pend){g.m=g.pend.filter(s=>S.sources.includes(s)).map(tomar);g.pend=null;g.started=true;
     // la melodía sale de su lugar, sigue la forma a ≤12°/s (IAH8D.seguir) y termina de vuelta en su lugar: sin saltos
-    if(g.R)for(const x of g.m){const H=x.H,sc=S.scale||1,rot=S.rot||0;x.rot=rot;x.sc=sc;x.Rs=IAH8D.seguir(g.R.pts,g.R.segundos,{desde:[H[0]+rot,H[1],H[2]*sc],girar:true,max:IAH8D.velMax("mesa")})}}
+    // criterio de las canciones: cada pad dibuja la forma del gesto (IAH8D.recorrido, la misma geometría del render) y vuelve a su lugar
+    for(const x of g.m){const H=x.H,sc=S.scale||1,rot=S.rot||0;x.rot=rot;x.sc=sc;x.Rs=IAH8D.recorrido(g.G,g.G.filas[x.s.id],[H[0]+rot,H[1],H[2]*sc],spb()).pts}}
   for(const x of g.m){const H=x.H;
-    if(g.tg==="bloque"){const yaw=lerpT(g.T.Y,u),de=lerpT(g.T.E,u)*w,k=1+(lerpT(g.T.K,u)-1)*w;escribir(x,H[0]+yaw,H[1]+de,H[2]*k)}
-    else{const A=x.Rs,ix=u*(A.length-1),i0=Math.min(A.length-2,Math.floor(ix)),fr=ix-i0,p0=A[i0],p1=A[i0+1];
+    {const A=x.Rs,ix=u*(A.length-1),i0=Math.min(A.length-2,Math.floor(ix)),fr=ix-i0,p0=A[i0],p1=A[i0+1];
       escribir(x,p0[0]+(p1[0]-p0[0])*fr-x.rot,p0[1]+(p1[1]-p0[1])*fr,(p0[2]+(p1[2]-p0[2])*fr)/x.sc)}}}
 function terminar(g){for(const x of g.m)if(S.sources.includes(x.s)&&x.s.live===x.L)devolver(x.s);g.m=[];g.done=true}
 /* ---------- decisión: la toma IAH8D.planear (el mismo criterio de ORBITAL DJ, canciones y healing) ---------- */
 function decidir(b,now){const b0=ST.force?b:Math.ceil(b+.02);ST.force=false;
-  const pistas=pads().map(s=>{const c=parte(s);return {id:s.id,clase:anclado(s)?"bombo":c.clase,sub:c.sub,largo:c.largo,sonando:sonando(s),ocupada:own(s)||!libre(s,now)}});
-  const G=IAH8D.planear({formato:"mesa",compas_s:spb(),ahora:b0,pistas,historia:ST.hist,rnd,
-    en_curso:{bloque:ST.g.some(g=>g.tipo==="bloque"),melodia:ST.g.some(g=>g.tipo==="melodia")}});
-  for(const g of G)if(iniciar(g)){IAH8D.anotar(ST.hist,g);anotar(g.forma,g.tipo==="bloque"?"todo el bloque":ST.g[ST.g.length-1].nom)}}
+  const pistas=pads().map(s=>{const c=parte(s);return {id:s.id,clase:c.clase,sub:c.sub,largo:c.largo,sonando:sonando(s),ocupada:own(s)||!libre(s,now)||anclado(s)}});
+  // sección en vivo y el criterio de las canciones (IAH8D.planear → E8A_FORMAS.elegir, la misma función de e8aPlan)
+  const on=pistas.filter(p=>p.sonando),kick=on.some(p=>p.clase==="bombo"),kind=IAH8D.seccionVivo({bombo:kick,n:on.length,fx:on.some(p=>p.clase==="efecto"),desde_inicio:b0-(ST.b00||0),antes:ST.kind});
+  if(kind!==ST.kind){ST.kind=kind;ST.secB=b0}
+  const G=IAH8D.planear({formato:"mesa",compas_s:spb(),ahora:b0,pistas,seccion:{kind,b:ST.secB},energia:clamp(on.length/6,0,1)*(kick?1:.6),historia:ST.hist,rnd});
+  for(const g of G)if(iniciar(g)){IAH8D.anotar(ST.hist,g);anotar(g.forma,ST.g[ST.g.length-1].nom)}}
 const FN={giro_rapido:"giro del bloque",balanceo:"balanceo del bloque",explosion:"explosión",orbita:"órbita",parabola:"parábola",pendulo:"péndulo",pingpong:"ping-pong"};
 function anotar(f,nom){const line="IAH · "+(FN[f]||f.replace("_"," "))+" · "+nom;ST.log.push(line);if(ST.log.length>12)ST.log.shift();pintar(line)}
 function pintar(line){for(const e of document.querySelectorAll("[data-g=iahlog]"))e.textContent=ST.on?(line||ST.log[ST.log.length-1]||"IAH escucha…"):"";
@@ -12316,12 +12400,12 @@ function tick(){const now=performance.now(),dt=Math.min(.25,(now-(ST.t||now))/10
 /* ---------- encender / apagar ---------- */
 function start(){if(ST.on)return true;if(typeof PLAY_DESK!=="undefined"&&!PLAY_DESK.active){toast("IAH mueve los pads de la Mesa en vivo: ábrela y carga sonidos");return false}
   if(ST.ret){for(const r of ST.ret.m)if(r.s.live===r.L)devolver(r.s);ST.ret=null}
-  Object.assign(ST,{on:true,clk:0,t:performance.now(),ph:-1,force:true,g:[],hist:[],log:[],kind:null});ST.snap.clear();ST.sig.clear();ST.touch.clear();
+  Object.assign(ST,{on:true,clk:0,t:performance.now(),ph:-1,force:true,g:[],hist:[],log:[],kind:null});try{ST.b00=Math.ceil(nowBar());ST.secB=ST.b00}catch(e){ST.b00=0;ST.secB=0}ST.snap.clear();ST.sig.clear();ST.touch.clear();
   for(const s of pads())ST.sig.set(s.id,sigOf(s));
   if(!S.playing&&S.sources.length){try{if(PLAY.on)PLAY.startTracks();else APP.play()}catch(e){}}
   clearInterval(ST.timer);ST.timer=setInterval(tick,40);
   const n=pads(),bl=n.filter(enBloque).length,vu=n.filter(vuela).length;
-  toast(n.length?"IAH toma el espacio: el bloque ("+bl+": bajo, armonía y ritmo) se mueve junto y lento"+(vu?", la melodía vuela sola":" (carga algo melódico para que vuele)")+"; el bombo queda fijo. Toca un pad para tomarlo.":"IAH está listo: carga sonidos en los pads y empezará a moverlos");
+  toast(n.length?"IAH toma el espacio con el criterio de las canciones: el bloque ("+bl+": bombo, bajo, ritmo y armonía) se mueve junto"+(vu?", la melodía vuela con sus gestos":" (carga algo melódico para que vuele)")+"; giros y explosión en los drops. Toca un pad para tomarlo.":"IAH está listo: carga sonidos en los pads y empezará a moverlos");
   pintar("IAH escucha…");return true}
 // stop(inmediato): sin deslizar (al salir de la Mesa). Normal: cada pad vuelve en ~1,2 s a su posición o recorrido
 function stop(inmediato=false){if(!ST.on&&!ST.ret)return;ST.on=false;const m=[];
@@ -20854,6 +20938,7 @@ function mkChain(c,dest){const ch={c,in:c.createGain(),hp:c.createBiquadFilter()
   ch.hp.type="highpass";ch.hp.frequency.value=20;ch.hp.Q.value=.9;ch.lp.type="lowpass";ch.lp.frequency.value=20000;ch.lp.Q.value=.9;
   ch.duck=c.createGain();ch.in.connect(ch.hp);ch.hp.connect(ch.lp);ch.lp.connect(ch.vol);ch.vol.connect(ch.drop);ch.drop.connect(ch.duck);ch.duck.connect(ch.head);ch.head.connect(dest);return ch}
 function chFilt(ch,x,sw,t,tc=.03){const lp=Math.min(lpOf(x),lpOf(sw)),hp=Math.max(hpOf(x),hpOf(sw));ch.lp.frequency.setTargetAtTime(lp,t,tc);ch.hp.frequency.setTargetAtTime(hp,t,tc)}
+const vBoost=r=>r.vol<=-40?r.vol:r.vol+(r.boost||0);
 function chVol(ch,db,master,t,tc=.03){ch.vol.gain.setTargetAtTime(db<=-40?0:dB(db+master),t,tc)}
 // arranca un pad en «at» (= inicio del compás «bar»): fase global (los loops de 2 y 4 compases quedan en frase) y fundido corto
 function padStart(ch,p,buf,at,bar,bd,now=0){const c=ch.c,n=c.createBufferSource(),g=c.createGain();n.buffer=buf;
@@ -20884,7 +20969,7 @@ function vPos(v,t,P,k,ramp){const CR=ORB.CRUCE,R0c=CR&&(ORB.cruceR?ORB.cruceR(P)
   set(v.wg[0].gain,I.width);set(v.wg[1].gain,I.width);
   const wet=iso==="dir"?0:1,fW=clamp((P[2]-1.5)/4,0,1),wR=wet*(v.wsR==null?1:v.wsR+(Math.max(v.wsR,.25)-v.wsR)*fW);
   const back=Math.max(0,-Math.cos(P[0]*D2R)),hyper=/^v10-/.test(v.ren)?m.hyper-1:0;
-  set(v.rpd.delayTime,Math.min(.29,I.rev_pre));set(v.send.gain,I.rev_amp*(1+(.6+hyper)*back*Math.min(1,k))*wR*v.reverb*(iso==="er"?0:1));v.di=I;
+  set(v.rpd.delayTime,Math.min(.29,I.rev_pre));set(v.send.gain,I.rev_amp*(1+(.6+hyper)*back*Math.min(1,k))*wR*v.reverb*(globalThis.ORB_DJ_SALA||1)*(iso==="er"?0:1));v.di=I;/* ORB_DJ_SALA: sala dinámica por sección de IAH en vivo */
   if(v.eHs){const e=clamp(P[1]/75,-1,1),up=Math.max(0,e),dn=Math.max(0,-e),x=v.dx;set(v.eHs.gain,4.5*up-6*dn+x.hs);set(v.eN.frequency,6800+3400*up-1400*dn);set(v.eN.gain,-(3+4*Math.abs(e)));set(v.ePr.gain,2*up-1.5*dn+x.pr);set(v.eLs.gain,2.5*dn-1.2*up+x.ls)}
   const REF=ORB.DIST.REF;ORB.RENDS[v.ren].set(v,t,ORB.xyz(P[0],P[1],REF),[P[0],P[1],REF],k,ramp);v.last=P}
 
@@ -20904,7 +20989,7 @@ function Deck(c,destOf,o={}){
   const bd=()=>D.seg?D.seg.bd:240/D.bpm;
   D.barAt=t=>D.seg?D.seg.bar+(t-D.seg.t)/D.seg.bd:0;
   D.timeAt=b=>D.seg?D.seg.t+(b-D.seg.bar)*D.seg.bd:0;
-  D.chain=id=>{const r=D.R[id];if(!r.ch){r.ch=mkChain(c,destOf(id));chVol(r.ch,r.vol,D.master+(D.auto||0),c.currentTime,.001);chFilt(r.ch,r.filt,D.sweep,c.currentTime,.001)}return r.ch};
+  D.chain=id=>{const r=D.R[id];if(!r.ch){r.ch=mkChain(c,destOf(id));chVol(r.ch,vBoost(r),D.master+(D.auto||0),c.currentTime,.001);chFilt(r.ch,r.filt,D.sweep,c.currentTime,.001)}return r.ch};
   D.start=(at)=>{if(D.playing)return;D.playing=true;D.seg={t:at??c.currentTime+.2,bar:0,bd:240/D.bpm};D.metroNext=0;emit("transport",{on:true})};
   D.stop=()=>{if(!D.playing)return;const t=c.currentTime;for(const r of Object.values(D.R)){if(r.cur)padStop(r.cur.node,t+FO);r.cur=null;r.pend=null;r.lastLaunch=null}D.playing=false;D.A=null;if(!o.offline)CLUB=false;D.dropAt=null;D.pendBpm=null;emit("transport",{on:false})};
   D.nextBar=()=>{if(!D.playing)return 0;const t=c.currentTime+.03,b=D.barAt(t);const q=D.quant;return Math.max(0,Math.ceil((b-1e-6)/q)*q)};
@@ -20931,11 +21016,13 @@ function Deck(c,destOf,o={}){
     head(at);emit("exec",{row:r.id,pad,bar});}
   function head(at){const n=Object.values(D.R).filter(r=>r.cur).length,g=(D.A&&D.A.arr.club===true?CLUB_HEAD:hdOf(n))*(D.mk||1);for(const r of Object.values(D.R))if(r.ch)r.ch.head.gain.setTargetAtTime(g,at,.05)}
   // consumo: fader y filtro no crean la voz 8D de una pista callada (se aplican al crearla en D.chain)
-  D.setVol=(id,db)=>{const r=D.R[id];r.vol=db;if(r.ch)chVol(r.ch,db,D.master+(D.auto||0),c.currentTime);emit("param",{row:id,type:"vol",val:db})};
+  D.setVol=(id,db)=>{const r=D.R[id];r.vol=db;if(r.ch)chVol(r.ch,vBoost(r),D.master+(D.auto||0),c.currentTime);emit("param",{row:id,type:"vol",val:db})};
   D.setFilt=(id,x)=>{const r=D.R[id];r.filt=x;if(r.ch)chFilt(r.ch,x,D.sweep,c.currentTime);emit("param",{row:id,type:"filt",val:x})};
   D.setSweep=x=>{D.sweep=x;for(const r of Object.values(D.R))if(r.ch)chFilt(r.ch,r.filt,x,c.currentTime);emit("param",{type:"sweep",val:x})};
   /* 15 nov: margen automático (D.auto) cuando suenan muchas pistas, para que la suma no sature; se suma al máster del usuario */
-  D.setAuto=db=>{D.auto=Math.min(0,db);for(const r of Object.values(D.R))if(r.ch)chVol(r.ch,r.vol,D.master+D.auto,c.currentTime,.25)};
+  D.setAuto=db=>{D.auto=Math.min(0,db);for(const r of Object.values(D.R))if(r.ch)chVol(r.ch,vBoost(r),D.master+D.auto,c.currentTime,.25)};
+  // AUDIBILIDAD EN VIVO (15 nov, criterio de las canciones): IAH sube la pista que se mueve (+3…+8 dB) con rampa suave (≥150 ms)
+  D.setBoost=(id,db)=>{const r=D.R[id];if(!r)return;r.boost=clamp(+db||0,0,8);if(r.ch)chVol(r.ch,vBoost(r),D.master+(D.auto||0),c.currentTime,.15)};
   D.setMaster=db=>{D.master=Math.min(6,db);for(const r of Object.values(D.R))if(r.ch)chVol(r.ch,r.vol,D.master+(D.auto||0),c.currentTime);emit("param",{type:"master",val:D.master})};
   D.setMov=(id,mov,own)=>{if(own!==undefined)D.R[id].own=!!own;D.R[id].mov=movCopy(mov);emit("param",{row:id,type:"mov",val:movCopy(mov)})};
   D.drop=()=>{if(!D.playing)return;D.dropAt=D.nextBar()||1;emit("ui")};
@@ -21235,33 +21322,8 @@ function e8aPlan(arr,TM,bus,N){const M=arr.iah||{},nb=Math.max(1,Math.round(arr.
   const pres={};for(const s of stems){const x=X(s),ra=e8ra(x);pres[s]=Array.from({length:nb},(_,b)=>20*Math.log10(bar(b,x)/ra+1e-9))}
   const Eb=Array.from({length:nb},(_,b)=>20*Math.log10(bar(b,bus.blk)+1e-12)),so=[...Eb].sort((a,b)=>a-b),lo=so[Math.floor(.1*(nb-1))],hi=so[Math.floor(.95*(nb-1))],E0=Eb.map(v=>clamp((v-lo)/(hi-lo+1e-9),0,1));
   const PRI={intro:.3,build:.55,drop:1,break:.12,outro:.35},E=E0.map((v,b)=>.5*v+.5*(PRI[secAt(b).kind]??.5));pres.bloque=Array.from({length:nb},(_,b)=>20*Math.log10(bar(b,bus.blk)/e8ra(bus.blk)+1e-9));
-  const tg=t=>t==="bloque"?["bombo","bajo","perc","pads"]:t==="bombo_bajo"?["bombo","bajo"]:t.split("+");
-  const presW=(st,b0,b1)=>{let m=1;for(const s of st){if(!pres[s])return 0;let a=0;for(let b=b0;b<b1;b++)a+=pres[s][b];m=Math.min(m,clamp((a/(b1-b0)+18)/18,0,1))}return m};
-  const C=[];const add=(f,t,b0,len,mot)=>{const b1=Math.min(nb,b0+len);if(b1-b0<1||b0<0)return;C.push({f,t,b0,b1,mot})};
-  for(const S of secs){const k=S.kind,z=S.b+S.len;
-    if(k==="drop"){add("explosion","bloque",S.b,2,"la entrada del drop");for(let b=S.b;b<z;b+=4){for(const L of [2,4])add("giro_rapido","bloque",b,L,"drop");
-        for(const f of ["zigzag","pingpong","ocho","elipse","rayado","rebote","espejo","orbita","parabola","espiral"])for(const t of E8A_TGT[f])add(f,t,b+(rnd()<.5?0:2),[1,2,2,4][Math.floor(rnd()*4)],"drop")}
-      add("vuelo","lead",S.b+Math.max(0,Math.floor(S.len/2)-2),4,"mitad del drop");add("vuelo","lead",S.b+4,4,"drop");
-      for(let b=S.b+7;b<z;b+=8){add("pingpong","bombo_bajo",b,1,"fin de frase (fill)");add("rayado","bombo_bajo",b,1,"fin de frase (fill)");add("zigzag","perc",b,1,"fin de frase (fill)")}}
-    else if(k==="build"){const L=1+(rnd()<.5?1:0);add("congelar","bloque",z-L,L,"justo antes del drop");
-      for(let b=S.b;b<z-1;b+=2)for(const f of ["espiral","elipse","ocho","pingpong","zigzag","rayado","rebote","espejo"])for(const t of E8A_TGT[f])add(f,t,b,[2,2,4][Math.floor(rnd()*3)],"subida")}
-    else{for(let b=S.b;b<z;b+=4)for(const f of ["elipse","ocho","parabola","pendulo","distancia","orbita","espiral","rayado","espejo"])for(const t of E8A_TGT[f])add(f,t,b,[4,4,8,2][Math.floor(rnd()*4)],E8A_SEC[k]||k);
-      if(k==="break")add("vuelo","lead",S.b,4,"inicio del respiro")}}
-  // entradas de elementos (de los carriles del arreglo)
-  for(const [row,Ls] of Object.entries(M.lanes||{}))if(["perc","pads","lead"].includes(row))for(const g of Ls)if(g.s>0&&g.s<nb)for(const f of ["parabola","espiral","ocho"])add(f,row,g.s,2,"entra "+E8A_N[row]);
-  // puntaje base
-  for(const c of C){const st=tg(c.t),sec=secAt(c.b0);c.fit=E8A_FIT[c.f]?.[sec.kind]??.2;let e=0;for(let b=c.b0;b<c.b1;b++)e+=E[b];c.E=e/(c.b1-c.b0);c.sec=sec;
-    c.pres=["giro_rapido","congelar","explosion"].includes(c.f)?1:presW(c.t==="bloque"?["bloque"]:st,c.b0,c.b1);
-    let on=0;for(const s of st)if(pres[s]&&c.b0>0)on=Math.max(on,pres[s][c.b0]-pres[s][c.b0-1]);c.on=on;
-    c.sync=Math.min(1,(c.b0%8===0?1:c.b0%4===0?.8:c.b0%2===0?.55:.35)+(on>6?.35:0)+(/entra|fill|antes del drop|entrada/.test(c.mot)?.3:0));c.riesgo=rnd();c.st=st}
-  C.sort((a,b)=>a.b0-b.b0||(b.fit+b.riesgo*.3)-(a.fit+a.riesgo*.3));
-  const ok=[],desc=[],THR=.74;
-  for(const c of C){if(c.pres<.3){if(c.fit>.8&&desc.length<6&&!desc.some(d=>d.t===c.t&&Math.abs(d.b0-c.b0)<8))desc.push(c);continue}
-    let nov=1,ult=null;for(const g of ok){if(g.f===c.f&&c.b0-g.b0<12){nov-=.5;ult=g}if(g.f===c.f&&g.t===c.t)nov-=.25;if(g.t===c.t&&c.b0-g.b1<4)nov-=.2}nov=clamp(nov,0,1);c.nov=nov;c.ult=ok.filter(g=>g.f===c.f).pop()||null;
-    c.score=.3*c.fit+.2*c.E+.2*c.pres+.12*nov+.1*c.sync+.08*c.riesgo;if(c.score<THR)continue;
-    const sol=ok.filter(g=>g.b0<c.b1&&c.b0<g.b1);if(c.f==="explosion"?sol.length:sol.some(g=>g.f==="explosion"))continue;
-    if(sol.length>=2||(sol.length===1&&c.score<THR+.06))continue;if(!['giro_rapido','congelar','explosion'].includes(c.f)&&ok.some(g=>!['giro_rapido','congelar','explosion'].includes(g.f)&&Math.abs(g.b0-c.b0)<2))continue;if(sol.some(g=>g.st.some(s=>c.st.includes(s))||(["giro_rapido","congelar"].includes(g.f)&&["giro_rapido","congelar"].includes(c.f))))continue;
-    if(["giro_rapido","congelar"].includes(c.f)&&sol.some(g=>g.t==="bloque"))continue;{let fu=0;for(const g of ok)if(g.t!=="bloque")fu+=Math.max(0,Math.min(c.b0,g.b1)-Math.max(c.b0-8,g.b0));if(c.t!=="bloque"&&fu>4)continue}ok.push(c)}
+  // selección: la MISMA función que usa IAH en vivo (ORBITAL DJ y Mesa) → E8A_FORMAS.elegir (e8a_formas.js)
+  const {ok,desc}=E8A_FORMAS.elegir({secs,nb,E,pres,rnd,lanes:M.lanes});
   // parámetros concretos de cada gesto (con la semilla): forma, plano, tamaño, ciclos a tempo o libres
   for(const g of ok){const rit=["drop","build"].includes(g.sec.kind),bars=g.b1-g.b0,secs_=TM.tAt(g.b1)-TM.tAt(g.b0),R=clamp(.5+.9*g.E,.35,1.6),P={R,ph:rnd()*2*Math.PI};
     P.cyc=rit?Math.max(1,Math.round(bars/[1,2,1,.5][Math.floor(rnd()*4)]*(g.E>.7?1:.5))):Math.max(.5,secs_/(5+6*rnd()));
@@ -23750,13 +23812,13 @@ function recStep(){if(!REC)return;const b=nowBar(),u=(b-REC.b0)/REC.bars;if(u<0)
 function setMovMode(m){if(S.movMode===m)return;S.movMode=m;root.querySelectorAll("[data-mm]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.mm===m)));
   if(m==="libre"){iahStop();for(const t of S.tracks){if(t.ctl==="iah"&&isLive(t)&&isMoving(t))stillAt(t);t.ctl="dj"}K.toast("Movimiento libre: tú mueves cada sonido con el dedo")}
   else{IAHS.home={};for(const t of S.tracks){const P=basePos(t,nowBar());if(!/^(bombo|bajo)$/.test(iahRow(t))&&P&&!t.rec&&!t.fling)IAHS.home[t.id]={az0:P[0],el0:clamp(P[1],-20,40),r:clamp(P[2],.6,2)};t.ctl="iah";t.fling=null}
-    Object.assign(IAHS,{ph:-1,force:true,g:[],hist:[],kind:null});K.toast("IAH toma el espacio: el bajo y la armonía se mueven juntos y despacio, la melodía vuela sola; el bombo queda fijo al frente. Toca un sonido para tomarlo.");iahStep()}
+    Object.assign(IAHS,{ph:-1,force:true,g:[],hist:[],kind:null});IAHS.b00=Math.ceil(nowBar());IAHS.secB=IAHS.b00;K.toast("IAH toma el espacio con el criterio de las canciones IAH DJ creations: el bloque (bombo, bajo, ritmo y pads) se mueve junto, giros y explosión en los drops, y lo que se mueve se oye. Toca un sonido para tomarlo.");iahStep()}
   renderStrips();save()}
-// IAH en vivo (15 nov 2026): el CRITERIO es el de IAH8D (iah_8d.js), el cerebro único de IAH como operador 8D, el mismo de la
-// Mesa en vivo, las canciones y el healing. Aquí solo se ejecuta: el BLOQUE (bajo + armonía + ritmo) junto y lento (8–16 compases,
-// desfase bajo 0°/pads +35°/perc −35°), la MELODÍA (o un efecto) vuela sola (4–8 compases), el bombo fijo al frente, ≤12°/s,
-// máx. 2 gestos, respiro de 2 compases, sin giros rápidos ni explosiones. Toca un sonido para tomarlo.
-const IAHS={ph:-1,force:false,g:[],kind:null,hist:[],seed:(Date.now()>>>0)||1,home:{}};
+// IAH en vivo (15 nov 2026, Jorge: «SIEMPRE TIENE QUE SER EL MISMO CRITERIO»): IAH8D.planear(formato club) usa E8A_FORMAS.elegir,
+// la MISMA función que e8aPlan de las canciones IAH DJ creations: bloque = bombo+bajo+perc+pads JUNTOS (bombo incluido), giros y
+// explosión en drops, gestos de 1–4 compases en drop/subida y 2–8 en el resto, máx. 2 gestos. Sección detectada en vivo. AUDIBILIDAD:
+// la pista que se mueve sube +3…+8 dB (rampa ≥150 ms, dentro del margen automático). SALA DINÁMICA por sección con fundido.
+const IAHS={ph:-1,force:false,g:[],kind:null,hist:[],seed:(Date.now()>>>0)||1,home:{},b00:0,secB:0,sala:1,aud:{}};
 try{window.ORB_DJ_IAH=IAHS}catch(e){}// para pruebas y para IAH: estado del modo IAH en vivo
 const iahRnd=()=>{IAHS.seed=(Math.imul(IAHS.seed,1664525)+1013904223)>>>0;return IAHS.seed/4294967296};
 const iahRow=t=>t.role||t.eng||"";
@@ -23764,33 +23826,42 @@ function iahHome(t){const r=iahRow(t);if(r==="bombo"||r==="bajo")return Object.a
   const H=IAHS.home[t.id];if(H)return Object.assign({k:"fija",s:3},H);
   const q=/^x/.test(t.eng)&&!t.layerOf&&(t.rol==="voces"||t.rol==="percusion")?t.rol:r;const az={perc:-60,pads:115,lead:30,fx:-130,voces:-20,percusion:70}[q]??freeGapAz(t),el={perc:0,pads:15,lead:10,fx:20,voces:12,percusion:0}[q]??0;return {k:"fija",s:3,az0:az,el0:el,r:1.2}}
 function iahStop(){for(const g of IAHS.g)if(g.started)try{g.fin()}catch(e){}IAHS.g=[];for(const t of S.tracks)if(t._iah){t.rec=null;t._iah=false}
+  for(const t of S.tracks){if(t._aud&&K.deck&&K.deck.setBoost)try{K.deck.setBoost(t.eng,0)}catch(e){}t._aud=0}IAHS.aud={};IAHS.sala=1;try{globalThis.ORB_DJ_SALA=1}catch(e){}
   ROOM.spin=0;tween("rs",1,1);const a=((ROOM.az+ROOM.man)%360+540)%360-180;ROOM.az=a;ROOM.man=0;tween("az",0,1);}
 // MARGEN AUTOMÁTICO (15 nov, Jorge: «clipea cuando sumas muchos sonidos»): con más de 4 pistas sonando baja el conjunto
 // 10·log10(n/4) dB (6 → −1,8; 8 → −3; 12 → −4,8; 16 → −6), suave; el limitador queda de seguridad y no trabaja de más
 let AUTO_DB=0;function autoMargen(){const d=K.deck;if(!d||!d.setAuto)return;const n=S.tracks.filter(t=>t.clips.some(Boolean)&&isLive(t)).length;
   const db=n<=2?0:+(-1.5-13*Math.log10(Math.max(1,n/3))).toFixed(1);/* v2 (Jorge: «todavía clipea un poco»): desde 3 pistas, −1,5 dB y 13·log10(n/3): 4 → −3,1; 6 → −5,4; 8 → −7; 12 → −9,3 */if(Math.abs(db-AUTO_DB)>=.5){AUTO_DB=db;d.setAuto(db)}}
+const IAH_SALA={intro:1.4,build:1.25,drop:1,break:1.5,outro:1.5};
+// audibilidad + sala dinámica (cada cuadro): suave, sin saltos
+function iahAud(b){const d=K.deck;if(!d)return;const tn=performance.now(),dt=IAHS._tn?Math.min(.25,(tn-IAHS._tn)/1000):0;IAHS._tn=tn;
+  const tgt=IAH_SALA[IAHS.kind]??1;IAHS.sala+=(tgt-IAHS.sala)*(1-Math.exp(-dt/1.5));try{globalThis.ORB_DJ_SALA=+IAHS.sala.toFixed(3)}catch(e){}
+  if(!d.setBoost)return;const mov=S.tracks.filter(t=>t._iah&&t.rec&&isLive(t)),cap=mov.length>2?8-3*Math.log2(mov.length/2):8;
+  for(const t of S.tracks){let db=0;if(t._iah&&t.rec&&isLive(t)){const H=iahHome(t);db=Math.min(cap,IAH8D.audibilidad(basePos(t,b),[H.az0??0,H.el0??0,H.r??1.2]))}
+    const cur=t._aud||0,nx=cur+(db-cur)*(1-Math.exp(-dt/.15));if(Math.abs(nx-cur)>.25||(db===0&&cur!==0&&nx<.3)){const v=db===0&&nx<.3?0:+nx.toFixed(2);t._aud=v;try{d.setBoost(t.eng,v)}catch(e){}if(v)IAHS.aud[t.name||t.id]=Math.max(IAHS.aud[t.name||t.id]||0,v)}}}
 function iahStep(){if(S.movMode!=="iah")return;const d=K.deck;if(!d||!d.playing)return;const b=nowBar();
-  for(const g of IAHS.g)if(!g.started&&b>=g.b0-.02){g.started=true;try{g.start()}catch(e){console.warn(e)}}
   for(const g of IAHS.g)if(!g.done&&b>=g.b1-.02){g.done=true;try{g.fin()}catch(e){console.warn(e)}}IAHS.g=IAHS.g.filter(g=>!g.done);
+  for(const g of IAHS.g)if(!g.started&&b>=g.b0-.02){g.started=true;try{g.start()}catch(e){console.warn(e)}}
+  if(typeof IAH8D!=="undefined")iahAud(b);
   const ph=Math.floor((b+.05)/2);if(ph===IAHS.ph&&!IAHS.force)return;IAHS.ph=ph;IAHS.force=false;
   const live=S.tracks.filter(t=>t.clips.some(Boolean)&&isLive(t)),own=live.filter(t=>t.ctl!=="dj");
-  // quietos en su casa los que no están en un gesto (bombo y bajo al frente, el resto repartido alrededor)
+  // quietos en su casa los que no están en un gesto
   for(const t of own)if(!t._iah&&!IAHS.g.some(g=>g.trks.includes(t))){const H=iahHome(t),R=K.deck.R[t.eng],m=R?R.mov:t.mov;if(t.rec||t.fling||!m||m.k!=="fija"||m.az0!==H.az0||m.r!==H.r){t.fling=null;t.rec=null;t.mov=H;applyMov(t)}}
   if(typeof IAH8D==="undefined")return;
   const b0=Math.ceil(b+.02),spb=240/(K.deck?.bpm||128);
-  const pistas=own.map(t=>({id:t.id,rol:iahRow(t),fino:t.rol||"",nombre:t.name||"",sonando:true,ocupada:!!t._iah||IAHS.g.some(g=>g.trks.includes(t))}));
-  const G=IAH8D.planear({formato:"club",compas_s:spb,ahora:b0,pistas,historia:IAHS.hist,rnd:iahRnd,
-    en_curso:{bloque:IAHS.g.some(g=>g.tipo==="bloque"),melodia:IAHS.g.some(g=>g.tipo==="melodia")}});
+  // sección en vivo: drop (bombo + energía), subida, respiro, intro
+  const kick=live.some(t=>iahRow(t)==="bombo"),kind=IAH8D.seccionVivo({bombo:kick,n:live.length,fx:live.some(t=>iahRow(t)==="fx"),desde_inicio:b0-(IAHS.b00||0),antes:IAHS.kind});
+  if(kind!==IAHS.kind){IAHS.kind=kind;IAHS.secB=b0}
+  const pistas=own.map(t=>({id:t.id,rol:iahRow(t),fino:t.rol||"",nombre:t.name||"",sonando:true,ocupada:IAHS.g.some(g=>g.trks.includes(t)),hasta:Math.max(-1,...IAHS.g.filter(g=>g.trks.includes(t)).map(g=>g.b1))}));
+  const G=IAH8D.planear({formato:"club",compas_s:spb,ahora:b0,pistas,seccion:{kind,b:IAHS.secB},energia:clamp(live.length/6,0,1)*(kick?1:.6),historia:IAHS.hist,rnd:iahRnd});
   for(const g of G){const trks=g.ids.map(id=>own.find(t=>t.id===id)).filter(Boolean);if(!trks.length)continue;
-    const T=IAH8D.trayecto(g.forma,{compases:g.compases,compas_s:spb,rnd:iahRnd,vel_max:g.velocidad_max,formato:"club"});if(!T)continue;
-    // cada pista sale de su casa, sigue la forma (girada para empezar en el bajo o en la melodía, + su desfase) a ≤12°/s y vuelve a casa
-    const casa=t=>{const H=iahHome(t);return [H.az0??0,H.el0??0,H.r??1.2]},ref=g.tipo==="bloque"?(trks.find(t=>iahRow(t)==="bajo")||trks[0]):trks[0],d0=casa(ref)[0]-T.pts[0][0];
-    const bars=g.compases,recs=trks.map(t=>IAH8D.seguir(T.pts.map(p=>[p[0]+d0+(g.desfase[t.id]||0),p[1],p[2]]),T.segundos,{desde:casa(t),max:g.velocidad_max}));for(const t of trks)t._iah=true;
-    IAHS.g.push({f:g.forma,tipo:g.tipo,tg:g.tipo==="bloque"?"bloque":trks.map(iahRow).join("+"),b0:g.b0,b1:g.b1,trks,vmax:T.vmax,
-      start:()=>trks.forEach((t,i)=>{if(t.ctl!=="dj"){t.fling=null;t.rec={bars,b0:g.b0,pts:recs[i]}}}),
-      fin:()=>{for(const t of trks)if(t._iah&&t.ctl!=="dj"){t.rec=null;t._iah=false;t.mov=iahHome(t);applyMov(t)}}});
-    IAH8D.anotar(IAHS.hist,g);iahLog(g.forma,g.tipo==="bloque"?"bloque":trks.map(iahRow).join("+"))}}
-function iahLog(f,tg){try{const N=K.E8A_N||{},nom=tg==="bloque"?"todo el bloque (bajo, armonía y ritmo)":tg.split(/[+_]/).map(x=>N[x]||x).join(" y ");const el=root&&root.querySelector(".ldx-iah-log");if(el)el.textContent="IAH · "+f.replace("_"," ")+" · "+nom}catch(e){}}
+    const casa=t=>{const H=iahHome(t);return [H.az0??0,H.el0??0,H.r??1.2]};
+    const bars=g.compases,recs=trks.map(t=>IAH8D.recorrido(g,g.filas[t.id],casa(t),spb).pts);for(const t of trks)t._iah=true;
+    IAHS.g.push({f:g.forma,tipo:g.tipo,tg:g.objetivo,kind,b0:g.b0,b1:g.b1,bars,trks,
+      start:()=>trks.forEach((t,i)=>{if(t.ctl!=="dj"){t.fling=null;t._iah=true;t.rec={bars,b0:g.b0,pts:recs[i]}}}),
+      fin(){for(const t of trks)if(t._iah&&t.ctl!=="dj"&&!IAHS.g.some(o=>o!==this&&!o.done&&o.trks.includes(t)&&o.b0<=g.b1+.02)){t.rec=null;t._iah=false;t.mov=iahHome(t);applyMov(t)}}});
+    IAH8D.anotar(IAHS.hist,g);(IAHS.log=IAHS.log||[]).push({b0:g.b0,f:g.forma,tg:g.objetivo,bars,kind,trks:trks.map(iahRow)});iahLog(g.forma,g.objetivo)}}
+function iahLog(f,tg){try{const N=K.E8A_N||{},nom=tg==="bloque"?"todo el bloque (bombo, bajo, ritmo y pads)":tg.split(/[+_]/).map(x=>N[x]||x).join(" y ");const el=root&&root.querySelector(".ldx-iah-log");if(el)el.textContent="IAH · "+f.replace("_"," ")+" · "+nom}catch(e){}}
 /* ---------- SESIONES LISTAS: cambiar de sesión sin parar la música (entra en la próxima frase de 4 compases) ---------- */
 const NSLOT=6;let SLOTQ=-1;
 function toggleSlots(){slotsBox.hidden=!slotsBox.hidden;root.querySelectorAll(".ldx-slots-btn").forEach(b=>b.setAttribute("aria-pressed",String(!slotsBox.hidden)));renderSlots();requestAnimationFrame(fitSpace)}
