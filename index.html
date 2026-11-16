@@ -5567,7 +5567,9 @@ async function render(sc,opt={}){const r=await renderAll(sc,sc.fileBuf||S.fileBu
 
 /* ---------- medición en vivo ---------- */
 const MB={l:new Float32Array(2048),r:new Float32Array(2048),kl:new Float32Array(32768),kr:new Float32Array(32768),f:new Uint8Array(1024)};
-function meters(){if(!M||!M.anL)return null;M.anL.getFloatTimeDomainData(MB.l);M.anR.getFloatTimeDomainData(MB.r);let pl=0,pr=0,sl=0,sr=0,slr=0;
+// rendimiento (15 nov): meters() se pedía 3–4 veces por cuadro (DJ, Mesa, barra, visor) y cada vez copia 2×32768 muestras y hace la correlación ITD; se reutiliza 30 ms
+let MCa=null,MCt=-1e9;function meters(){const tn=performance.now();if(MCa&&tn-MCt<30&&tn>=MCt)return MCa;const r=meters0();MCa=r;MCt=tn;return r}
+function meters0(){if(!M||!M.anL)return null;M.anL.getFloatTimeDomainData(MB.l);M.anR.getFloatTimeDomainData(MB.r);let pl=0,pr=0,sl=0,sr=0,slr=0;
   for(let i=0;i<2048;i++){const a=MB.l[i],b=MB.r[i];pl=Math.max(pl,Math.abs(a));pr=Math.max(pr,Math.abs(b));sl+=a*a;sr+=b*b;slr+=a*b}
   const ild=sl>1e-10&&sr>1e-10?10*Math.log10(sr/sl):0,cor=slr/Math.sqrt(sl*sr+1e-12);
   // ITD: correlación cruzada ±1 ms
@@ -7335,7 +7337,7 @@ function project(p){const m=pv,x=p[0],y=p[1],z=p[2];const w=m[3]*x+m[7]*y+m[11]*
 function toPlane(sx,sy,h=0){const nx=sx/V.w*2-1,ny=1-sy/V.h*2;const inv=inv4(pv);if(!inv)return null;const a=tf(inv,[nx,ny,-1]),b=tf(inv,[nx,ny,1]);const d=[b[0]-a[0],b[1]-a[1],b[2]-a[2]];if(Math.abs(d[1])<1e-6)return null;const k=(h-a[1])/d[1];if(k<0)return null;return [a[0]+d[0]*k,h,a[2]+d[2]*k]}
 /* ---------- tamaño y FBO ---------- */
 function resize(force){if(!cv||!gl)return;const r=cv.getBoundingClientRect();const qt=QT[V.q]||QT[0];
-  const dpr=V.fixed?V.fixed.dpr:Math.min(devicePixelRatio||1,qt.dpr);V.dpr=dpr;V.w=V.fixed?V.fixed.w/dpr:r.width;V.h=V.fixed?V.fixed.h/dpr:r.height;
+  const dpr=V.fixed?V.fixed.dpr:Math.min(devicePixelRatio||1,qt.dpr,1.5);/* rendimiento (15 nov): tope 1,5 — el cielo es suave y a dpr 2–3 con bloom y 4 FBO el GPU se ahogaba */V.dpr=dpr;V.w=V.fixed?V.fixed.w/dpr:r.width;V.h=V.fixed?V.fixed.h/dpr:r.height;
   const W=V.fixed?V.fixed.w:Math.max(2,Math.round(r.width*dpr)),H=V.fixed?V.fixed.h:Math.max(2,Math.round(r.height*dpr));
   if(W!==cv.width||H!==cv.height||force||!V.FB){cv.width=W;cv.height=H;if(V.FB)for(const k in V.FB){gl.deleteTexture(V.FB[k].t);gl.deleteFramebuffer(V.FB[k].f);if(V.FB[k].rb)gl.deleteRenderbuffer(V.FB[k].rb)}
     V.FB={s:fbo(W,H,true),a:fbo(W,H),b:fbo(W,H),c:fbo(W,H)};V.fboOk=V.FB.s.ok&&V.FB.a.ok&&V.FB.b.ok&&V.FB.c.ok}}
@@ -7350,10 +7352,19 @@ function readAudio(D){if(V.an){try{V.an.getByteFrequencyData(V.anF);let s=0;cons
 /* ---------- bucle ---------- */
 let last=performance.now(),fps=60;
 // presupuesto de CPU: el visor mide su trabajo por cuadro; si pasa de ~9 ms baja calidad y luego salta cuadros (el hilo principal programa el audio)
-function loop(now){requestAnimationFrame(loop);if(!V.ok||V.offline||document.hidden)return;V.fc=(V.fc||0)+1;if(V.busy&&(V.fc%4))return;if(V.skip>1&&(V.fc%V.skip))return;
+// rendimiento (15 nov, «la app está pegada»): ¿un panel opaco (Mesa, DJ, Baño, Escucha A/B…) tapa el cielo? se mira cada 250 ms en 5 puntos.
+// Tapado: no se dibuja (las fuentes se siguen actualizando para la Mesa). Además el cielo va a ~30 fps (salta cuadros según la tasa de la pantalla).
+function tapado(now){if(now-(V.covT||0)<250)return V.cov;V.covT=now;let c=false;try{const r=cv.getBoundingClientRect();if(!r.width||!r.height)c=true;else{c=true;
+  for(const [fx,fy] of [[.5,.5],[.15,.15],[.85,.15],[.15,.85],[.85,.85]]){const st=document.elementsFromPoint(r.left+r.width*fx,r.top+r.height*fy);let tp=false;
+    for(const e of st){if(e===cv)break;const cs=getComputedStyle(e);if(+cs.opacity<.95)continue;if(cs.backgroundImage!=="none"){tp=true;break}const m=cs.backgroundColor.match(/[\d.]+/g);if(m&&(m.length<4||+m[3]>=.95)&&!(m.length>=4&&+m[3]===0)){tp=true;break}}
+    if(!tp){c=false;break}}}}catch(e){c=false}V.cov=c;return c}
+function loop(now){requestAnimationFrame(loop);if(!V.ok||V.offline||document.hidden)return;
+  if(V.rawT){const ri=now-V.rawT;if(ri>0&&ri<200)V.rawIv=V.rawIv?V.rawIv*.9+ri*.1:ri}V.rawT=now;
+  if(!V.fixed&&tapado(now)){if(V.provider&&now-(V.covP||0)>33){V.covP=now;try{V.frameSources=V.provider().sources}catch(e){}}last=now;V.lastDraw=0;V.wk=[];return}
+  V.fc=(V.fc||0)+1;if(V.busy&&(V.fc%4))return;const sk=Math.max(V.skip||1,V.rawIv?Math.round(30/V.rawIv):1);if(sk>1&&(V.fc%sk))return;
   const dt=Math.min(.1,(now-last)/1000);last=now;if(!cv.offsetWidth)return;const w0=performance.now();
   const D=V.provider?V.provider():{sources:[],events:[],lev:0};V.frameSources=D.sources;tick((now-V.t0)/1000,dt,D);const w=performance.now()-w0;
-  if(w>80&&!V.lockQ&&V.q>-1){V.q--;V.wk=[];V.up=0;resize();V.lastDraw=now;return}const iv=V.lastDraw?now-V.lastDraw:16.7;V.lastDraw=now;V.wk.push([w,iv/(V.skip||1)]);V.ftAvg=V.ftAvg?V.ftAvg*.95+w*.05:w;
+  if(w>80&&!V.lockQ&&V.q>-1){V.q--;V.wk=[];V.up=0;resize();V.lastDraw=now;return}const iv=V.lastDraw?now-V.lastDraw:16.7;V.lastDraw=now;V.wk.push([w,iv/Math.max(V.skip||1,V.rawIv?Math.round(30/V.rawIv):1)]);V.ftAvg=V.ftAvg?V.ftAvg*.95+w*.05:w;
   if(V.wk.length>=12){const m=V.wk.reduce((a,b)=>a+b[0],0)/V.wk.length,r=V.wk.reduce((a,b)=>a+b[1],0)/V.wk.length;V.wk=[];V.work=m;V.rafMs=r;fps=1000/Math.max(1,r);
     if(V.lockQ)return;const slow=m>9||r>34;if(slow&&V.q>-1){V.q--;V.up=0;resize()}else if(slow){V.skip=Math.min(30,Math.ceil((V.skip||1)*1.6))}else if(m<4&&r<20&&V.skip>1){V.skip--}
     else if(m<4.5&&r<18&&V.skip<=1&&V.q<(MOBILE?2:3)&&++V.up>8){V.q++;V.up=0;resize()}}}
@@ -10372,8 +10383,11 @@ function drawSer(g,v,x0,y0,RR){let d=SER[v]||SER.Z;
 // esfera se ve a ~0,6 de su tamaño; el ser (.orbital-ser-identidad, posicionado en % por CSS) se escala igual alrededor del centro
 // de la escena para conservar la relación de la portada. En visores normales no se toca la regla CSS.
 let serFit="";
+// rendimiento (15 nov): rectángulos en caché 300 ms (se borran al cambiar el tamaño): antes 4 getBoundingClientRect por cuadro forzaban el layout
+let RCg=0;const RCm=new WeakMap();addEventListener("resize",()=>{RCg++});
+function rectC(el){const n=performance.now(),c=RCm.get(el);if(c&&c.g===RCg&&n-c.t<300)return c.r;const r=el.getBoundingClientRect();RCm.set(el,{t:n,g:RCg,r});return r}
 function serAlign(){const ser=document.querySelector(".orbital-ser-identidad");if(!ser)return;
-  const box=ser.parentElement.getBoundingClientRect(),narrow=on&&ser.parentElement===cv.parentElement&&box.height>0&&box.width/box.height<.8;
+  const box=rectC(ser.parentElement),narrow=on&&ser.parentElement===cv.parentElement&&box.height>0&&box.width/box.height<.8;
   const m=SER_MQ.matches,key=narrow?(m?"m":"d"):"";if(key===serFit)return;serFit=key;
   if(!narrow){ser.style.removeProperty("height");ser.style.removeProperty("bottom");return}
   // medido: radio de la esfera ×0,581 y centro de la escena al 49,3 % (48,9 % en visores normales)
@@ -10389,8 +10403,8 @@ const GZ={X:{x:[1,0],y:[-.42,.42],f:[0,-1]},Y:{x:[-.42,.42],y:[0,-1],f:[1,0]},Z:
 function gizmo(g){if(cv.closest(".ldx-space-slot"))return;// en Orbital DJ la vista va dentro del plato, sin gizmo
 const u=vaU(),A=VA?GZ[VA.from]:GZ[VIEW],B=GZ[VIEW],mob=W<600,s=mob?26:34,gx=mob?44:60;let gy=mob?H-200:H-150;
   // el logo de la pantalla (arriba a la izquierda) no debe tapar el gizmo: se baja por debajo del logo, sin pasar los botones X/Y/Z
-  {const box=cv.getBoundingClientRect(),logo=cv.parentElement.querySelector(".play-screen-logo"),plane=cv.parentElement.querySelector(".play-plane");
-    const lr=logo&&logo.getBoundingClientRect(),pr=plane&&plane.getBoundingClientRect();
+  {const box=rectC(cv),logo=cv.parentElement.querySelector(".play-screen-logo"),plane=cv.parentElement.querySelector(".play-plane");
+    const lr=logo&&rectC(logo),pr=plane&&rectC(plane);
     if(lr&&lr.height){const top=lr.bottom-box.top+s*1.55+6;if(gy<top)gy=top}
     if(pr&&pr.height){const bottom=pr.top-box.top-s*1.55-18;if(gy>bottom)gy=Math.max(lr&&lr.height?lr.bottom-box.top+s*1.55+6:s*1.55+6,bottom)}}
   g.save();g.globalCompositeOperation="source-over";g.fillStyle="rgba(6,10,22,.72)";g.beginPath();g.arc(gx,gy,s*1.55,0,7);g.fill();g.strokeStyle="rgba(90,140,255,.35)";g.lineWidth=1;g.stroke();
@@ -12507,7 +12521,7 @@ async function restoreSong(){const k=EXP.LS.get("orb_lastsong",null);if(!k)retur
 
 /* ---------- forma de onda / línea de tiempo ---------- */
 function curDur(){return S.aiDur||(S.fileBuf?S.fileBuf.duration:0)}
-function wave(){const cv=$("#wave");if(!cv.offsetWidth)return;const W=cv.offsetWidth,H=cv.offsetHeight||44,dp=Math.min(2,devicePixelRatio||1);if(cv.width!==Math.round(W*dp)){cv.width=Math.round(W*dp);cv.height=Math.round(H*dp)}
+function wave(){if(typeof GLV!=="undefined"&&GLV.V&&GLV.V.cov)return;/* rendimiento (15 nov): con un panel opaco encima (Mesa, DJ, Baño, A/B) la barra de onda no se ve; no se redibuja */const cv=$("#wave");if(!cv.offsetWidth)return;const W=cv.offsetWidth,H=cv.offsetHeight||44,dp=Math.min(2,devicePixelRatio||1);if(cv.width!==Math.round(W*dp)){cv.width=Math.round(W*dp);cv.height=Math.round(H*dp)}
   const g=cv.getContext("2d");g.setTransform(dp,0,0,dp,0,0);g.clearRect(0,0,W,H);const D=curDur(),t=ORB.pos();
   if(S.aiDur&&AI.plan){for(const x of AI.plan.progression){g.fillStyle=EMO.P[x.emotion].col+"55";g.fillRect(x.t0/D*W,4,(x.t1-x.t0)/D*W-1,H-8)}}
   else if(peaks){g.fillStyle="rgba(63,230,238,.55)";for(let i=0;i<peaks.length;i++){const x=i/peaks.length*W,hh=Math.max(1,peaks[i]*(H-6));g.fillRect(x,(H-hh)/2,Math.max(1,W/peaks.length-.5),hh)}}
@@ -23935,12 +23949,14 @@ function fitSpace(){placeCtl();const mob=innerWidth<=760;let M=mesaM()||MESA_M||
     while(2*(half(M)+vw)>maxP&&M>200)M-=2}// el círculo se reduce lo justo para que quepa el aro (y, en la compu, la columna de la izquierda)
   const rc=half(M),rp=rc+vw;const st=root.style;st.setProperty("--m",M+"px");st.setProperty("--rc",rc.toFixed(1)+"px");st.setProperty("--vw",vw+"px");
   st.setProperty("--pd",(2*rp).toFixed(1)+"px");st.setProperty("--rin",(rc/rp*100).toFixed(2)+"%");root.dataset.mesaM=M;
-  try{PLAY.resize()}catch(e){}const r=ov.getBoundingClientRect(),dpr=Math.min(1.5,devicePixelRatio||1);ov.width=Math.round(r.width*dpr);ov.height=Math.round(r.height*dpr)}
+  try{PLAY.resize()}catch(e){}const r=ov.getBoundingClientRect(),dpr=Math.min(1.5,devicePixelRatio||1);OVW=r.width;ov.width=Math.round(r.width*dpr);ov.height=Math.round(r.height*dpr)}
+// rendimiento (15 nov): ancho del lienzo en caché (antes getBoundingClientRect en cada cuadro forzaba el layout de toda la página)
+let OVW=0,OVRO=null;
 const projP=P=>{try{const q=PLAY.proj(P);return q}catch(e){const r=ov.getBoundingClientRect(),k=Math.min(r.width,r.height)/2*.86*Math.min(1,P[2]/4),a=P[0]*Math.PI/180;return [r.width/2+Math.sin(a)*k,r.height/2-Math.cos(a)*k,P[1]/80]}};
 // horizonte: proyección horizontal (r·cos el), así el aro inclinado se ve como elipse
 const projH=P=>{const rh=P[2]*Math.cos(P[1]*Math.PI/180);try{return PLAY.toScr(P[0],rh)}catch(e){return projP([P[0],0,rh])}};
 const DOTS=[];
-function drawOv(){const g=ov.getContext("2d"),dpr=ov.width/Math.max(1,ov.getBoundingClientRect().width),b=nowBar();g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,ov.width,ov.height);g.setTransform(dpr,0,0,dpr,0,0);
+function drawOv(){if(!OVRO&&typeof ResizeObserver!=="undefined"){try{OVRO=new ResizeObserver(()=>{OVW=0});OVRO.observe(ov)}catch(e){OVRO=1}}if(!OVW)OVW=ov.getBoundingClientRect().width;const g=ov.getContext("2d"),dpr=ov.width/Math.max(1,OVW),b=nowBar();g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,ov.width,ov.height);g.setTransform(dpr,0,0,dpr,0,0);
   // horizonte de la sala: aro inclinado (más brillante donde sube) y línea del eje
   const tilt=Math.hypot(ROOM.roll,ROOM.pitch)>.5||Math.abs(ROOM.elev)>.5||(GHOST&&(Math.hypot(GHOST.roll,GHOST.pitch)>.5||Math.abs(GHOST.elev)>.5));
   if(tilt){for(const [R,al] of [[GHOST,.45],[ROOM,1]]){if(!R)continue;let prev=null;for(let i=0;i<=72;i++){const P=roomXform([i*5,0,3.4],null,b,Object.assign({},R,{az:0,man:0,pp:0,glitch:null,rs:1,mirror:false}));const q=projH(P);
