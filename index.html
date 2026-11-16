@@ -1845,7 +1845,7 @@ body.ldjx-open .ldj-fab{display:none!important}
 /* MIS CUES: 30 lugares en 3 bancos de 10 (5×2) + «Dibujar recorrido» en Crear cue (pedido de Jorge, 15 nov 2026) */
 .ldjx .ldx-ucues .ldx-ucue{min-width:0;overflow:hidden}
 .ldjx .ldx-ucues .ldx-ucue span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ldjx .ldx-ucues .ldx-ucempty{--h:200;opacity:.5;border-style:dashed;font-size:20px;font-weight:300;filter:saturate(.25)}
+.ldjx .ldx-ucues .ldx-ucempty{font-size:20px;font-weight:300}/* 15 nov: los 30 con su luz encendida (Jorge) */
 .ldjx .ldx-ucues .ldx-ucempty:hover{opacity:.85}
 .ldjx .ldx-ucbank{grid-column:1/-1;display:grid;grid-template-columns:44px 1fr 44px;gap:5px;align-items:center}
 .ldjx .ldx-ucues .ldx-ucnav{min-height:30px;font-size:13px;padding:0}
@@ -23713,7 +23713,7 @@ function renderUserCues(){const box=root&&root.querySelector(".ldx-ucues");if(!b
   const pads=[];for(let j=0;j<UCB;j++){const i=bk*UCB+j,c=U[i];
     pads.push(c?E("button",{type:"button",class:"ldx-epad ldx-ucue","data-uc":i,style:"--h:"+(28+i*23)%360,onclick:e=>fireUserCue(c,e.currentTarget),
         oncontextmenu:e=>{e.preventDefault();if(confirm("¿Borrar el cue «"+c.n+"»?")){U[i]=null;renderUserCues();save()}},title:ucTitle(c)},E("i",{class:"ldx-ucn"},String(i+1)),E("span",{},c.n))
-      :E("button",{type:"button",class:"ldx-epad ldx-ucue ldx-ucempty","data-uc":i,title:"Lugar "+(j+1)+" del banco "+"ABC"[bk]+" vacío: toca para crear un cue",onclick:()=>addUserCue(i)},E("i",{class:"ldx-ucn"},String(i+1)),E("span",{},"＋")))}
+      :E("button",{type:"button",class:"ldx-epad ldx-ucue ldx-ucempty","data-uc":i,style:"--h:"+(28+i*23)%360,title:"Lugar "+(j+1)+" del banco "+"ABC"[bk]+" vacío: toca para crear un cue",onclick:()=>addUserCue(i)},E("i",{class:"ldx-ucn"},String(i+1)),E("span",{},"＋")))}
   box.replaceChildren(nav,...pads)}
 
 /* ---------- GRABAR GESTO: mueve el sonido con el dedo 4 u 8 compases y queda en bucle (arranca en el próximo compás) ---------- */
