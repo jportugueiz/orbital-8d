@@ -1861,6 +1861,12 @@ body.ldjx-open .ldj-fab{display:none!important}
 .ldx-cue-paradas{display:grid;gap:4px;margin-top:6px}
 .ldx-cue-parada{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px}
 .ldx-cue-parada input{width:64px;padding:4px;border-radius:6px;border:1px solid #2f4452;background:#0b1118;color:#e6f6ff}
+
+/* 15 nov: MIS CUES con su número fijo (1–30) arriba del nombre */
+.ldjx .ldx-ucues .ldx-ucue{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative}
+.ldjx .ldx-ucues .ldx-ucue .ldx-ucn{display:block;font:800 10px/1 UI,system-ui;font-style:normal;letter-spacing:.06em;opacity:.85;color:#fff;text-shadow:0 1px 1px #000}
+.ldjx .ldx-ucues .ldx-ucempty .ldx-ucn{opacity:1}
+.ldjx .ldx-ucues .ldx-ucue span{max-width:100%}
 /* Materiales comunes para el estudio, los modos inmersivos y el mezclador integrado. */
 :root {
   --rack-edge:#535c65;
@@ -22967,7 +22973,7 @@ return {on:true,open:openIah,compose,compile,_t,get model(){return model},get ar
 const LAB_DJ_UI=(()=>{
 if(typeof LAB_DJ==="undefined"||!LAB_DJ.on)return {on:false};
 const K=LAB_DJ._k;
-const MAXT=18,ROWS_N=8,clamp=(x,a,b)=>x<a?a:x>b?b:x;
+const MAXT=18,ROWS_N=10,clamp=(x,a,b)=>x<a?a:x>b?b:x;
 const E=(tag,a,...kids)=>{const n=document.createElement(tag);for(const [k,v] of Object.entries(a||{})){if(v==null||v===false)continue;
   if(k.startsWith("on"))n.addEventListener(k.slice(2),v);else if(k==="html")n.innerHTML=v;else n.setAttribute(k,v===true?"":v)}
   for(const c of kids.flat())if(c!=null&&c!==false)n.append(c.nodeType?c:document.createTextNode(String(c)));return n};
@@ -23023,24 +23029,42 @@ function mkTrack(i,o={}){return Object.assign({id:"t"+(i+1),eng:"x"+(i+1),name:"
 // una columna por FAMILIA (bombo · ritmo · bajo · atmósfera · melodía · efectos, las filas del motor), con al menos 5 sonidos listos en cada una:
 // primero los del kit, después los de kits del mismo estilo y, si faltan, los de tempo más cercano (el motor los ajusta al tempo).
 // Varios sonidos de la misma familia pueden sonar a la vez (capas: padPress → layer).
-const FAM=[["bombo","BOMBO","bombo"],["perc","RITMO","perc"],["bajo","BAJO","bajo"],["pads","ATMÓS","pads"],["lead","MELODÍA","lead"],["fx","EFECTOS","fx"]];
-const FAMCOL={bombo:"#ff5a4f",perc:"#ffb347",bajo:"#a874ff",pads:"#45b8ff",lead:"#3fe0a0",fx:"#ff4fa3"};
-const MINFAM=8;// 15 nov: los 8 pads de cada familia llenos (incluidos efectos), el mejor primero
+// 15 nov (Jorge): las 8 columnas llenas, 10 sonidos cada una. PISTA 7 = VOCES (voces/chops de la fila fx) y PISTA 8 = PERC 2
+// (congas, bongos, toms, djembé, metal, sonajeros… de la fila perc). Suenan en filas extra del motor (x7, x8); para IAH, VOCES = melodía
+// y PERC 2 = bloque/ritmo (campo role). EFECTOS queda sin voces. [familia, nombre, rol fino, fila para IAH/picker]
+const FAM=[["bombo","BOMBO","bombo","bombo"],["perc","RITMO","perc","perc"],["bajo","BAJO","bajo","bajo"],["pads","ATMÓS","pads","pads"],["lead","MELODÍA","lead","lead"],["fx","EFECTOS","fx","fx"],
+  ["voces","VOCES","voces","lead"],["perc2","PERC 2","percusion","perc"]];
+const FAMCOL={bombo:"#ff5a4f",perc:"#ffb347",bajo:"#a874ff",pads:"#45b8ff",lead:"#3fe0a0",fx:"#ff4fa3",voces:"#ffe08a",perc2:"#c6e05a"};
+const MINFAM=10;// 15 nov: los 10 pads de cada familia llenos, el mejor primero
+const RX_VOZ=/^(voz|voces|vox|canto|grito|¡?hey|ooh|susurro|coro|chant)/i,RX_P2=/conga|bongo|djemb|\btoms?\b|metal|sonaj|madera|cencerro|redoble|tamborz|tribal|timbal|clave|g[uü]iro/i;
+function famOf(id){const p=K.PAD[id];if(!p)return null;const n=p.n||id;
+  if(p.row==="fx")return RX_VOZ.test(n)||ROLMAP[id]==="voces"?"voces":"fx";if(p.row==="perc")return RX_P2.test(n)?"perc2":"perc";return p.row}
+const kitOf=id=>K.PAD[id]?.kit||"orbita",kitN=k=>{const KI=LAB_DJ._t?.kits||K.kits||{};return String(KI[k]?.n||k).replace(/\s*\d{2,3}$/,"")};
+// nombre en el pad: si la columna repite un nombre (otro kit), se le suma el kit: «Subida · Trance»
+function padLab(t,id){const n=padName(id);if(!t||!id)return n;return t.clips.some(c=>c&&c!==id&&padName(c)===n)&&kitOf(id)!==S.kit?n+" · "+kitN(kitOf(id)):n}
 // el «mejor» de cada familia para el beat completo: bombo principal (no fills ni reversas), ritmo con hats/shaker (groove continuo),
 // bajo que no sea solo sub, pads y melodía con loop largo; si no, el orden del kit (curado por género)
 function beatPri(row,id){const p=K.PAD[id]||{},n=(p.n||id).toLowerCase(),L=p.bars||1;let s=0;
+  // EFECTOS: primero lo que más se usa en un set (subida, bajada, impacto, crash, ruido), después el resto
+  if(row==="fx"){const o=["subida","bajada","impacto","crash","ruido blanco","reversa","entrada","metal","ruido"].findIndex(x=>n.startsWith(x));return o<0?9:o}
+  if(row==="voces")return 0;
   if(p.kind==="shot")s+=50;if(/fill|rev|revers|crash|impact|subida|riser|bajada|caida/.test(n))s+=30;if(/\b2\b|\b3\b| 2$| 3$/.test(n))s+=3;
   if(row==="perc"&&!/hat|shak|shuffle|top|ride|groove/.test(n))s+=8;if(row==="bajo"&&/\bsub\b|^sub/.test(n))s+=10;
-  if((row==="pads"||row==="lead")&&L<2)s+=4;return s}
+  if((row==="pads"||row==="lead")&&L<2)s+=4;if(row==="voces"&&/susurro|alien|oscura/.test(n))s+=2;if(row==="perc2"&&/\b2$/.test(n))s+=1;return s}
 function tracksFromKit(kitId,also){const KITS=LAB_DJ._t?.kits||K.kits||{},kit=KITS[kitId];const main=kit?kit.ids:K.CAT.map(c=>c[0]);
   const bpm=kit?kit.bpm:128,pool=[...(also||[]).filter(k=>k!==kitId&&KITS[k]),...Object.keys(KITS).filter(k=>k!==kitId&&!(also||[]).includes(k)).sort((a,b)=>Math.abs(KITS[a].bpm-bpm)-Math.abs(KITS[b].bpm-bpm))];
-  const out=[];
-  for(const [row,name,rol] of FAM){const list=main.filter(id=>K.PAD[id]&&K.PAD[id].row===row);
-    const target=Math.min(ROWS_N,Math.max(MINFAM,list.length));
-    for(const k of pool){if(list.length>=target)break;for(const id of KITS[k].ids){if(list.length>=target)break;const p=K.PAD[id];if(p&&p.row===row&&!list.includes(id)&&!list.some(x=>K.PAD[x].n===p.n&&K.PAD[x].rol===p.rol))list.push(id)}}
-    if(!list.length)continue;
-    list.sort((a,b)=>beatPri(row,a)-beatPri(row,b));// el mejor de la familia queda en la fila 1 (beat completo del kit)
-    out.push(mkTrack(out.length,{eng:row,rol,name,color:FAMCOL[row]||EXTRA[out.length%8],role:row,clips:[...list,...Array(ROWS_N).fill(null)].slice(0,ROWS_N),mov:{k:"fija",s:3}}))}
+  // candidatos en orden de preferencia: el kit, los kits hermanos del estilo y después por BPM más cercano
+  const cand=[],seen=new Set(),own=new Set(main);for(const id of [...main,...pool.flatMap(k=>KITS[k].ids)])if(K.PAD[id]&&!seen.has(id)){seen.add(id);cand.push(id)}
+  const fileOf=id=>K.PAD[id].file||id,out=[];
+  for(const [fam,name,rol,role] of FAM){const C=cand.filter(id=>famOf(id)===fam),pick=[],names=new Set(),files=new Set(),vari=new Set();
+    // 1) nombres distintos (si se repite, gana el del kit o el de BPM más cercano); 2) si faltan para 10, variantes de otros kits (otro audio)
+    for(const id of C){if(pick.length>=ROWS_N)break;const n=K.PAD[id].n;if(names.has(n)||files.has(fileOf(id)))continue;pick.push(id);names.add(n);files.add(fileOf(id))}
+    for(const id of C){if(pick.length>=Math.max(MINFAM,0)||pick.length>=ROWS_N)break;if(pick.includes(id)||files.has(fileOf(id)))continue;const lab=K.PAD[id].n+" · "+kitOf(id);if(names.has(lab))continue;pick.push(id);vari.add(id);names.add(lab);files.add(fileOf(id))}
+    if(!pick.length)continue;
+    const sc=id=>beatPri(fam,id)+(own.has(id)?0:12)+(vari.has(id)?40:0);
+    pick.sort((a,b)=>sc(a)-sc(b));// el mejor de la familia queda en la fila 1 (beat completo del kit)
+    const o={rol,name,color:FAMCOL[fam]||EXTRA[out.length%8],role,clips:[...pick,...Array(ROWS_N).fill(null)].slice(0,ROWS_N),mov:{k:"fija",s:3}};if(K.ROWS.some(r=>r.id===fam))o.eng=fam;
+    const t=mkTrack(out.length,o);if(!o.eng&&K.ROW[t.eng])K.ROW[t.eng].n=name;out.push(t)}
   while(out.length<MAXT)out.push(mkTrack(out.length));return out}
 /* ---------- ESTILOS IAH: un toque arma un set completo de beats (kit del estilo + sonidos de kits hermanos, ≥5 por familia) ---------- */
 const ESTILOS=[["house","House",["techhouse","deephouse","afro","nudisco"]],["techno","Techno",["melodic","minimal","hardtechno"]],["trance","Trance / progresivo",["progressive","psytrance","bigroom"]],
@@ -23320,8 +23344,8 @@ function renderGrid(){if(!grid)return;const P=PERB();if(S.bank*P>=MAXT)S.bank=0;
   if(S.pro)cells.push(E("div",{class:"ldx-gh ldx-scenehead",title:"Lanza toda la fila"},"FILA"));
   for(let r=0;r<ROWS_N;r++){
     T.forEach(t=>{const id=t.clips[r],st=t.state;const cls="ldx-pad"+(id?" full":"")+(st.play===r?" play":"")+(st.queue===r&&st.play!==r?" queue":"");
-      cells.push(E("button",{type:"button",class:cls,style:"--c:"+t.color,"data-t":t.id,"data-r":r,title:id?padName(id)+" · toca para lanzar o parar (entra en el próximo compás)":"Vacío · toca para cargar un sonido",
-        onclick:()=>padPress(t,r)},E("span",{},id?padName(id):"")))});
+      cells.push(E("button",{type:"button",class:cls,style:"--c:"+t.color,"data-t":t.id,"data-r":r,title:id?padLab(t,id)+" · toca para lanzar o parar (entra en el próximo compás)":"Vacío · toca para cargar un sonido",
+        onclick:()=>padPress(t,r)},E("span",{},id?padLab(t,id):"")))});
     if(S.pro)cells.push(E("button",{type:"button",class:"ldx-scene","data-r":r,title:"Fila "+(r+1)+": lanza toda la fila · tecla "+(r+1),"aria-label":"Lanzar fila "+(r+1),onclick:()=>sceneLaunch(r)},E("span",{html:SV('<path d="M7 4l12 8-12 8z" fill="currentColor"/>')})))}
   grid.style.setProperty("--n",T.length);grid.classList.toggle("with-scene",S.pro);grid.replaceChildren(...cells);paintPads()}
 
@@ -23688,8 +23712,8 @@ function renderUserCues(){const box=root&&root.querySelector(".ldx-ucues");if(!b
     E("span",{class:"ldx-uclab"},"BANCO "+"ABC"[bk]+" · "+(bk+1)+"/"+nb),E("button",{type:"button",class:"ldx-epad ldx-ucnav","aria-label":"Banco siguiente",onclick:()=>go(1)},"▶"));
   const pads=[];for(let j=0;j<UCB;j++){const i=bk*UCB+j,c=U[i];
     pads.push(c?E("button",{type:"button",class:"ldx-epad ldx-ucue","data-uc":i,style:"--h:"+(28+i*23)%360,onclick:e=>fireUserCue(c,e.currentTarget),
-        oncontextmenu:e=>{e.preventDefault();if(confirm("¿Borrar el cue «"+c.n+"»?")){U[i]=null;renderUserCues();save()}},title:ucTitle(c)},E("span",{},c.n))
-      :E("button",{type:"button",class:"ldx-epad ldx-ucue ldx-ucempty","data-uc":i,title:"Lugar "+(j+1)+" del banco "+"ABC"[bk]+" vacío: toca para crear un cue",onclick:()=>addUserCue(i)},E("span",{},"＋")))}
+        oncontextmenu:e=>{e.preventDefault();if(confirm("¿Borrar el cue «"+c.n+"»?")){U[i]=null;renderUserCues();save()}},title:ucTitle(c)},E("i",{class:"ldx-ucn"},String(i+1)),E("span",{},c.n))
+      :E("button",{type:"button",class:"ldx-epad ldx-ucue ldx-ucempty","data-uc":i,title:"Lugar "+(j+1)+" del banco "+"ABC"[bk]+" vacío: toca para crear un cue",onclick:()=>addUserCue(i)},E("i",{class:"ldx-ucn"},String(i+1)),E("span",{},"＋")))}
   box.replaceChildren(nav,...pads)}
 
 /* ---------- GRABAR GESTO: mueve el sonido con el dedo 4 u 8 compases y queda en bucle (arranca en el próximo compás) ---------- */
@@ -23719,7 +23743,7 @@ const iahRnd=()=>{IAHS.seed=(Math.imul(IAHS.seed,1664525)+1013904223)>>>0;return
 const iahRow=t=>t.role||t.eng||"";
 function iahHome(t){const r=iahRow(t);if(r==="bombo"||r==="bajo")return Object.assign({k:"fija",s:3},anchorPos(t));
   const H=IAHS.home[t.id];if(H)return Object.assign({k:"fija",s:3},H);
-  const az={perc:-60,pads:115,lead:30,fx:-130}[r]??freeGapAz(t),el={perc:0,pads:15,lead:10,fx:20}[r]??0;return {k:"fija",s:3,az0:az,el0:el,r:1.2}}
+  const q=/^x/.test(t.eng)&&!t.layerOf&&(t.rol==="voces"||t.rol==="percusion")?t.rol:r;const az={perc:-60,pads:115,lead:30,fx:-130,voces:-20,percusion:70}[q]??freeGapAz(t),el={perc:0,pads:15,lead:10,fx:20,voces:12,percusion:0}[q]??0;return {k:"fija",s:3,az0:az,el0:el,r:1.2}}
 function iahStop(){for(const g of IAHS.g)if(g.started)try{g.fin()}catch(e){}IAHS.g=[];for(const t of S.tracks)if(t._iah){t.rec=null;t._iah=false}
   ROOM.spin=0;tween("rs",1,1);const a=((ROOM.az+ROOM.man)%360+540)%360-180;ROOM.az=a;ROOM.man=0;tween("az",0,1);}
 function iahStep(){if(S.movMode!=="iah")return;const d=K.deck;if(!d||!d.playing)return;const b=nowBar();
@@ -24050,7 +24074,11 @@ function uiLoad(u){const KI=LAB_DJ._t?.kits||{};const kit=LAB_DJ._t?.kit||S.kit;
   if(u&&Array.isArray(u.tracks)&&u.tracks.length){S.tracks=u.tracks.slice(0,MAXT).map((o,i)=>mkTrack(i,Object.assign({},o,{state:{play:-1,queue:-1},clips:[...(o.clips||[]),...Array(ROWS_N).fill(null)].slice(0,ROWS_N).map(id=>id&&K.PAD[id]?id:null),
       mov:Object.assign({k:"fija",s:3},o.mov||{}),pinned:v2?!!o.pinned:false,ctl:v2&&o.ctl?o.ctl:"dj",fling:null,man:null,layerOf:v2?o.layerOf||null:null,br:o.br||0,_on:o.on??-1})));
     while(S.tracks.length<MAXT)S.tracks.push(mkTrack(S.tracks.length));if(u.quant!=null)S.quant=u.quant;if(Array.isArray(u.ucues))S.ucues=u.ucues.slice(0,30);if(u.ucBank!=null)S.ucBank=u.ucBank|0;if(u.plato)S.plato=u.plato;if(u.ancla!=null)S.ancla=u.ancla;
-    if(v2&&(u.movMode==="iah"||u.movMode==="libre"))S.movMode=u.movMode}
+    if(v2&&(u.movMode==="iah"||u.movMode==="libre"))S.movMode=u.movMode;
+    // sesión guardada con menos de 10 pads por columna (antes eran 8): se rellenan los huecos y las pistas 7/8 vacías con lo del kit
+    if(u.tracks.some(o=>(o.clips||[]).length<ROWS_N)){const F=tracksFromKit(kit);F.forEach((f,i)=>{const o=S.tracks[i];if(!o||!f.clips.some(Boolean)||o.layerOf)return;
+      if(!o.clips.some(Boolean)&&/^x/.test(o.eng)&&/^PISTA /.test(o.name)){Object.assign(o,{name:f.name,role:f.role,rol:f.rol,color:f.color,clips:f.clips.slice()});if(K.ROW[o.eng])K.ROW[o.eng].n=o.name;return}
+      if(o.eng!==f.eng)return;const add=f.clips.filter(c=>c&&!o.clips.includes(c));o.clips=o.clips.map(c=>c||add.shift()||null)})}}
   else{S.tracks=tracksFromKit(kit)}
   if(S.movMode==="libre")for(const t of S.tracks)t.ctl="dj";
   if(KI[kit]){S.bpm=KI[kit].bpm;S.key=KI[kit].key||""}
