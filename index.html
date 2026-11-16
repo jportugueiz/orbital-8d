@@ -20936,7 +20936,7 @@ function Deck(c,destOf,o={}){
   D.setSweep=x=>{D.sweep=x;for(const r of Object.values(D.R))if(r.ch)chFilt(r.ch,r.filt,x,c.currentTime);emit("param",{type:"sweep",val:x})};
   /* 15 nov: margen automático (D.auto) cuando suenan muchas pistas, para que la suma no sature; se suma al máster del usuario */
   D.setAuto=db=>{D.auto=Math.min(0,db);for(const r of Object.values(D.R))if(r.ch)chVol(r.ch,r.vol,D.master+D.auto,c.currentTime,.25)};
-  D.setMaster=db=>{D.master=Math.min(0,db);for(const r of Object.values(D.R))if(r.ch)chVol(r.ch,r.vol,D.master+(D.auto||0),c.currentTime);emit("param",{type:"master",val:D.master})};
+  D.setMaster=db=>{D.master=Math.min(6,db);for(const r of Object.values(D.R))if(r.ch)chVol(r.ch,r.vol,D.master+(D.auto||0),c.currentTime);emit("param",{type:"master",val:D.master})};
   D.setMov=(id,mov,own)=>{if(own!==undefined)D.R[id].own=!!own;D.R[id].mov=movCopy(mov);emit("param",{row:id,type:"mov",val:movCopy(mov)})};
   D.drop=()=>{if(!D.playing)return;D.dropAt=D.nextBar()||1;emit("ui")};
   function doDrop(bar){const t=D.timeAt(bar),t2=D.timeAt(bar+1);for(const r of Object.values(D.R)){if(!r.ch)continue;const g=r.ch.drop.gain;g.setValueAtTime(1,t-FO);g.linearRampToValueAtTime(0,t);g.setValueAtTime(0,t2);g.linearRampToValueAtTime(1,t2+FI)}emit("exec",{drop:true,bar})}
@@ -23035,7 +23035,7 @@ const S={tracks:[],bank:0,shift:false,sync:true,quant:1,jogMode:"inercia",plato:
   movMode:"libre",pro:!!LSG("orb_dj_pro",false),slots:(()=>{const v=LSG("orb_dj_slots",[]);return Array.isArray(v)?v:[]})()};
 const ROLMAP={};let ROLP=null;// id → rol fino del catálogo (clap, hats, sub…): una pista por rol, como en un set real
 function mkTrack(i,o={}){return Object.assign({id:"t"+(i+1),eng:"x"+(i+1),name:"PISTA "+(i+1),color:EXTRA[i%EXTRA.length],role:null,rol:null,rec:null,clips:Array(ROWS_N).fill(null),
-  trim:0,hi:0,mid:0,low:0,filt:0,br:0,vol:.78,cue:false,solo:false,mute:false,mov:{k:"fija",s:3},ctl:"dj",pinned:false,fling:null,layerOf:null,state:{play:-1,queue:-1}},o)}
+  trim:0,hi:0,mid:0,low:0,filt:0,br:0,vol:.75,cue:false,solo:false,mute:false,mov:{k:"fija",s:3},ctl:"dj",pinned:false,fling:null,layerOf:null,state:{play:-1,queue:-1}},o)}
 // una columna por FAMILIA (bombo · ritmo · bajo · atmósfera · melodía · efectos, las filas del motor), con al menos 5 sonidos listos en cada una:
 // primero los del kit, después los de kits del mismo estilo y, si faltan, los de tempo más cercano (el motor los ajusta al tempo).
 // Varios sonidos de la misma familia pueden sonar a la vez (capas: padPress → layer).
@@ -23159,12 +23159,12 @@ function knob(lab,o){const v={x:o.v??0},min=o.min??-1,max=o.max??1,ctr=o.center?
   el.addEventListener("dblclick",()=>set(o.def??ctr,true));
   el.addEventListener("keydown",e=>{const st=(max-min)/40;if(e.key==="ArrowUp"||e.key==="ArrowRight"){e.preventDefault();set(v.x+st,true)}if(e.key==="ArrowDown"||e.key==="ArrowLeft"){e.preventDefault();set(v.x-st,true)}});
   set(v.x);el.set=set;el.get=()=>v.x;return el}
-function fader(lab,o){const v={x:o.v??.78};const cap=E("i",{class:"ldx-fader-cap"}),el=E("div",{class:"ldx-fader"+(o.cls?" "+o.cls:""),role:"slider",tabindex:"0","aria-label":lab,title:o.tip||lab},E("b",{class:"ldx-fader-rail"}),cap);
+function fader(lab,o){const v={x:o.v??.75};const cap=E("i",{class:"ldx-fader-cap"}),el=E("div",{class:"ldx-fader"+(o.cls?" "+o.cls:""),role:"slider",tabindex:"0","aria-label":lab,title:o.tip||lab},E("b",{class:"ldx-fader-rail"}),cap);
   const set=(x,emit)=>{v.x=clamp(x,0,1);cap.style.bottom="calc("+(v.x*100)+"% - "+(v.x*28)+"px)";el.setAttribute("aria-valuenow",v.x.toFixed(2));if(emit&&o.on)o.on(v.x)};
   const fromY=e=>{const r=el.getBoundingClientRect();return 1-(e.clientY-r.top-14)/(r.height-28)};
   el.addEventListener("pointerdown",e=>{e.preventDefault();el.setPointerCapture(e.pointerId);set(fromY(e),true)});
   el.addEventListener("pointermove",e=>{if(el.hasPointerCapture(e.pointerId))set(fromY(e),true)});
-  el.addEventListener("dblclick",()=>set(o.def??.78,true));
+  el.addEventListener("dblclick",()=>set(o.def??.75,true));
   el.addEventListener("keydown",e=>{if(e.key==="ArrowUp"){e.preventDefault();set(v.x+.02,true)}if(e.key==="ArrowDown"){e.preventDefault();set(v.x-.02,true)}});
   set(v.x);el.set=set;el.get=()=>v.x;return el}
 const vu=(cls="")=>{const m=E("div",{class:"ldx-vu "+cls,"aria-hidden":"true"});for(let i=0;i<15;i++)m.append(E("i"));m.set=x=>{const n=Math.round(clamp(x,0,1)*15);if(n===m._n)return;m._n=n;[...m.children].forEach((c,j)=>c.classList.toggle("on",14-j<n))};return m};
@@ -23200,7 +23200,7 @@ function build(){
     btn("● Grabar",{cls:"ldx-rec ldx-hide-m",press:false,tip:"Graba lo que lanzas y mueves",on:toggleRec}),
     btn("⬇ WAV",{cls:"ldx-hide-m ldx-wav",tip:"Descarga la grabación en WAV, hecha con el motor 8D",on:()=>clickOld(".ldj-tools .ldj-btn:nth-child(3)")}),
     E("div",{class:"ldx-mvol ldx-hide-m",title:"Volumen general (doble clic: 0 dB)"},E("div",{class:"ldx-mvol-row"},E("small",{},"VOL"),
-      E("input",{type:"range",class:"ldx-mvol-r",min:0,max:1,step:.01,value:.78,"aria-label":"Volumen general",oninput:e=>setMaster(+e.target.value),ondblclick:e=>{e.target.value=.78;setMaster(.78)}}),
+      E("input",{type:"range",class:"ldx-mvol-r",min:0,max:1,step:.01,value:.75,"aria-label":"Volumen general",oninput:e=>setMaster(+e.target.value),ondblclick:e=>{e.target.value=.75;setMaster(.75)}}),
       E("div",{class:"ldx-vupair"},mVU[0],mVU[1])),E("small",{class:"ldx-lim",title:"El limitador del máster está siempre encendido: protege tus oídos y los parlantes"},"● Limitador activo")),
     btn("PRO",{cls:"ldx-probtn",press:S.pro,tip:"Controles avanzados de DJ (pueden debilitar el efecto 8D)",on:()=>setPro(!S.pro)}),
     btn("⋯",{cls:"ldx-hmenu ldx-only-m",tip:"Más opciones",attr:{"aria-label":"Más opciones"},on:e=>openHeadMenu(e.currentTarget)}),
@@ -23326,9 +23326,9 @@ function bigFader(){const fill=E("b",{class:"ldx-bf-fill"}),cap=E("i",{class:"ld
   const mB=btn("M",{cls:"ldx-mute",tip:"Silenciar este sonido",attr:{"aria-label":"Silenciar"},on:()=>{const L=selList(),v=!L[0].mute;for(const t of L)t.mute=v;applyAll();el.sync();renderStrips()}});
   el.foot=E("div",{class:"ldx-bf-foot"},sB,mB);
   let u=1;const CAP=56,H=()=>Math.max(40,track.getBoundingClientRect().height-CAP);
-  const paint=()=>{cap.style.bottom="calc("+u.toFixed(4)+" * (100% - "+CAP+"px))";fill.style.height="calc("+u.toFixed(4)+" * (100% - "+CAP+"px) + "+(CAP/2)+"px)";const x=u*.78,db=dbOfFader(x);
+  const paint=()=>{cap.style.bottom="calc("+u.toFixed(4)+" * (100% - "+CAP+"px))";fill.style.height="calc("+u.toFixed(4)+" * (100% - "+CAP+"px) + "+(CAP/2)+"px)";const x=u,db=dbOfFader(x);
     out.textContent=x<=.001?"−∞ dB":db>-.05?"0 dB":db.toFixed(1).replace("-","−")+" dB";el.setAttribute("aria-valuenow",u.toFixed(2));el.setAttribute("aria-valuetext",out.textContent)};
-  const set=nu=>{u=clamp(nu,0,1);const x=u*.78;for(const t of selList()){t.vol=x;applyVol(t)}paint();save()};
+  const set=nu=>{u=clamp(nu,0,1);const x=u;for(const t of selList()){t.vol=x;applyVol(t)}paint();save()};
   let drag=null,lastUp=0;
   el.addEventListener("pointerdown",e=>{if(e.pointerType==="mouse"&&e.button!==0)return;e.preventDefault();try{el.setPointerCapture(e.pointerId)}catch(_){}drag={id:e.pointerId,y0:e.clientY,u0:u,moved:false}});
   el.addEventListener("pointermove",e=>{if(!drag||drag.id!==e.pointerId)return;const dy=drag.y0-e.clientY;if(!drag.moved&&Math.abs(dy)<4)return;drag.moved=true;set(drag.u0+dy/H())});
@@ -23336,7 +23336,7 @@ function bigFader(){const fill=E("b",{class:"ldx-bf-fill"}),cap=E("i",{class:"ld
   el.addEventListener("pointerup",up);el.addEventListener("pointercancel",up);
   el.addEventListener("wheel",e=>{e.preventDefault();set(u+(e.deltaY>0?-.02:.02))},{passive:false});
   el.addEventListener("keydown",e=>{if(e.key==="ArrowUp"){e.preventDefault();set(u+.02)}if(e.key==="ArrowDown"){e.preventDefault();set(u-.02)}if(e.key==="Home"){e.preventDefault();set(1)}});
-  el.sync=()=>{const t=selList()[0];if(!t)return;u=clamp((t.vol??.78)/.78,0,1);name.textContent=t.name;name.style.color=t.color;el.style.setProperty("--c",t.color);
+  el.sync=()=>{const t=selList()[0];if(!t)return;u=clamp(t.vol??.75,0,1);name.textContent=t.name;name.style.color=t.color;el.style.setProperty("--c",t.color);
     sB.setAttribute("aria-pressed",String(!!t.solo));mB.setAttribute("aria-pressed",String(!!t.mute));paint()};
   el.repaint=paint;return el}
 
@@ -23511,11 +23511,11 @@ function delPlaying(t){const R=K.deck&&K.deck.R[t.eng];const id=R&&R.cur?R.cur.p
 function addSound(t){let r=t.clips.findIndex(x=>!x);if(r<0)r=ROWS_N-1;openPicker(t,r)}
 // ELIMINAR PISTA (como en la Mesa): para la pista en el próximo compás y la deja vacía (sonidos, posición, movimiento, EQ y volumen de fábrica)
 function deleteTracks(list){for(const t of list){trackStop(t);const i=S.tracks.indexOf(t);
-    Object.assign(t,{name:"PISTA "+(i+1),role:null,rol:null,rec:null,man:null,fling:null,layerOf:null,pinned:false,ctl:"dj",clips:Array(ROWS_N).fill(null),trim:0,hi:0,mid:0,low:0,filt:0,br:0,vol:.78,cue:false,solo:false,mute:false,mov:{k:"fija",s:3},state:{play:-1,queue:-1}});
+    Object.assign(t,{name:"PISTA "+(i+1),role:null,rol:null,rec:null,man:null,fling:null,layerOf:null,pinned:false,ctl:"dj",clips:Array(ROWS_N).fill(null),trim:0,hi:0,mid:0,low:0,filt:0,br:0,vol:.75,cue:false,solo:false,mute:false,mov:{k:"fija",s:3},state:{play:-1,queue:-1}});
     const R=K.deck&&K.deck.R[t.eng];if(R){R.sel=null;R.mov=movOf(t)}if(K.ROW[t.eng]&&/^x/.test(t.eng))K.ROW[t.eng].n=t.name;
     try{applyMov(t)}catch(e){}}
   try{applyAll()}catch(e){}renderGrid();renderStrips();renderMando();syncPads();save()}
-const dbOfFader=x=>x<=0?-60:20*Math.log10(Math.pow(x/.78,2.2));
+const dbOfFader=x=>x<=0?-60:Math.min(6,20*Math.log10(Math.pow(x/.75,2.2)));/* 15 nov (Jorge): 75 % = volumen de siempre (0 dB); 100 % ≈ +4 dB */
 function trackDb(t){const anySolo=S.tracks.some(o=>o.solo);if(t.mute||(anySolo&&!t.solo))return -60;return clamp(dbOfFader(t.vol),-60,6)}
 function chainFor(t){const d=K.deck;if(!d||!d.R[t.eng])return null;const ch=d.chain(t.eng);
   if(!ch.eq){const c=d.c,lo=c.createBiquadFilter(),mid=c.createBiquadFilter(),hi=c.createBiquadFilter(),trim=c.createGain();
@@ -23595,7 +23595,7 @@ function guardarSesion(){const kitN=((LAB_DJ._t?.kits||{})[S.kit]||{}).n||S.kit|
     K.toast("Sesión «"+n+"» guardada: sonidos, cues, presets y movimientos. La abres en Sesiones o en Listas.")}
   catch(e){K.toast("No pude guardar la sesión: "+(e.message||e))}}
 function openSessions(){clickOld(".ldj-tools .ldj-btn:nth-child(4)")}
-function setMaster(x){try{deck().setMaster(Math.min(0,dbOfFader(x)))}catch(e){}}
+function setMaster(x){try{deck().setMaster(Math.min(6,dbOfFader(x)))}catch(e){}}
 function setFx(k){S.fx.type=k;root.querySelectorAll(".ldx-fxk").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.fx===k)));applyFx()}
 function setDiv(d){S.fx.div=d;root.querySelectorAll(".ldx-div").forEach(b=>b.setAttribute("aria-pressed",String(+b.dataset.div===d)));applyFx()}
 function toggleFx(e){const b=e.currentTarget;schedule("fx",()=>{S.fx.on=!S.fx.on;b.setAttribute("aria-pressed",S.fx.on);applyFx()},b)}
