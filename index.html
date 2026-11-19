@@ -1338,6 +1338,10 @@ body.playing{overflow:hidden}
 .play-frequency-panel label{display:grid;gap:5px;color:#8eabb2;font-size:10px;font-weight:750;letter-spacing:.08em;text-transform:uppercase}
 .play-frequency-panel select,.play-frequency-panel input{min-height:37px;border:1px solid #3b5963;border-radius:7px;color:#e6f8fa;background:#071319;padding:6px 9px}
 .play-frequency-panel input{width:115px}.play-frequency-panel .note{flex:1 1 100%;margin:0;color:#91adb3;font-size:10px;line-height:1.4}
+.frequency-picker-dialog{width:min(720px,calc(100vw - 28px));padding:0;border:1px solid #4d7882;border-radius:14px;color:#e9fbfd;background:#09171d;box-shadow:0 24px 80px #000d,0 0 34px #38dce74a}
+.frequency-picker-dialog::backdrop{background:#02070cdb;backdrop-filter:blur(5px)}
+.frequency-picker-dialog>header{display:flex;align-items:center;justify-content:space-between;padding:15px 17px;border-bottom:1px solid #31515c;background:linear-gradient(#1a3039,#0e2028)}
+.frequency-picker-dialog h2{margin:0;font-size:20px}.frequency-picker-dialog .play-frequency-panel{margin:16px;min-height:112px}.frequency-picker-dialog #pFreqLoad{min-height:42px;padding-inline:18px}
 .take-studio{
   box-sizing:border-box;width:min(720px,calc(100% - 24px));max-width:none;max-height:calc(100% - 24px);
   border:1px solid #425963;border-radius:15px;padding:18px;background:#101b21;color:#e8f1f3;
@@ -3865,7 +3869,6 @@ body[data-mode="ses"] #ship .left{grid-area:library}
     <section id="pRightMix" aria-label="Mezcla de sonido"></section>
     <section class="play-desk" aria-label="Biblioteca de JUGAR">
       <div class="play-library-tabs" id="pDeskLibrary" role="group" aria-label="Abrir grupo de la biblioteca">
-        <button class="pbtn sm" type="button" data-play-library="frequency" aria-controls="pDeskFrequencyPanel" aria-expanded="false">Elegir frecuencias</button>
         <button class="pbtn sm" type="button" data-play-library="background" aria-controls="pDeskBackgroundPanel" aria-expanded="false">Fondos</button>
         <button class="pbtn sm" type="button" data-play-library="fondos" aria-controls="pDeskSourcePanel" aria-expanded="false">Sonidos</button>
         <button class="pbtn sm" type="button" data-play-library="instrumentos" aria-controls="pDeskSourcePanel" aria-expanded="false">Instrumentos</button>
@@ -3881,13 +3884,6 @@ body[data-mode="ses"] #ship .left{grid-area:library}
         <label>Sonido <select id="pDeskSound" aria-label="Sonido para la pista"></select></label>
         <button class="pbtn sm" id="pDeskLoad" type="button">Cargar</button>
         <button class="pbtn sm" id="pDeskClear" type="button" aria-label="Vaciar pista seleccionada">Vaciar</button>
-      </div>
-      <div class="play-desk-top play-frequency-panel" id="pDeskFrequencyPanel" hidden>
-        <label>Pista <select id="pFreqChannel" aria-label="Pista para la frecuencia"></select></label>
-        <label>Frecuencia <input id="pFreqHz" type="number" min="40" max="1200" step="0.1" value="432"> Hz</label>
-        <label>Forma <select id="pFreqWave"><option value="sine">Pura</option><option value="triangle">Suave armónica</option></select></label>
-        <button class="pbtn sm" id="pFreqLoad" type="button">Cargar frecuencia</button>
-        <p id="pFreqInfo" class="note"></p>
       </div>
     </section>
     <section id="pDeskMovement" class="play-movement" aria-label="Movimientos">
@@ -4019,6 +4015,16 @@ body[data-mode="ses"] #ship .left{grid-area:library}
       <div id="pDeskCueLaunch" role="group" aria-label="Disparadores de cues"></div>
     </section>
   </section>
+  <dialog class="play-library-dialog frequency-picker-dialog" id="pFrequencyDialog" aria-labelledby="pFrequencyTitle">
+    <header><h2 id="pFrequencyTitle">Elegir frecuencia</h2><form method="dialog"><button class="pbtn" aria-label="Cerrar frecuencias">✕</button></form></header>
+    <div class="play-desk-top play-frequency-panel" id="pDeskFrequencyPanel">
+      <label>Pista <select id="pFreqChannel" aria-label="Pista para la frecuencia"></select></label>
+      <label>Frecuencia <input id="pFreqHz" type="number" min="40" max="1200" step="0.1" value="432"> Hz</label>
+      <label>Forma <select id="pFreqWave"><option value="sine">Pura</option><option value="triangle">Suave armónica</option></select></label>
+      <button class="pbtn primary" id="pFreqLoad" type="button">Cargar frecuencia</button>
+      <p id="pFreqInfo" class="note"></p>
+    </div>
+  </dialog>
   <dialog class="play-library-dialog" id="pSoundsDialog" aria-labelledby="pSoundsTitle">
     <header><h2 id="pSoundsTitle">Agregar sonido</h2><form method="dialog"><button class="pbtn" aria-label="Cerrar sonidos">✕</button></form></header>
   </dialog>
@@ -13269,7 +13275,7 @@ const PLAY_DESK=(()=>{
 
   const freqUses={174:"Tradición wellness: descanso y seguridad",285:"Tradición wellness: renovación",396:"Tradición solfeggio: liberación emocional",417:"Tradición solfeggio: cambio",432:"Afinación alternativa; no tiene beneficios terapéuticos demostrados",528:"Tradición solfeggio: transformación",639:"Tradición solfeggio: conexión",741:"Tradición solfeggio: claridad",852:"Tradición solfeggio: introspección",963:"Tradición solfeggio: meditación"};
   function freqInfo(){const hz=ORB.clamp(+el("pFreqHz").value||432,40,1200),txt=freqUses[Math.round(hz)]||"Tono audible configurable";el("pFreqInfo").textContent=`${hz.toFixed(1)} Hz · ${txt}. Las asociaciones wellness son tradicionales, no tratamientos médicos.`}
-  function loadFrequency(){if(S.rec){UI.toast("Detén REC antes de cargar una frecuencia");return}const index=+el("pFreqChannel").value||freeChannel();if(!index){UI.toast("No hay pistas libres");return}const previous=trackAt(index);if(previous)ORB.removeSource(previous.id);const hz=ORB.clamp(+el("pFreqHz").value||432,40,1200),wave=el("pFreqWave").value;ORB.addSource({id:"deck"+index,deckChannel:index,kind:"freq",hz,wave,label:hz.toFixed(1)+" Hz",continuousInstrument:true,vol_db:-6,speed:.18,compression:0,path:{type:"still",az0:(index-3)*31,el:0},dist:1.7});syncLayerMix();select(index);render();save();if(S.playing)UI.toast(hz.toFixed(1)+" Hz sonando")}
+  function loadFrequency(){if(S.rec){UI.toast("Detén REC antes de cargar una frecuencia");return}const index=+el("pFreqChannel").value||freeChannel();if(!index){UI.toast("No hay pistas libres");return}const previous=trackAt(index);if(previous)ORB.removeSource(previous.id);const hz=ORB.clamp(+el("pFreqHz").value||432,40,1200),wave=el("pFreqWave").value;ORB.addSource({id:"deck"+index,deckChannel:index,kind:"freq",hz,wave,label:hz.toFixed(1)+" Hz",continuousInstrument:true,vol_db:-6,speed:.18,compression:0,path:{type:"still",az0:(index-3)*31,el:0},dist:1.7});syncLayerMix();select(index);render();save();el("pFrequencyDialog").close();UI.toast(hz.toFixed(1)+" Hz cargados en la pista "+index)}
 
   function deleteTrack(index){
     if(!trackAt(index))return false;
@@ -13893,8 +13899,9 @@ const PLAY_DESK=(()=>{
     el("pFreqHz").oninput=freqInfo;
     el("pFreqLoad").onclick=loadFrequency;
     el("pOpenFrequency").onclick=()=>{
-      showLibrary("frequency");
-      requestAnimationFrame(()=>el("pDeskFrequencyPanel").scrollIntoView({behavior:"smooth",block:"nearest"}));
+      if(product!=="frequency")return;
+      freqInfo();
+      el("pFrequencyDialog").showModal();
     };
     freqInfo();
     el("pBackground").onchange=()=>{
