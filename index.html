@@ -4009,6 +4009,7 @@ body[data-mode="ses"] #ship .left{grid-area:library}
     </div>
     <div id="pDeskTracks" class="play-desk-tracks" role="region" aria-label="Pads de pistas" tabindex="0"></div>
     <div id="pDeskLibraryGroup" class="play-desk" aria-label="Biblioteca de JUGAR">
+      <button class="pbtn" type="button" id="pOpenFrequency" hidden>◉ Elegir frecuencias</button>
       <button class="pbtn" type="button" id="pOpenSounds">＋ Agregar sonido</button>
       <button class="pbtn" type="button" id="pOpenMusic">♫ Elegir música</button>
       <button class="pbtn" type="button" id="pOpenDJ">🎧 IAH DJ creations</button>
@@ -11508,7 +11509,8 @@ return {init,send,proposeBowlDemo:()=>send(BOWL_DEMO),crear,editar,set,tick,show
    ● REC graba la automatización (50 fps) y su audio (render offline 48 kHz → WAV 24 en IndexedDB).
    ===================================================================== */
 const PLAY=(()=>{
-const {h,toast}=UI,S=ORB.S;let cv,cx=null,W=0,H=0,dpr=1,on=false,sel=null,raf=0,twist=null,unl=false,sig="",startingTracks=null;
+const {h,toast}=UI,S=ORB.S;let cv,cx=null,W=0,H=0,dpr=1,on=false,sel=null,raf=0,twist=null,unl=false,sig="",startingTracks=null,product="live";
+const productKey=base=>product==="frequency"?base+"_frequency":base;
 let startingTake=null,finishingTake=false,takeStartedAt=0;
 let drawing=null;
 let masterMeter;
@@ -11713,7 +11715,7 @@ function initScript(){
   const input=$("#pDeskScriptText"),status=$("#pDeskScriptStatus");
   button.onclick=()=>{
     if(scriptTimer!==null){stopScript();return}
-    input.value=EXP.LS.get("orb_play_script","");status.textContent="";
+    input.value=EXP.LS.get(productKey("orb_play_script"),"");status.textContent="";
     dialog.showModal();
   };
   $("#pDeskScriptForm").onsubmit=event=>{
@@ -11730,7 +11732,7 @@ function initScript(){
       steps.push({at:step.at,voice,start:step.start});
     }
     if(!steps.length)return;
-    EXP.LS.set("orb_play_script",input.value);
+    EXP.LS.set(productKey("orb_play_script"),input.value);
     dialog.close();
     if(event.submitter?.value!=="run")return;
     unlock();
@@ -12337,7 +12339,7 @@ function axesUI(){if(document.querySelector("#play .play-axes"))return;const box
     if(e.key==="Escape"&&drawing){e.preventDefault();cancelDrawing();PLAY_DESK.highlight(sel);return}
     if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;if(PLAY_GRUPOS.key(e))return;if(e.ctrlKey||e.metaKey||e.altKey)return;const k=e.key.toUpperCase();if(VIEWS[k]){e.preventDefault();setView(k)}})}
 /* ---------- tomas ---------- */
-const takes=()=>{const L=EXP.LS.get("orb_takes",[]);return Array.isArray(L)?L:[]};const saveTakes=L=>EXP.LS.set("orb_takes",L);
+const takes=()=>{const L=EXP.LS.get(productKey("orb_takes"),[]);return Array.isArray(L)?L:[]};const saveTakes=L=>EXP.LS.set(productKey("orb_takes"),L);
 function syncRecord(){
   const button=$("#pRec");
   button.disabled=!!startingTake||finishingTake;
@@ -12467,8 +12469,9 @@ function syncSharedViewer(){
   GLV.V.ok=!!GLV.V.has&&!GLV.V.lost&&(!on||shared);
   if(GLV.V.ok)GLV.resize(true);
 }
-function open(product="live"){
+function open(nextProduct="live"){
   if(on)return;
+  product=nextProduct;
   on=true;GLV.V.ok=false;$("#play").hidden=false;document.body.classList.add("playing");
   syncSharedViewer();
   PLAY_DESK.open(product);syncTransport();syncRecord();srcBar();takeList();resize();
@@ -12631,6 +12634,7 @@ const PLAY_DESK=(()=>{
   const distanceOf=s=>s.live?.r??s.dist??ORB.radio(s.distance);
   const freeChannel=()=>{for(let i=firstSound;i<=channelCount;i++)if(!trackAt(i))return i;return 0};
   let workspace=null,backgroundRequest=null,product="live",syncSessionWords=()=>{};
+  const productKey=base=>product==="frequency"?base+"_frequency":base;
   let songRequest=null;
   let masterDb=0,masterMuted=false,masterFader;
   let openLibrary="",sourceLibrary="";
@@ -13361,6 +13365,7 @@ const PLAY_DESK=(()=>{
     el("pFreqChannel").replaceChildren(...channelOptions());
     showLibrary("instrumentos");select(firstSound);render();
     el("pFrequencyBadge").hidden=product!=="frequency";
+    el("pOpenFrequency").hidden=product!=="frequency";
     if(product==="frequency")showLibrary("frequency");
     if(!soundPadGroups.length){
       soundPadGroups=SOUND_LIBRARY.sourceGroups({library:true});
@@ -13373,6 +13378,7 @@ const PLAY_DESK=(()=>{
 
   function close(restore=true){
     if(!workspace)return;
+    if(product==="frequency"&&document.body.dataset.orbitalProduct==="frequency")delete document.body.dataset.orbitalProduct;
     if(typeof PLAY_IAH!=="undefined")PLAY_IAH.stop(true);// IAH (gancho): al salir de la Mesa cada pad vuelve a su lugar
     SOUND_LIBRARY.stopPreview();
     for(const id of ["pSoundsDialog","pMusicDialog","pBackgroundDialog"])if(el(id).open)el(id).close();
@@ -13570,8 +13576,8 @@ const PLAY_DESK=(()=>{
     const cueDialog=el("pCueEditor"),cuePad=el("pCuePad"),cueFamily=el("pCueFamily");
     const cueSound=el("pCueSound"),cueRoute=el("pCueRoute"),cueName=el("pCueName");
     let groups=[],draft=null,bankCue=null;
-    const cueBankKey="orb_play_cue_bank",bankList=el("pCueBankList");
-    const cueBank=()=>EXP.LS.get(cueBankKey,[])||[];
+    const cueBankKey=()=>productKey("orb_play_cue_bank"),bankList=el("pCueBankList");
+    const cueBank=()=>EXP.LS.get(cueBankKey(),[])||[];
     function syncCueBank(){
       bankList.replaceChildren(...cueBank().map((item,i)=>h("option",{value:i},item.cue.name)));
       el("pCueBankLoad").disabled=!bankList.options.length;
@@ -13600,7 +13606,7 @@ const PLAY_DESK=(()=>{
         :cueRoute.value==="guardado"?bankCue:cueRoute.value==="actual"?voice?.cuePreset||voice?.armedCue:null;
       if(!cue){UI.toast("Primero guarda el cue en el pad o termina de dibujar su altura");return}
       const name=cueName.value.trim()||cue.name||"Cue "+cuePad.value;
-      EXP.LS.set(cueBankKey,[{kind:voice?.kind==="freq"?"freq":"inst",inst:voice?.kind==="freq"?null:cueSound.value,cue:{...cue,name}},...cueBank()]);
+      EXP.LS.set(cueBankKey(),[{kind:voice?.kind==="freq"?"freq":"inst",inst:voice?.kind==="freq"?null:cueSound.value,cue:{...cue,name}},...cueBank()]);
       syncCueBank();UI.toast("Cue guardado en el banco");
     };
     const timing=el("pCueTiming"),timingRows=el("pCueTimingRows"),cuePreview=el("pCuePreview");
@@ -13803,7 +13809,7 @@ const PLAY_DESK=(()=>{
       save();
       const levels=Object.values(fixedTracks).map(({mute,solo})=>({mute,solo}));
       const tracks=S.sources.filter(s=>s.deckChannel!=null).map(s=>({...savedTrack(s),vol_db:s.vol_db,solo:s.solo}));
-      const snapshot={...savedDesk(),product,tracks,levels,masterMuted,script:EXP.LS.get("orb_play_script",""),song:el("pDeskSong").value};
+      const snapshot={...savedDesk(),product,tracks,levels,masterMuted,script:EXP.LS.get(productKey("orb_play_script"),""),song:el("pDeskSong").value};
       EXP.LS.set(sessionsKey,[{name,product,snapshot},...allSessions()]);
       sessionName.value="";
       sessionDialog.close();
@@ -13815,7 +13821,7 @@ const PLAY_DESK=(()=>{
       if(!snapshot||S.rec||S.replay)return;
       save();
       PLAY.stopScript();
-      EXP.LS.set("orb_play_script",snapshot.script||"");
+      EXP.LS.set(productKey("orb_play_script"),snapshot.script||"");
       stopLayers();
       const active=ORB.S.playing;
       if(active)ORB.stop();
@@ -13886,6 +13892,10 @@ const PLAY_DESK=(()=>{
     el("pDeskClear").onclick=()=>load(channel(),"");
     el("pFreqHz").oninput=freqInfo;
     el("pFreqLoad").onclick=loadFrequency;
+    el("pOpenFrequency").onclick=()=>{
+      showLibrary("frequency");
+      requestAnimationFrame(()=>el("pDeskFrequencyPanel").scrollIntoView({behavior:"smooth",block:"nearest"}));
+    };
     freqInfo();
     el("pBackground").onchange=()=>{
       stopBackground();
@@ -20816,6 +20826,7 @@ const FREQUENCY_BATH=(()=>{
     dialog.addEventListener("close",()=>{cancelAnimationFrame(raf);sources.forEach(audioOff);setTimeout(()=>ctx?.close(),150);dialog.remove()},{once:true});document.body.append(dialog);dialog.showModal();add();raf=requestAnimationFrame(tick);addBtn.focus();
   }
   const openFrequencyDesk=()=>{
+    document.body.dataset.orbitalProduct="frequency";
     // Baños es un producto propio. Si el usuario viene de DJ/DJ 8D, cerrar
     // primero esa consola evita que su círculo y sus mandos queden por encima.
     try{if(typeof LAB_DJ_UI!=="undefined")LAB_DJ_UI.close()}catch(error){console.warn("Cerrar DJ para Baños",error)}
@@ -27087,14 +27098,16 @@ function adoptArr(arr){if(!arr||!arr.iah||!arr.ev)return;const by={};for(const e
   let ch=0;for(const row in by){const t=engTrack(row);if(!t)continue;const ids=by[row].slice(0,ROWS_N),nc=ids.concat(t.clips.filter(c=>c&&!ids.includes(c))).slice(0,ROWS_N);while(nc.length<ROWS_N)nc.push(null);
     if(nc.join()!==t.clips.join()){t.clips=nc;if(FAMN[row])t.name=FAMN[row];ch=1}}
   if(ch){try{renderGrid();renderStrips()}catch(e){}save();K.toast("La configuración de IAH quedó en tu grilla: después la puedes usar tú")}}
-function open(){if(!adoptOn&&K.HOOKS&&K.HOOKS.play){adoptOn=1;K.HOOKS.play.push(adoptArr)}if(!root)build();const first=!!root.hidden||!document.body.classList.contains("ldjx-open");root.hidden=false;document.body.classList.add("ldjx-open");ORB.setDjOutputActive(true);
+function open(){document.body.dataset.orbitalProduct="dj";if(!adoptOn&&K.HOOKS&&K.HOOKS.play){adoptOn=1;K.HOOKS.play.push(adoptArr)}if(!root)build();const first=!!root.hidden||!document.body.classList.contains("ldjx-open");root.hidden=false;document.body.classList.add("ldjx-open");ORB.setDjOutputActive(true);
   const wasPlayOn=typeof PLAY!=="undefined"&&!!PLAY.on;if(first&&!ISO)isoPause();mountSpace();if(!ISO)isoIn(wasPlayOn);sync();if(!raf)frame()}
 function close(){if(SONG)SONG.pause();root.hidden=true;if(typeof LAB_DJ_DECKS!=="undefined")void LAB_DJ_DECKS.stopAll(true).catch(e=>K.toast(e.message));document.body.classList.remove("ldjx-open");ORB.setDjOutputActive(false);try{LAB_DJ.close()}catch(e){}closeMenu();DRAW=null;REC=null;
   const I=isoOut();unmountSpace(I&&I.wasPlayOn)}
 function init(){try{
     if(K.HOOKS){(K.HOOKS.pos=K.HOOKS.pos||[]).push(posHook);(K.HOOKS.transport=K.HOOKS.transport||[]).push(motionTransport);K.HOOKS.ui={save:uiState,load:uiLoad}}
     ROLP=fetch("sonidos_dj/catalogo.json").then(r=>r.ok?r.json():null).then(j=>{for(const k of j?.kits||[])for(const p of k.pads||[])if(p.rol)ROLMAP[p.id]=p.rol}).catch(()=>{});
-    S.tracks=tracksFromKit(S.kit);build();plateInit();slotInit();open();
+    S.tracks=tracksFromKit(S.kit);build();plateInit();slotInit();
+    if(document.body.dataset.orbitalProduct!=="frequency")open();
+    else{root.hidden=true;document.body.classList.remove("ldjx-open");ORB.setDjOutputActive(false)}
     // cuando el motor terminó de leer el catálogo: selector con los 16 kits y pistas por rol (o las de la última sesión)
     let n=0;const iv=setInterval(()=>{n++;const KI=LAB_DJ._t?.kits||{};if(Object.keys(KI).length>1||n>40){clearInterval(iv);kitOptions();ROLP.then(()=>{try{if(!S.userKit){S.kit=LAB_DJ._t?.kit||S.kit;uiLoad(LSG("orb_dj_ui",null))}sync()}finally{circleReady=true}})}},250);
     // el botón flotante viejo («Orbital DJ») abre esta consola, no la de 6 filas
