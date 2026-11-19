@@ -20815,7 +20815,14 @@ const FREQUENCY_BATH=(()=>{
     dialog.append(h("div",{class:"freq-spatial-shell"},h("header",{class:"freq-spatial-head"},h("div",{},h("span",{},"ORBITAL · FREQUENCY LAB"),h("h1",{id:"freqSpatialTitle"},"Baño de Frecuencias 8D")),h("nav",{},addBtn,play,saveBtn,libraryBtn,closeBtn)),h("main",{class:"freq-spatial-main"},h("section",{class:"freq-space-wrap"},canvas,empty),inspector),h("footer",{},"Escucha a volumen moderado. Las asociaciones wellness se presentan como tradición, no como tratamiento médico.")));
     dialog.addEventListener("close",()=>{cancelAnimationFrame(raf);sources.forEach(audioOff);setTimeout(()=>ctx?.close(),150);dialog.remove()},{once:true});document.body.append(dialog);dialog.showModal();add();raf=requestAnimationFrame(tick);addBtn.focus();
   }
-  const openFrequencyDesk=()=>PLAY.open("frequency");
+  const openFrequencyDesk=()=>{
+    // Baños es un producto propio. Si el usuario viene de DJ/DJ 8D, cerrar
+    // primero esa consola evita que su círculo y sus mandos queden por encima.
+    try{if(typeof LAB_DJ_UI!=="undefined")LAB_DJ_UI.close()}catch(error){console.warn("Cerrar DJ para Baños",error)}
+    try{if(typeof LAB_DJ!=="undefined")LAB_DJ.close()}catch(error){console.warn("Cerrar motor DJ para Baños",error)}
+    document.body.classList.remove("ldjx-open","ldj-open");
+    PLAY.open("frequency");
+  };
   $("#bFrequencyBath").onclick=openFrequencyDesk;
   const route=new URLSearchParams(location.search).get("bano");
   if(route==="frecuencias"||route==="comparar")requestAnimationFrame(()=>route==="comparar"?open("compare"):openFrequencyDesk());
