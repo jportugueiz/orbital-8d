@@ -26611,7 +26611,9 @@ function drawOv(){if(!OVRO&&typeof ResizeObserver!=="undefined"){try{OVRO=new Re
       if(prev){const h=clamp(P[1]/40,-1,1);g.strokeStyle=h>=0?`rgba(63,230,238,${(.45+.55*h)*al})`:`rgba(255,179,71,${(.45-.55*h)*al})`;g.lineWidth=2+3*Math.abs(h);if(R===GHOST)g.setLineDash([4,4]);g.beginPath();g.moveTo(prev[0],prev[1]);g.lineTo(q[0],q[1]);g.stroke();g.setLineDash([])}prev=q}}}
   if(DRAW&&DRAW.scr&&DRAW.scr.length>1){g.strokeStyle=DRAW.t.color;g.lineWidth=3;g.setLineDash([6,4]);g.beginPath();DRAW.scr.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));g.stroke();g.setLineDash([])}
   DOTS.length=0;
-  const LBL=[];for(const t of allTracks()){if(t.state.play<0&&t.state.queue<0&&!t.state.ext&&!t.man&&!S.sel.has(t.id))continue;if(!t.clips.some(Boolean)&&!t.state.ext)continue;
+  // Seleccionar una pista permite editarla desde los paneles, pero no la mete
+  // en la escena. El punto aparece sólo al disparar el pad/cue o al manipularlo.
+  const LBL=[];for(const t of allTracks()){if(t.state.play<0&&t.state.queue<0&&!t.state.ext&&!t.man)continue;if(!t.clips.some(Boolean)&&!t.state.ext)continue;
     const P=posOf(t,b),q=projP(P),h=clamp(P[1]/60,-1,1),rad=(S.sel.has(t.id)?20:17)*(1+.25*h);// del tamaño de los íconos de la Mesa (34 px): cómodos de tomar con el dedo
     if(GHOST&&!isAncla(t)){const Pg=roomXform(basePos(t,b),t,b,GHOST),qg=projP(Pg);g.strokeStyle=t.color;g.globalAlpha=.6;g.setLineDash([3,3]);g.beginPath();g.arc(qg[0],qg[1],rad,0,Math.PI*2);g.stroke();g.setLineDash([]);g.globalAlpha=1}
     g.shadowColor=t.color;g.shadowBlur=10+10*Math.max(0,h);g.fillStyle=t.color;g.globalAlpha=t.song&&!t.audible?.16:t.state.play>=0?.55+.45*(1+h)/2:.35;g.beginPath();g.arc(q[0],q[1],rad,0,Math.PI*2);g.fill();g.shadowBlur=0;g.globalAlpha=1;
