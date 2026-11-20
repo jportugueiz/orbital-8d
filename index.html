@@ -25672,9 +25672,20 @@ async function djAsset(path){
    const parts=path.split("/");
    url="audio-web/"+parts.at(-2)+"/manifest.json";
  }
- const response=await fetch(url);
- if(!response.ok)throw Error("No se pudo cargar "+url+" · HTTP "+response.status);
- return response.blob();
+ let cause;
+ for(let attempt=0;attempt<3;attempt++){
+  try{
+   const response=await fetch(url,{cache:attempt?"reload":"default"});
+   if(!response.ok)throw Error("HTTP "+response.status);
+   const blob=await response.blob();
+   if(!blob.size||blob.type.includes("text/html"))throw Error("contenido incompleto");
+   return blob;
+  }catch(error){
+   cause=error;
+   if(attempt<2)await new Promise(resolve=>setTimeout(resolve,500*(attempt+1)));
+  }
+ }
+ throw Error(url+" · "+cause.message);
 }
 const demoId="demo:orbital";
 const builtInSongs=[
