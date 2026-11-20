@@ -816,7 +816,7 @@ body.playing{overflow:hidden}
 #play #pDeskTracks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;overflow:visible}
 #play #pDeskTracks .play-track{width:auto;min-width:0;min-height:0;padding:0;background:none;border:0;box-shadow:none}
 #play #pDeskTracks .play-track>.pbtn{
-  width:100%;min-width:0;min-height:42px;padding:3px;background:linear-gradient(150deg,#38424e,#171c24 65%);
+  width:100%;min-width:0;min-height:56px;padding:6px;background:linear-gradient(150deg,#38424e,#171c24 65%);
   border:1px solid #66717e;border-bottom:3px solid #090b10;border-radius:7px;box-shadow:inset 0 1px #fff3,0 2px 4px #000a;
 }
 #play #pDeskTracks .play-track>.pbtn[aria-pressed=true]{
@@ -890,7 +890,7 @@ body.playing{overflow:hidden}
 #play #pDeskCueBank #pDeskCueLaunch{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(4,minmax(44px,1fr))}
 #play #pDeskCueBank .cue-pad{align-content:center;font-size:15px}
 #play #pDeskCueBank .cue-pad small{font-size:11px}
-#play .cue-pad{min-width:0;min-height:36px;padding:3px;display:grid;gap:2px}
+#play .cue-pad{min-width:0;min-height:56px;padding:6px;display:grid;gap:3px}
 #play .cue-pad small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px}
 #play .cue-pad[data-ready=true]{border-color:#6cebf2;background:#183c4b;color:#d8fdff}
 #play #pSoundPads{min-width:0;padding:5px;border:1px solid #516174;border-radius:6px;background:#151d29}
@@ -1338,10 +1338,13 @@ body.playing{overflow:hidden}
 .play-frequency-panel label{display:grid;gap:5px;color:#8eabb2;font-size:10px;font-weight:750;letter-spacing:.08em;text-transform:uppercase}
 .play-frequency-panel select,.play-frequency-panel input{min-height:37px;border:1px solid #3b5963;border-radius:7px;color:#e6f8fa;background:#071319;padding:6px 9px}
 .play-frequency-panel input{width:115px}.play-frequency-panel .note{flex:1 1 100%;margin:0;color:#91adb3;font-size:10px;line-height:1.4}
-.frequency-picker-dialog{width:min(720px,calc(100vw - 28px));padding:0;border:1px solid #4d7882;border-radius:14px;color:#e9fbfd;background:#09171d;box-shadow:0 24px 80px #000d,0 0 34px #38dce74a}
+.frequency-picker-dialog{width:min(920px,calc(100vw - 28px));padding:0;border:1px solid #4d7882;border-radius:14px;color:#e9fbfd;background:#09171d;box-shadow:0 24px 80px #000d,0 0 34px #38dce74a}
 .frequency-picker-dialog::backdrop{background:#02070cdb;backdrop-filter:blur(5px)}
 .frequency-picker-dialog>header{display:flex;align-items:center;justify-content:space-between;padding:15px 17px;border-bottom:1px solid #31515c;background:linear-gradient(#1a3039,#0e2028)}
 .frequency-picker-dialog h2{margin:0;font-size:20px}.frequency-picker-dialog .play-frequency-panel{margin:16px;min-height:112px}.frequency-picker-dialog #pFreqLoad{min-height:42px;padding-inline:18px}
+.frequency-range-guide{flex:1 1 100%;display:grid;gap:9px;padding:12px;border:1px solid #31515c;border-radius:10px;background:#071319}
+.frequency-range-guide h3,.frequency-range-guide p{margin:0}.frequency-range-guide>div{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.frequency-range-guide article{display:grid;gap:4px;padding:9px;border:1px solid #29434c;border-radius:8px;background:#0d2027}.frequency-range-guide article b{color:#65e2e7}.frequency-range-guide article strong{font-size:12px}.frequency-range-guide article span,.frequency-range-guide p,.frequency-range-guide small,.frequency-range-guide details{color:#9db8be;font-size:10px;line-height:1.45}.frequency-range-guide a{color:#7debf0}
+@media(max-width:760px){.frequency-range-guide>div{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .take-studio{
   box-sizing:border-box;width:min(720px,calc(100% - 24px));max-width:none;max-height:calc(100% - 24px);
   border:1px solid #425963;border-radius:15px;padding:18px;background:#101b21;color:#e8f1f3;
@@ -3651,7 +3654,6 @@ body[data-mode="ses"] #ship .left{grid-area:library}
       <div class="vhud tr"><select id="selEnv" class="vsel" aria-label="Entorno visual"></select><button class="vbtn" id="bFull" aria-label="Pantalla completa">⤢</button></div>
       <details id="orbCues" class="orb-cues">
         <summary>Cues</summary>
-        <div><select id="orbCueSource" aria-label="Fuente para preparar cue"></select><button id="orbArmCue" class="vbtn" type="button">Armar</button></div>
         <div id="orbCuePads" role="group" aria-label="Disparar cues preparados"></div>
       </details>
       <div class="vhud bl tools m-manual" id="tools">
@@ -3826,7 +3828,6 @@ body[data-mode="ses"] #ship .left{grid-area:library}
   <aside class="play-controls" aria-label="Comandos de JUGAR">
     <div class="play-transport">
       <button class="pbtn" id="pDeskSession" type="button">Guardar sesión</button>
-      <button class="pbtn" id="pDeskScript" type="button">Guion</button>
       <button class="pbtn" id="pDeskClearAll" type="button">Borrar todo</button>
       <button class="pbtn" id="pDeskBenzai" type="button" hidden>BENZAI</button>
       <button class="pbtn" id="pDeskDelete" type="button" disabled>Eliminar pista</button>
@@ -3846,6 +3847,7 @@ body[data-mode="ses"] #ship .left{grid-area:library}
         <form id="pDeskSessionForm">
           <label>Nombre <input id="pDeskSessionName" maxlength="60" required></label>
           <button class="pbtn" id="pDeskSessionSave">Guardar copia</button>
+          <button class="pbtn" id="pDeskScript" type="button">Secuencia del show</button>
         </form>
         <label>Sesión guardada <select id="pDeskSessionList"></select></label>
         <button class="pbtn" id="pDeskSessionLoad" type="button">Cargar sesión</button>
@@ -3903,7 +3905,7 @@ body[data-mode="ses"] #ship .left{grid-area:library}
               <form id="pMotionSave" hidden><label>Nombre <input id="pMotionName" required maxlength="40"></label><button class="pbtn">Guardar como nuevo movimiento</button></form>
               <button class="pbtn" id="pMotionApply" type="button">Aplicar recorrido</button>
               <button class="pbtn" id="pDrawHeight" type="button">Dibujar altura</button>
-              <button class="pbtn" id="pDrawApply" type="button" disabled>Aplicar dibujo</button>
+              <button class="pbtn" id="pDrawApply" type="button" disabled>Guardar dibujo</button>
             </section>
           </div>
         </dialog>
@@ -3911,7 +3913,6 @@ body[data-mode="ses"] #ship .left{grid-area:library}
           <button class="pbtn sm" id="pCreateCue" type="button">Crear cue</button>
           <button class="pbtn sm" id="pEditCue" type="button" disabled>Editar cue</button>
         </div>
-        <button class="pbtn sm" id="pArmCue" type="button" hidden disabled>Armar cue</button>
         <div class="play-speed">
           <label for="pDeskSpeed"><span id="pDeskSpeedLabel">Velocidad</span> <output id="pDeskSpeedValue" for="pDeskSpeed">—</output></label>
           <div class="play-speed-control">
@@ -4019,10 +4020,28 @@ body[data-mode="ses"] #ship .left{grid-area:library}
     <header><h2 id="pFrequencyTitle">Elegir frecuencia</h2><form method="dialog"><button class="pbtn" aria-label="Cerrar frecuencias">✕</button></form></header>
     <div class="play-desk-top play-frequency-panel" id="pDeskFrequencyPanel">
       <label>Pista <select id="pFreqChannel" aria-label="Pista para la frecuencia"></select></label>
-      <label>Frecuencia <input id="pFreqHz" type="number" min="40" max="1200" step="0.1" value="432"> Hz</label>
+      <label>Frecuencia sugerida <select id="pFreqPreset">
+        <option value="432">432 Hz · afinación alternativa</option><option value="174">174 Hz · tradición wellness</option>
+        <option value="285">285 Hz · tradición wellness</option><option value="396">396 Hz · tradición solfeggio</option>
+        <option value="417">417 Hz · tradición solfeggio</option><option value="440">440 Hz · afinación estándar A4</option>
+        <option value="528">528 Hz · tradición solfeggio</option><option value="639">639 Hz · tradición solfeggio</option>
+        <option value="741">741 Hz · tradición solfeggio</option><option value="852">852 Hz · tradición solfeggio</option>
+        <option value="963">963 Hz · tradición solfeggio</option><option value="custom">Personalizada</option>
+      </select></label>
+      <label>Hz exactos <input id="pFreqHz" type="number" min="40" max="1200" step="0.1" value="432" aria-describedby="pFreqInfo"> 40–1200 Hz</label>
       <label>Forma <select id="pFreqWave"><option value="sine">Pura</option><option value="triangle">Suave armónica</option></select></label>
       <button class="pbtn primary" id="pFreqLoad" type="button">Cargar frecuencia</button>
       <p id="pFreqInfo" class="note"></p>
+      <section class="frequency-range-guide" aria-labelledby="pFrequencyGuideTitle">
+        <h3 id="pFrequencyGuideTitle">Guía sonora orientativa</h3>
+        <p>No son efectos médicos universales: describen cómo suele percibirse el tono y sirven como punto de partida artístico.</p>
+        <div><article><b>40–100 Hz</b><strong>Profundo y corporal</strong><span>Base, vibración y reposo lento. Mantener bajo de volumen.</span></article>
+          <article><b>100–250 Hz</b><strong>Cálido y envolvente</strong><span>Gravedad, calidez y sensación de apoyo.</span></article>
+          <article><b>250–500 Hz</b><strong>Centrado y suave</strong><span>Cuerpo medio; útil para capas serenas y sostenidas.</span></article>
+          <article><b>500–1200 Hz</b><strong>Claro y presente</strong><span>Más definición y atención; puede cansar antes si está fuerte.</span></article></div>
+        <details><summary>Qué significa “tradición wellness”</summary><p>Las asociaciones atribuidas a 174, 285, 396, 417, 528, 639, 741, 852 y 963 Hz pertenecen a prácticas contemporáneas de bienestar. No se presentan como diagnóstico, tratamiento ni resultado garantizado.</p></details>
+        <small>Empieza con volumen bajo. La seguridad auditiva depende principalmente del nivel y del tiempo de exposición. <a href="https://www.who.int/news-room/questions-and-answers/item/deafness-and-hearing-loss-safe-listening" target="_blank" rel="noopener">OMS: escucha segura</a> · <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10198548/" target="_blank" rel="noopener">Revisión sobre beats binaurales</a></small>
+      </section>
     </div>
   </dialog>
   <dialog class="play-library-dialog" id="pSoundsDialog" aria-labelledby="pSoundsTitle">
@@ -6385,10 +6404,10 @@ function killVoice(s,fade=.05){const v=s._v;if(!v)return;const c=v.c,t=c.current
   if(s._fs){try{s._fs.stop(t+.3)}catch(e){}s._fs=null}if(s._g&&s._g.sus){try{s._g.sus.n.stop(t+.3)}catch(e){}}
   setTimeout(()=>{try{v.cueInput?.disconnect();v.src.disconnect();v.benzai?.disconnect();v.benzai?.port.close();v.q.stp.disconnect();v.send.disconnect();v.tg.forEach(g=>g.disconnect());v.pMg.disconnect();v.orig.disconnect();v.oD.disconnect()}catch(e){}},Math.max(500,fade*6000));s._v=null;s._g=null}
 function applyMix(){const c=cctx;if(!c)return;const t=c.currentTime;for(const s of S.sources){if(!s._v)continue;s._v.lvl.gain.setTargetAtTime(gainOf(s,S.sources),t,.04);voiceMix(s._v,t,s.depth,S.inten,S.ab)}busHead()}
-function startFile(s,at,off){const c=ac(),v=rtVoice(s);if(!S.fileBuf)return;if(s._fs){try{s._fs.stop()}catch(e){}}
+function startFile(s,at,off){const c=ac(),v=rtVoice(s);if(!S.fileBuf)return;if(s._fs){try{const t=c.currentTime;s._fe?.gain.setTargetAtTime(0,t,.012);s._fs.stop(t+.08)}catch(e){}}
   const n=c.createBufferSource();n.buffer=S.fileBuf;n.loop=S.loop;const e=c.createGain();e.gain.setValueAtTime(0,at);e.gain.linearRampToValueAtTime(1,at+.02);n.connect(e);e.connect(v.src);n.start(at,off%S.fileBuf.duration);s._fs=n;s._fe=e;
   n.onended=()=>{n.disconnect();e.disconnect();if(s._fs===n&&!S.loop){s._fs=null;s._fe=null;stop();try{ORB.onEnd&&ORB.onEnd()}catch(e){}}}}
-function startFreq(s,at,dest){const c=ac(),v=rtVoice(s);if(s._fo)try{s._fo.stop()}catch(e){}const o=c.createOscillator(),g=c.createGain();o.type=s.wave||"sine";o.frequency.setValueAtTime(clamp(+s.hz||432,20,20000),at);g.gain.setValueAtTime(0,at);g.gain.linearRampToValueAtTime(1,at+.08);o.connect(g);g.connect(dest||v.src);o.start(at);s._fo=o;s._fg=g}
+function startFreq(s,at,dest){const c=ac(),v=rtVoice(s);if(s._fo)try{const t=c.currentTime;s._fg?.gain.setTargetAtTime(0,t,.012);s._fo.stop(t+.08)}catch(e){}const o=c.createOscillator(),g=c.createGain();o.type=s.wave||"sine";o.frequency.setValueAtTime(clamp(+s.hz||432,20,20000),at);g.gain.setValueAtTime(0,at);g.gain.linearRampToValueAtTime(1,at+.08);o.connect(g);g.connect(dest||v.src);o.start(at);s._fo=o;s._fg=g}
 // transporte: ORB.onTransport(cb) → cb(«play»|«pause»|«stop»|«seek», pos) (capa binaural y otros consumidores; sondear ORB.S/pos() también vale)
 const TRL=[];function trEmit(e){for(const f of TRL)try{f(e,pos())}catch(x){console.warn(x)}}
 function play(){const c=ac();if(S.playing)return;S.playing=true;const at=c.currentTime+.06;S.t0=at-S.off;
@@ -6586,7 +6605,7 @@ async function renderRange(sc,T0,T1,fileBuf,used){const sr=48000,pre=Math.min(8,
     plSet(gn.gain,[[0,0],[f,lv],[Math.max(f,dur-f),lv],[dur,0]],o);n.start(0,lp[0]+(o%(lp[1]-lp[0])));bd={du,duck_db:sc.bed.duck_db==null?-6:sc.bed.duck_db};for(const h of hits)bedDuck(bd,h[0],h[1])}
   if(sc.background?.on&&sc.background.start_s<T1&&sc.background.end_s>o){const bg=await bedLoad(sc.background.track);timedBed(c,m,sc.background,bg,-o,0)}
   if(sc.bin&&sc.bin.on)binStart(c,m,sc.bin,0,dur,o);
-  const fo=sc.fade_out_s||0;if(fo)plSet(m.out.gain,[[0,1],[Math.max(0,dur-fo),1],[dur,0]],o);
+  const fi=.012,fo=Math.max(.012,sc.fade_out_s||0);plSet(m.out.gain,[[0,0],[Math.min(fi,dur/3),1],[Math.max(Math.min(fi,dur/3),dur-fo),1],[dur,0]],o);
   const b=await c.startRendering();return {b,skip:Math.round(pre*sr)}}
 // render completo: devuelve {L,R} Float32 (dur corta) o escribe por partes con onChunk(L,R) (sesiones largas)
 async function renderAll(sc,fileBuf,opt={}){const dur=sc.dur,CH=opt.chunk||30,used=new Set(sc.binaural&&typeof BINL!=="undefined"?BINL.sceneUrls(sc):[]);const parts=[];let done=0;
@@ -9813,7 +9832,7 @@ function bkHit(i,T,R){const B=SHX.B,L=ORB.LIB[i],sus=L.modo==="sus",kinds=sus?["
   const MR0=Math.random;Math.random=R;let ev=null;try{ev=SHX.evNuevo(i,T,{pal:B.pal,dur:dur+2,gain:.3,dec:sus?dur:3,sp,bus:{dry:B.dry,wet:B.wet}})}finally{Math.random=MR0}if(!ev)return;
   const s=c.createBufferSource();s.buffer=x.buf;const g=c.createGain(),lv=dB(L.lv||-10)*(x.g||.35)*2.2,gg=bkGain(i)*lv;
   if(sus){s.loop=true;if(x.loop){s.loopStart=x.loop[0];s.loopEnd=x.loop[1]}g.gain.setValueAtTime(0,T);g.gain.linearRampToValueAtTime(gg,T+3);g.gain.setValueAtTime(gg,T+dur-4);g.gain.linearRampToValueAtTime(0,T+dur);s.start(T,x.loop?x.loop[0]:0);s.stop(T+dur+.1)}
-  else{g.gain.value=gg;s.playbackRate.value=.97+R()*.06;s.start(T);s.stop(T+dur)}
+  else{const fi=Math.min(.006,dur/4),fo=Math.min(.012,dur/4);g.gain.setValueAtTime(0,T);g.gain.linearRampToValueAtTime(gg,T+fi);g.gain.setValueAtTime(gg,Math.max(T+fi,T+dur-fo));g.gain.linearRampToValueAtTime(0,T+dur);s.playbackRate.value=.97+R()*.06;s.start(T);s.stop(T+dur+.005)}
   s.connect(g);g.connect(ev.in);ev.fin=Math.max(ev.fin,T+dur+1);BX.act.push({i,n:g,g:lv,fin:T+dur+1});BX.lv[i]=.05}
 
 /* ---------- música IAH: lista desde ORB.BEDS (manifiesto beds_iah.json), bucle con fundido cruzado ---------- */
@@ -11699,7 +11718,7 @@ function stopScript(){
     if(S.sources.includes(voice)&&voice._playCueAt!=null&&!voice.waiting)fireCue(voice);
   }
   scriptVoices.clear();
-  $("#pDeskScript").textContent="Guion";
+  $("#pDeskScript").textContent="Secuencia del show";
 }
 // una línea del Guion: «segundo pad iniciar|detener» (Orbital DJ la lee igual, con compases)
 function scriptLine(line){
@@ -11765,32 +11784,31 @@ function initScript(){
     tick();
   };
 }
-let cueSignature="";
+let cueSignature="",cuePage=0;
 function syncCues(){
-  const picker=$("#orbCueSource"),panel=$("#orbCues"),arm=$("#orbArmCue");
+  const panel=$("#orbCues");
   const choices=S.sources.filter(s=>!s.cue),ready=choices.filter(s=>s.armedCue||s.cuePreset);
   const key=JSON.stringify(choices.map(s=>[s.id,s.deckChannel,s.label,!!s.armedCue,s.cuePreset?.name,s._playCueAt!=null]));
   if(key!==cueSignature){
     cueSignature=key;
-    const selected=picker.value||MAN.sel;
-    picker.replaceChildren(...choices.map(s=>h("option",{value:s.id},s.label)));
-    if(choices.some(s=>s.id===selected))picker.value=selected;
     const pads=(list=ready)=>list.map(s=>h("button",{class:"vbtn",type:"button","aria-pressed":String(s._playCueAt!=null),onclick:()=>{
       const voice=S.sources.find(voice=>voice.id===s.id);
       if(voice)fireCue(voice);
     }},(s._playCueAt!=null?"■ ":"▶ ")+(s.cuePreset?.name||s.label)));
     $("#orbCuePads").replaceChildren(...pads(ready));
     $("#pCues").replaceChildren(...pads(ready.filter(s=>s.armedCue)));
-    $("#pDeskCueLaunch").replaceChildren(...Array.from({length:ORB.DECK_CHANNELS-2},(_,i)=>{
-      const voice=ready.find(s=>s.deckChannel===i+3);
+    const cueCount=ORB.DECK_CHANNELS-2,cueStart=cuePage*10;
+    const cueButtons=Array.from({length:Math.min(10,cueCount-cueStart)},(_,i)=>{
+      const channel=cueStart+i+3,voice=ready.find(s=>s.deckChannel===channel);
       return h("button",{class:"pbtn cue-pad",type:"button",disabled:!voice,"data-ready":String(!!voice),"aria-pressed":String(voice?._playCueAt!=null),
-        onclick:()=>{const current=S.sources.find(s=>s.deckChannel===i+3);if(current)fireCue(current)}},
-        h("b",{},String(i+1).padStart(2,"0")),h("small",{},voice?(voice._playCueAt!=null?"■ ":"▶ ")+(voice.cuePreset?.name||voice.label):"Vacío"));
-    }));
+        onclick:()=>{const current=S.sources.find(s=>s.deckChannel===channel);if(current)fireCue(current)}},
+        h("b",{},String(channel-2).padStart(2,"0")),h("small",{},voice?(voice._playCueAt!=null?"■ ":"▶ ")+(voice.cuePreset?.name||voice.label):"Vacío"));
+    });
+    const cueNav=cueCount>10?[h("button",{class:"pbtn cue-bank-nav",type:"button",disabled:cuePage===0,onclick:()=>{cuePage=0;cueSignature="";syncCues()}},"‹ 1–10"),h("button",{class:"pbtn cue-bank-nav",type:"button",disabled:cuePage===1,onclick:()=>{cuePage=1;cueSignature="";syncCues()}},"11–"+cueCount+" ›")]:[];
+    $("#pDeskCueLaunch").replaceChildren(...cueButtons,...cueNav);
     $("#pCues").hidden=!ready.some(s=>s.armedCue);
     panel.classList.toggle("has-cues",!!ready.length);
   }
-  arm.disabled=!canArmCue(choices.find(s=>s.id===picker.value));
 }
 // estado en vivo de una fuente; si venía de una toma o de su trayectoria, arranca desde donde está ahora (sin saltos)
 function live(s){const P=ownPoint(s);
@@ -12452,9 +12470,15 @@ function resize(){
   if(cv.height!==height)cv.height=height;
   updateMixerWindow();
 }
+let mixerPage=0;
 function updateMixerWindow(){
-  $("#pDeskVisible").textContent=`${$("#pDeskTracks").childElementCount} pistas`;
-  $("#pDeskScrollPrev").hidden=$("#pDeskScrollNext").hidden=true;
+  const tracks=[...$("#pDeskTracks").children],pages=Math.max(1,Math.ceil(tracks.length/10));
+  mixerPage=Math.min(mixerPage,pages-1);const start=mixerPage*10,end=Math.min(start+10,tracks.length);
+  tracks.forEach((track,index)=>track.hidden=index<start||index>=end);
+  $("#pDeskVisible").textContent=tracks.length?`${start+1}–${end} / ${tracks.length}`:"0 pistas";
+  $("#pDeskScrollPrev").hidden=$("#pDeskScrollNext").hidden=pages<=1;
+  $("#pDeskScrollPrev").disabled=mixerPage===0;$("#pDeskScrollNext").disabled=mixerPage===pages-1;
+  return pages;
 }
 const stopTouch=e=>{if(!on||!e.cancelable)return;if((e.touches&&e.touches.length>1)||e.target===cv||e.type.startsWith("gesture"))e.preventDefault()};
 function syncSharedViewer(){
@@ -12556,8 +12580,6 @@ function initHoverDelete(){
 }
 
 function init(){cv=$("#pc");PLAY_DESK.init();PLAY_GRUPOS.init();initScript();axesUI();initHoverDelete();cv.addEventListener("pointerdown",down);cv.addEventListener("pointermove",move);cv.addEventListener("pointerup",up);cv.addEventListener("pointercancel",up);
-  $("#orbArmCue").onclick=()=>armCue(S.sources.find(s=>s.id===$("#orbCueSource").value));
-  $("#orbCueSource").onchange=syncCues;
   const screen=cv.closest(".play-stage")||$("#play .play-stage");
   $("#pFull").onclick=()=>{cancelDrawing();GLV.fullscreen(screen);syncFullscreen()};
   $("#pView3D").onclick=()=>{setView(VIEW==="3D"?"X":"3D")};
@@ -12571,8 +12593,7 @@ function init(){cv=$("#pc");PLAY_DESK.init();PLAY_GRUPOS.init();initScript();axe
   rail.addEventListener("scroll",updateMixerWindow,{passive:true});
   for(const [id,direction] of [["#pDeskScrollPrev",-1],["#pDeskScrollNext",1]]){
     $(id).onclick=()=>{
-      const page=updateMixerWindow();
-      if(page)rail.scrollBy({left:direction*page,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
+      mixerPage=Math.max(0,mixerPage+direction);updateMixerWindow();
     };
   }
   cv.addEventListener("contextmenu",e=>e.preventDefault());
@@ -12826,8 +12847,6 @@ const PLAY_DESK=(()=>{
   function syncMovement(){
     const index=channel(),voice=trackAt(index),speed=el("pDeskSpeed");
     const drawing=voice&&PLAY.isDrawing?.(voice);
-    el("pArmCue").disabled=!voice||!!drawing||!PLAY.canArmCue(voice);
-    el("pArmCue").textContent=voice?.armedCue?"Cue armado":"Armar cue";
     const type=voice?(drawing?"drawn":voice.live?"free":voice.path.type):"";
     const tempo=type==="tempo";
     speed.disabled=drawing||!paths.includes(type)||type==="still";
@@ -13061,6 +13080,8 @@ const PLAY_DESK=(()=>{
       else PLAY.setMovement(voice,value);
       if(value==="tempo"&&!edited)voice.path.bpm=Number(slider.value);
       else if(!slider.disabled)voice.speed=Number(slider.value)/100;
+      voice._mo=ORB.mkMotion(voice);voice._P=null;voice._dirty=true;
+      if(!S.playing)APP.play();
       syncMovement();save();bank.close();
     };
     el("pDrawRoute").onclick=()=>{
@@ -13273,9 +13294,10 @@ const PLAY_DESK=(()=>{
     PLAY.resize();
   }
 
-  const freqUses={174:"Tradición wellness: descanso y seguridad",285:"Tradición wellness: renovación",396:"Tradición solfeggio: liberación emocional",417:"Tradición solfeggio: cambio",432:"Afinación alternativa; no tiene beneficios terapéuticos demostrados",528:"Tradición solfeggio: transformación",639:"Tradición solfeggio: conexión",741:"Tradición solfeggio: claridad",852:"Tradición solfeggio: introspección",963:"Tradición solfeggio: meditación"};
-  function freqInfo(){const hz=ORB.clamp(+el("pFreqHz").value||432,40,1200),txt=freqUses[Math.round(hz)]||"Tono audible configurable";el("pFreqInfo").textContent=`${hz.toFixed(1)} Hz · ${txt}. Las asociaciones wellness son tradicionales, no tratamientos médicos.`}
-  function loadFrequency(){if(S.rec){UI.toast("Detén REC antes de cargar una frecuencia");return}const index=+el("pFreqChannel").value||freeChannel();if(!index){UI.toast("No hay pistas libres");return}const previous=trackAt(index);if(previous)ORB.removeSource(previous.id);const hz=ORB.clamp(+el("pFreqHz").value||432,40,1200),wave=el("pFreqWave").value;ORB.addSource({id:"deck"+index,deckChannel:index,kind:"freq",hz,wave,label:hz.toFixed(1)+" Hz",continuousInstrument:true,vol_db:-6,speed:.18,compression:0,path:{type:"still",az0:(index-3)*31,el:0},dist:1.7});syncLayerMix();select(index);render();save();el("pFrequencyDialog").close();UI.toast(hz.toFixed(1)+" Hz cargados en la pista "+index)}
+  const freqUses={174:"Tradición wellness: descanso y seguridad",285:"Tradición wellness: renovación",396:"Tradición solfeggio: liberación emocional",417:"Tradición solfeggio: cambio",432:"Afinación alternativa; no tiene beneficios terapéuticos demostrados",440:"Afinación musical estándar",528:"Tradición solfeggio: transformación",639:"Tradición solfeggio: conexión",741:"Tradición solfeggio: claridad",852:"Tradición solfeggio: introspección",963:"Tradición solfeggio: meditación"};
+  const freqBand=hz=>hz<100?"grave profundo; sensación corporal y reposada a bajo nivel":hz<250?"grave cálido y envolvente; útil como soporte":hz<500?"zona media centrada y suave":"tono claro y presente; puede fatigar antes si se usa fuerte";
+  function freqInfo(){const input=el("pFreqHz"),hz=Number(input.value),valid=Number.isFinite(hz)&&hz>=40&&hz<=1200;input.setCustomValidity(valid?"":"Usa una frecuencia entre 40 y 1200 Hz.");el("pFreqLoad").disabled=!valid;if(!valid){el("pFreqInfo").textContent="Rango permitido: 40–1200 Hz. Elige un valor real antes de cargarlo.";return false}const preset=el("pFreqPreset"),known=[...preset.options].some(o=>o.value!=="custom"&&Number(o.value)===hz);preset.value=known?String(hz):"custom";const txt=freqUses[Math.round(hz)]||freqBand(hz);el("pFreqInfo").textContent=`${hz.toFixed(1)} Hz · ${txt}. Las asociaciones wellness son tradicionales, no tratamientos médicos.`;return true}
+  function loadFrequency(){if(S.rec){UI.toast("Detén REC antes de cargar una frecuencia");return}if(!freqInfo()){el("pFreqHz").reportValidity();return}const index=+el("pFreqChannel").value||freeChannel();if(!index){UI.toast("No hay pistas libres");return}const previous=trackAt(index);if(previous)ORB.removeSource(previous.id);const hz=Number(el("pFreqHz").value),wave=el("pFreqWave").value;ORB.addSource({id:"deck"+index,deckChannel:index,kind:"freq",hz,wave,label:hz.toFixed(1)+" Hz",continuousInstrument:true,vol_db:-6,speed:.18,compression:0,path:{type:"still",az0:(index-3)*31,el:0},dist:1.7});syncLayerMix();select(index);render();save();el("pFrequencyDialog").close();UI.toast(hz.toFixed(1)+" Hz cargados en la pista "+index)}
 
   function deleteTrack(index){
     if(!trackAt(index))return false;
@@ -13341,6 +13363,7 @@ const PLAY_DESK=(()=>{
 
   function open(nextProduct="live"){
     product=nextProduct;
+    el("pOpenDJ").hidden=product==="frequency";
     syncSessionWords();
     workspace=Object.fromEntries(fields.map(k=>[k,S[k]]));
     workspace.off=Math.max(0,ORB.pos());
@@ -13358,6 +13381,10 @@ const PLAY_DESK=(()=>{
     masterMuted=false;
     masterFader.set(masterDb);syncMaster();
     restoreTracks(saved);
+    const songSelect=el("pDeskSong"),songValue=songSelect.value;
+    const availableSongs=SOUND_LIBRARY.musicTracks().filter(track=>product!=="frequency"||track.cat!=="dj");
+    songSelect.replaceChildren(h("option",{value:""},"Elige una canción"),...availableSongs.map(track=>h("option",{value:track.id},track.t)));
+    songSelect.value=availableSongs.some(track=>track.id===songValue)?songValue:"";
     if(typeof PLAY_GRUPOS!=="undefined")PLAY_GRUPOS.deskOpen(saved.grupos);// GRUPOS (gancho): grupos y cues de escena de la Mesa
     const background=el("pBackground");
     background.replaceChildren(h("option",{value:""},"Sin fondo"),
@@ -13566,7 +13593,7 @@ const PLAY_DESK=(()=>{
     }});
     el("pOpenMusic").onclick=picker(musicDialog,()=>{
       const tracks=SOUND_LIBRARY.musicTracks();
-      return {title:"Elige música",cards:Object.keys(musicGroups).flatMap(category=>{
+      return {title:"Elige música",cards:Object.keys(musicGroups).filter(category=>product!=="frequency"||category!=="dj").flatMap(category=>{
         const photo=category==="orbital"?photos+"pad.webp":cover(category==="celta"?"estandartes_norte":"templo_silencioso");
         const cards=tracks.filter(track=>musicCategory(track)===category).map(track=>trackCard({id:track.id,title:track.t},el("pDeskSong"),musicDialog,musicPhoto(track)));
         return cards.length?[{title:musicGroups[category],photo:cards[0].photo||photo,cards}]:[];
@@ -13857,7 +13884,6 @@ const PLAY_DESK=(()=>{
     clearDialog.addEventListener("close",()=>{
       if(clearDialog.returnValue==="borrar")clearDesk();
     });
-    el("pArmCue").onclick=()=>PLAY.armCue(trackAt(channel()));
     const benzai=el("pDeskBenzai");
     queueMicrotask(()=>{benzai.hidden=!BENZAI_LIVE.available;benzai.onclick=BENZAI_LIVE.open});
     const speed=el("pDeskSpeed");
@@ -13897,6 +13923,7 @@ const PLAY_DESK=(()=>{
     el("pDeskLoad").onclick=()=>load(channel(),el("pDeskSound").value);
     el("pDeskClear").onclick=()=>load(channel(),"");
     el("pFreqHz").oninput=freqInfo;
+    el("pFreqPreset").onchange=()=>{if(el("pFreqPreset").value!=="custom")el("pFreqHz").value=el("pFreqPreset").value;freqInfo()};
     el("pFreqLoad").onclick=loadFrequency;
     el("pOpenFrequency").onclick=()=>{
       if(product!=="frequency")return;
@@ -15534,7 +15561,10 @@ const SOUND_LIBRARY=(()=>{
   function stopPreview(){
     const current=preview;
     preview=null;
-    if(current?.node)current.node.stop();
+    if(current?.node){
+      const context=current.node.context,t=context.currentTime,fade=.025;
+      try{current.gain.gain.cancelScheduledValues(t);current.gain.gain.setValueAtTime(current.gain.gain.value,t);current.gain.gain.linearRampToValueAtTime(0,t+fade);current.node.stop(t+fade+.01)}catch(e){}
+    }
     renderPlaying();
   }
   function renderPlaying(){
@@ -15601,7 +15631,7 @@ const SOUND_LIBRARY=(()=>{
         if(preview===current){preview=null;renderPlaying()}
       };
       node.start(time,offset,duration);
-      current.node=node;
+      current.node=node;current.gain=gain;
       renderPlaying();
     }catch(error){
       if(preview!==current)return;
@@ -23043,7 +23073,7 @@ function padStart(ch,p,buf,at,bar,bd,now=0){const c=ch.c,n=c.createBufferSource(
   g.gain.value=0;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(1,t+FI);n.connect(g);g.connect(ch.in);n.start(t,loop?off%n.loopEnd:off);
   if(!loop)n.stop(t+buf.duration+.02);n.onended=()=>{try{n.disconnect();g.disconnect()}catch(e){}};
   const result={n,g,at:t,offset:loop?off%n.loopEnd:off};for(const h of HOOKS.source||[])try{h({type:"start",row:ch.row,buffer:buf,node:result,at:t,offset:result.offset,loop,loopStart:n.loopStart,loopEnd:n.loopEnd,fade:.004})}catch(e){console.warn(e)}return result}
-function padStop(node,at,hard){if(!node)return;for(const h of HOOKS.source||[])try{h({type:"stop",node,at,hard:!!hard})}catch(e){console.warn(e)}try{if(hard){node.n.stop(Math.max(node.at,at));return}
+function padStop(node,at,hard){if(!node)return;for(const h of HOOKS.source||[])try{h({type:"stop",node,at,hard:!!hard})}catch(e){console.warn(e)}try{
   const g=node.g.gain;if(at<=node.at){g.cancelScheduledValues(node.at);g.setValueAtTime(0,node.at);node.n.stop(node.at);return}
   const t0=Math.max(node.at,at-FO);if(g.cancelAndHoldAtTime)g.cancelAndHoldAtTime(t0);else{const value=g.value;g.cancelScheduledValues(t0);g.setValueAtTime(value,t0)}g.linearRampToValueAtTime(0,t0+FO);node.n.stop(t0+FO+.02)}catch(e){try{node.n.stop()}catch(_){}}}
 
@@ -23842,7 +23872,7 @@ function build(){
     E("button",{type:"button",class:"ldj-big ldj-drop",title:"Un compás de silencio y vuelve todo",onclick:()=>{ensureLive().drop();say("Drop en el próximo compás")}},"DROP"),
     E("label",{class:"ldj-master",title:"Volumen general (máximo 0 dB)"},"Volumen",E("input",{type:"range",min:-30,max:0,step:.5,value:0,oninput:e=>ensureLive().setMaster(+e.target.value)})),
     E("div",{class:"ldj-tools"},
-      E("button",{type:"button",class:"ldj-btn",title:"Escribe qué pad entra en qué compás",onclick:openGuion},"Guion"),
+      E("button",{type:"button",class:"ldj-btn",title:"Programa qué pad entra en cada compás",onclick:openGuion},"Secuencia del show"),
       E("button",{type:"button",class:"ldj-btn",title:"Escucha lo último que grabaste",onclick:playLast},"▶ Grabación"),
       E("button",{type:"button",class:"ldj-btn",title:"Descarga la grabación en WAV, hecha con el motor 8D",onclick:exportWav},"⬇ WAV"),
       E("button",{type:"button",class:"ldj-btn",title:"Guardar, cargar o compartir sesiones",onclick:openSessions},"Sesiones")),
@@ -23942,9 +23972,9 @@ function autoDj(){const d=ensureLive();if(d.rec)recToggle();const a=KIT==="orbit
 let guionText="";
 function buildGuion(){const ta=E("textarea",{class:"ldj-guion-text",rows:8,spellcheck:"false","aria-label":"Guion"});
   const msg=E("p",{class:"ldj-note"});const dlg=E("dialog",{class:"ldj-dlg ldj-guion"},
-    E("h3",{},"Guion"),E("p",{class:"ldj-note"},"Una acción por línea: compás, número del pad y iniciar o detener. Ejemplo: «9 12 iniciar». El compás 1 es el primero."),ta,msg,
+    E("h3",{},"Secuencia del show"),E("p",{class:"ldj-note"},"Programa una actuación repetible: una acción por línea, con compás, número del pad e iniciar o detener. Ejemplo: «9 12 iniciar»."),ta,msg,
     E("div",{class:"ldj-row-btns"},E("button",{type:"button",class:"ldj-btn",onclick:()=>{ta.value=guionDemo()}},"Ejemplo"),
-      E("button",{type:"button",class:"ldj-btn",onclick:()=>{const a=guionArr(ta.value,msg);if(a){guionText=ta.value;dlg.close();lastArr=a;ensureLive().playArr(a);say("Guion en marcha")}}},"▶ Tocar guion"),
+      E("button",{type:"button",class:"ldj-btn",onclick:()=>{const a=guionArr(ta.value,msg);if(a){guionText=ta.value;dlg.close();lastArr=a;ensureLive().playArr(a);say("Secuencia en marcha")}}},"▶ Tocar secuencia"),
       E("button",{type:"button",class:"ldj-btn",onclick:()=>{const a=guionArr(ta.value,msg);if(a){guionText=ta.value;lastArr=a;msg.textContent="Guardado. «⬇ WAV» lo exporta.";autosave()}}},"Guardar"),
       E("button",{type:"button",class:"ldj-btn",onclick:()=>dlg.close()},"Cerrar")));
   dlg.ta=ta;return dlg}
@@ -25603,6 +25633,7 @@ function build(){
       btn("Manual general",{cls:"ldx-mm",press:S.movMode==="libre",attr:{"data-mm":"libre"},tip:"El DJ controla las pistas. Las rutas originales activas siguen disponibles.",on:()=>setMovMode("libre")}),
       btn("Auto general · IAH",{cls:"ldx-mm",press:S.movMode==="iah",attr:{"data-mm":"iah"},tip:"IAH dirige el espacio 8D; puedes tomar una pista en Manual.",on:()=>setMovMode("iah")}))),
     E("span",{class:"ldx-flex"}),
+    btn("Preparar sesión",{cls:"ldx-prepare",tip:"Carga de una vez un set completo de sonidos por estilo; después puedes cambiar cualquier pad",on:e=>openStyles(e.currentTarget)}),
     btn("IAH DJ",{cls:"ldx-iah",tip:"IAH arma una sesión con los sonidos que elijas",on:openIah}),
     btn("🎧 IAH DJ creations",{cls:"ldx-creations",tip:"Las canciones que creó IAH en 8D: tócalas aquí mismo",on:e=>abrirCreations(e.currentTarget)}),
     btn("💾 Guardar sesión",{cls:"ldx-save-ses",tip:"Guarda TODO en una sesión: sonidos de cada pista, cues (los 30), presets, movimientos, sala, tempo y kit",on:guardarSesion}),
