@@ -1,0 +1,76 @@
+{
+  "title": "Missed Call",
+  "duration": 274.8,
+  "tracks": [
+    {
+      "name": "Voz principal",
+      "file": "musica/canciones/coleccion-8d/missed-call/00-lead-vocals.flac",
+      "sampleRate": 48000,
+      "frames": 13190400,
+      "channels": 2
+    },
+    {
+      "name": "Coros",
+      "file": "musica/canciones/coleccion-8d/missed-call/01-backing-vocals.flac",
+      "sampleRate": 48000,
+      "frames": 13190400,
+      "channels": 2
+    },
+    {
+      "name": "Batería",
+      "file": "musica/canciones/coleccion-8d/missed-call/02-drums.flac",
+      "sampleRate": 48000,
+      "frames": 13190400,
+      "channels": 2
+    },
+    {
+      "name": "Bajo",
+      "file": "musica/canciones/coleccion-8d/missed-call/03-bass.flac",
+      "sampleRate": 48000,
+      "frames": 13190400,
+      "channels": 2
+    },
+    {
+      "name": "Guitarra",
+      "file": "musica/canciones/coleccion-8d/missed-call/04-guitar.flac",
+      "sampleRate": 48000,
+      "frames": 13190400,
+      "channels": 2
+    },
+    {
+      "name": "Teclado",
+      "file": "musica/canciones/coleccion-8d/missed-call/05-keyboard.flac",
+      "sampleRate": 48000,
+      "frames": 13190400,
+      "channels": 2
+    },
+    {
+      "name": "Percusión",
+      "file": "musica/canciones/coleccion-8d/missed-call/06-percussion.flac",
+      "sampleRate": 48000,
+      "frames": 13190400,
+      "channels": 2
+    },
+    {
+      "name": "Cuerdas",
+      "file": "musica/canciones/coleccion-8d/missed-call/07-strings.flac",
+      "sampleRate": 48000,
+      "frames": 13190400,
+      "channels": 2
+    },
+    {
+      "name": "Sintetizador",
+      "file": "musica/canciones/coleccion-8d/missed-call/08-synth.flac",
+      "sampleRate": 48000,
+      "frames": 13190400,
+      "channels": 2
+    },
+    {
+      "name": "Otros",
+      "file": "musica/canciones/coleccion-8d/missed-call/09-other.flac",
+      "sampleRate": 48000,
+      "frames": 13190400,
+      "channels": 2
+    }
+  ]
+}
