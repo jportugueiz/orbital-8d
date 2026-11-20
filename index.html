@@ -9312,7 +9312,7 @@ const SH_SONGS=(()=>{
   function paint(){
     if(!panel)return;
     play.textContent=pending?"Abriendo audio…":when===null?"▶ Play":"Ⅱ Pausa";
-    play.disabled=!tracks.length||loading;
+    play.disabled=!tracks.length||loading||!!pending;
     home.disabled=progress.disabled=!tracks.length||loading;
     save.disabled=!tracks.length||loading||saving;
     load.disabled=library.disabled=saving;
@@ -9352,10 +9352,12 @@ const SH_SONGS=(()=>{
     }
     return decoded;
   }
-  function cancelLoad(){++loadToken;loading=false}
+  let preloadAbort=null,openingChunk=null;
+  function cancelLoad(){++loadToken;loading=false;preloadAbort?.abort();preloadAbort=null;openingChunk=null}
   async function openSong(items,title,songId,suffix=[]){
     pause();
-    const token=++loadToken;
+    cancelLoad();
+    const token=loadToken;
     loading=true;
     tell("Leyendo "+items.length+" pistas…");
     paint();
@@ -9377,6 +9379,18 @@ const SH_SONGS=(()=>{
         return Object.assign(source,{blob:t.blob,buffer:t.buffer,stream:t.stream,duration,
           color:colors[place%colors.length],bowl,didge,anchor,largo:role.largo});
       });
+      const streamed=[...suffix,...installed].filter(t=>t.stream);
+      if(streamed.length){
+        const abort=preloadAbort=new AbortController();
+        let ready=0;
+        const progress=()=>{if(token===loadToken)play.textContent="Cargando pistas "+ready+" / "+streamed.length};
+        progress();
+        const chunk=prepareChunk({tracks:streamed,abort,onDecoded:()=>{ready++;progress()}},0);
+        await chunk.ready;
+        if(token!==loadToken)return;
+        if(chunk.error){abort.abort();throw chunk.error}
+        preloadAbort=null;openingChunk=chunk;
+      }
       tracks=[...suffix,...installed];
       selected=new Set(tracks.slice(0,1).map(t=>t.id));
       duration=Math.max(...tracks.map(t=>t.duration));
@@ -9657,6 +9671,7 @@ const SH_SONGS=(()=>{
       const expected=Math.min(chunkSeconds,t.duration-at);
       if(Math.abs(buffer.duration-expected)>2/ctx.sampleRate)throw new Error("Fragmento desalineado de "+t.label);
       readAhead(t,buffer,at);
+      run.onDecoded?.();
       return [t,buffer];
     })).then(buffers=>{chunk.buffers=buffers},error=>{chunk.error=error});
     return chunk;
@@ -9729,7 +9744,7 @@ const SH_SONGS=(()=>{
       if(streamed.length){
         const index=Math.floor(offset/chunkSeconds);
         const run=streamRun={tracks:streamed,abort:new AbortController(),chunk:null,primed:null};
-        const first=run.chunk=prepareChunk(run,index);
+        const first=run.chunk=index===0&&openingChunk&&openingChunk.buffers.every(([t])=>streamed.includes(t))&&openingChunk.buffers.length===streamed.length?openingChunk:prepareChunk(run,index);
         const next=(index+1)*chunkSeconds;
         if(next-offset<3&&streamed.some(t=>t.duration>next))run.primed=prepareChunk(run,index+1);
         await Promise.all([first.ready,run.primed?.ready]);
@@ -9792,7 +9807,7 @@ const SH_SONGS=(()=>{
     paint();
   }
   function stop(){pause();offset=0;resetMotion();paint()}
-  function toggle(){if(when!==null||pending)pause();else void begin()}
+  function toggle(){if(pending)return;if(when!==null)pause();else void begin()}
   function seek(seconds){
     const resume=when!==null||pending;
     pause();
@@ -9911,7 +9926,7 @@ const SH_SONGS=(()=>{
       col:t.color,sel:selected.has(t.id),level:0,big:.95
     }));
   }
-  return {current:position,get tracks(){return tracks},mount,pause,stop,setMotion,visualSources,circleSources,moveInCircle,get playing(){return when!==null}};
+  return {current:position,get tracks(){return tracks},mount,begin,pause,stop,setMotion,visualSources,circleSources,moveInCircle,get playing(){return when!==null}};
 })();
 
 /* =====================================================================
@@ -12087,7 +12102,7 @@ const zone=az=>Math.floor((((az+45)%360)+360)%360/90);// 0 frente · 1 derecha �
 function unlock(){try{const c=ORB.ac();if(c.state!=="running")c.resume().catch(()=>{});if(unl)return;unl=true;const b=c.createBuffer(1,1,c.sampleRate),n=c.createBufferSource();n.buffer=b;n.connect(c.destination);n.start()}catch(e){}}
 
 function syncTransport(){
-  const active=PLAY_DESK.hasBackground;
+  const active=PLAY_DESK.hasBackground||(product==="healing"&&SH_SONGS.playing);
   for(const id of ["#pPlayB"]){
     const button=$(id);
     button.classList.toggle("on",active);
@@ -12820,8 +12835,10 @@ function init(){cv=$("#pc");PLAY_DESK.init();PLAY_GRUPOS.init();initScript();axe
     unlock();
     if(S.sources.length&&!S.playing)startTracks();
     PLAY_DESK.startLayers();
+    if(product==="healing"&&SH_SONGS.tracks.length)void SH_SONGS.begin();
   };
   $("#pStopB").onclick=()=>{/* ■ todo */
+    if(product==="healing"&&SH_SONGS.tracks.length)SH_SONGS.stop();
     PLAY_DESK.stopLayers();
     if(S.playing)APP.stop();
   };
