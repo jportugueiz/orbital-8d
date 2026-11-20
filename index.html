@@ -1439,17 +1439,21 @@ body.vp #ship>header.topbar{display:none}
 .oicon.grp-sel{outline:2px dashed #7df4ff;outline-offset:3px}
 @media (max-width:760px){#play .grp-bank{grid-template-columns:1fr}#play .grp-cue{min-height:40px;flex:1 1 30%}#play .grp-vel input{width:120px}}
 
-/* Bancos físicos laterales, iguales al lenguaje de controles de DJ 8D. */
+/* Aros físicos: exactamente el lenguaje radial de DJ 8D, sin reducir el círculo. */
 #play .grp-orbit-controls{position:absolute;inset:0;z-index:7;pointer-events:none}
-#play .grp-orbit-bank{position:absolute;top:50%;translate:0 -50%;display:grid;grid-template-columns:repeat(2,minmax(72px,104px));gap:9px;width:min(23%,220px);pointer-events:none}
-#play .grp-orbit-left{left:12px}#play .grp-orbit-right{right:12px}
-#play .grp-orbit-bank .pbtn{position:relative;pointer-events:auto;min-height:50px;min-width:0;padding:8px 9px 7px;border:1px solid #02070a;border-top-color:#536b75;border-radius:8px;color:#cbe1e6;background:radial-gradient(ellipse at 50% 12%,#ffffff0d,#0000 65%),linear-gradient(165deg,#2b3b44,#15232b 66%,#1b3037);box-shadow:0 5px 0 #020609,0 6px 0 #596a7155,0 9px 9px #000b,inset 0 1px 0 #d7f4ed31,inset 0 -2px 0 #0009;text-shadow:0 1px 1px #000;font:750 12px/1.15 UI;white-space:normal}
-#play .grp-orbit-bank .pbtn:before{content:"";position:absolute;top:7px;right:7px;width:7px;height:7px;border:1px solid #020608;border-radius:50%;background:radial-gradient(circle at 35% 25%,#fff8 0 10%,#63818b 26%,#071018 76%);box-shadow:inset 0 1px 2px #000,0 1px 0 #bdcbd32e;opacity:.42}
-#play .grp-orbit-bank .pbtn[aria-pressed=true],#play .grp-orbit-bank .pbtn.grp-queued{color:#e6ffff;border-top-color:#84f7f3;background:radial-gradient(ellipse at 50% 12%,#ffffff2b,#0000 65%),linear-gradient(165deg,#2c686d,#14363d 66%,#17444a);box-shadow:0 5px 0 #020609,0 6px 0 #6ad9d955,0 0 16px #52dce866,inset 0 1px 0 #eaffff70,inset 0 -2px 0 #0009}
-#play .grp-orbit-bank .pbtn[aria-pressed=true]:before,#play .grp-orbit-bank .pbtn.grp-queued:before{opacity:1;background:radial-gradient(circle at 35% 25%,#fff 0 10%,#64ffff 30%,#1e5556 82%);box-shadow:0 0 8px #5ff7f5,inset 0 1px 2px #fff6}
-#play .grp-orbit-bank .grp-orbit-special{grid-column:1/-1;color:#cbbcff;border-top-color:#8068ad;background:linear-gradient(165deg,#3d3154,#211c32 68%,#302443)}
+#play .grp-orbit-bank{position:absolute;inset:0;pointer-events:none}
+#play .grp-orbit-key{--orbit-led:#70e9ee;--orbit-light:color-mix(in srgb,var(--orbit-led) 46%,#243747);--orbit-face-color:color-mix(in srgb,var(--orbit-led) 14%,#13232e);position:absolute!important;left:var(--orbit-x);top:var(--orbit-y);width:var(--orbit-w);height:var(--orbit-h);display:flex;align-items:center;justify-content:flex-start;box-sizing:border-box;min-width:0!important;min-height:0!important;margin:0;padding:7px 0 0!important;pointer-events:auto;border:1px solid color-mix(in srgb,var(--orbit-led) 48%,#1c2936)!important;border-radius:9px!important;clip-path:var(--orbit-clip);color:#e9f6fb!important;background:linear-gradient(#131c27 0%,var(--orbit-light) 5%,color-mix(in srgb,var(--orbit-light) 70%,#ebfaff) 8%,var(--orbit-face-color) 16%,#0a141e 85%,#101e2b 87%,#050a10 94%)!important;box-shadow:inset 0 -3px #04080d,inset 0 2px #fff2,0 4px 5px #0008!important;text-shadow:0 1px 2px #000;font:650 14px/1.07 UI;white-space:normal}
+#play .grp-orbit-right .grp-orbit-key{justify-content:flex-end}
+#play .grp-orbit-key>span{display:block;width:var(--orbit-face);max-width:100%;box-sizing:border-box;padding:4px 3px 0;text-align:center;text-wrap:balance}
+#play .grp-orbit-key[data-orbit-theme=extra]{--orbit-led:#b29aff}#play .grp-orbit-key[data-orbit-theme=spatial]{--orbit-led:#f49aca}
+#play .grp-orbit-key:after{content:"";position:absolute;left:calc(var(--orbit-face)/2 - 10px);top:5px;width:20px;height:3px;border-radius:4px;background:color-mix(in srgb,var(--orbit-led) 43%,#111b23);box-shadow:0 1px 2px #020508}
+#play .grp-orbit-right .grp-orbit-key:after{left:auto;right:calc(var(--orbit-face)/2 - 10px)}
+#play .grp-orbit-key[aria-pressed=true]:after,#play .grp-orbit-key.grp-queued:after{background:var(--orbit-led);box-shadow:0 0 9px var(--orbit-led);animation:grpOrbitLed .66s steps(1,end) infinite}
+@keyframes grpOrbitLed{50%{opacity:.26}}
+#play .grp-orbit-settings{position:absolute;left:50%;top:12px;translate:-50% 0;display:flex;gap:8px;pointer-events:auto}
+#play .grp-orbit-settings .pbtn{min-height:38px;padding:6px 16px;border-radius:8px;box-shadow:inset 0 1px #fff2,0 4px 5px #0008}
 #play .grp-orbit-controls>.grp-iah-log{position:absolute;left:25%;right:25%;bottom:10px;text-align:center;pointer-events:none}
-@media(max-width:900px){#play .grp-orbit-bank{grid-template-columns:1fr;width:100px;gap:6px}#play .grp-orbit-left{left:6px}#play .grp-orbit-right{right:6px}#play .grp-orbit-bank .pbtn{min-height:40px;padding:5px;font-size:10px}}
+@media(max-width:700px){#play .grp-orbit-controls{display:none}}
 #play .grp-pads{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:5px}/* columnas según el ancho real del panel: las palabras nunca se montan (15 nov 2026) */
 #play .grp-pads .grp-cue{min-height:42px;min-width:0;padding:4px 6px;font-size:12px;white-space:normal;line-height:1.15;overflow-wrap:break-word;hyphens:auto;text-align:center;overflow:hidden}
 /* IAH en la Mesa (15 nov 2026): botón toggle y bitácora corta */
@@ -1565,6 +1569,8 @@ body.ldjx-open .ldj-fab{display:none!important}
   color:#c9d1d9;font:600 11px/1.2 UI,system-ui,sans-serif;letter-spacing:.04em;overflow:hidden;
   background:radial-gradient(120% 80% at 50% 0%,#151a20 0%,#0a0c0f 60%,#050607 100%)}
 .ldjx[hidden]{display:none}
+/* El layout heredado nunca se pinta durante los milisegundos de montaje. */
+.ldjx:not(.ldx-workspace){visibility:hidden!important;pointer-events:none!important}
 .ldjx,.ldj-iah{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}.ldjx button,.ldj-iah button{touch-action:manipulation}.ldjx input,.ldjx textarea,.ldjx select,.ldj-iah input,.ldj-iah select{-webkit-user-select:auto;user-select:auto}
 .ldjx h3{margin:0;font:800 11px/1 UI,system-ui;letter-spacing:.16em;color:#9aa6b2}
 .ldjx small{font-size:11px;letter-spacing:.1em;color:#9aa6b2}
@@ -14029,10 +14035,15 @@ let saveT=null;const saveSoon=()=>{clearTimeout(saveT);saveT=setTimeout(()=>{if(
 /* ---------- panel ---------- */
 const btn=(label,attrs,on)=>h("button",Object.assign({class:"pbtn sm",type:"button"},attrs||{},on?{onclick:on}:{}),label);
 // los 12 pads visibles de la Mesa (pedido de Jorge); el resto de los cues queda en la API PLAY.escena.* para IAH
-const PADS=[{id:"girar_der"},{id:"girar_izq"},{id:"frenar",shift:"parar",title:"Frenar · Shift: parar en seco"},{id:"volver",title:"Volver · también nivela"},{id:"media"},{id:"contra"},
-  {id:"torn"},{id:"pp8",n:"Ping-pong sala"},{id:"impl"},{id:"expl"},{id:"cong",toggle:"solt",n:"Congelar / Soltar"},{id:"acel",title:"Acelerador · mantén pulsado; al soltar, explota"}];
+// Mismo banco radial de DJ 8D: ocho comandos por lado. No se comprime el círculo.
+const PADS=[
+  {id:"girar_der"},{id:"girar_izq"},{id:"frenar",shift:"parar",title:"Frenar · Shift: parar en seco"},{id:"volver",title:"Volver · también nivela"},
+  {id:"media"},{id:"torn"},{id:"espejo"},{id:"elevar",n:"Subir sala"},
+  {id:"contra"},{id:"pp8",n:"Ping-pong sala"},{id:"acel",title:"Acelerador · mantén pulsado; al soltar, explota"},{id:"impl"},
+  {id:"expl"},{id:"cong",toggle:"solt",n:"Congelar / Soltar"},{id:"bajar",n:"Bajar sala"},{id:"paso",n:"Paso a paso"}
+];
 const frozen=()=>{const T=GRP.byId(GRP.L.active)||GRP.sala;return GRP.stateAt(T,ORB.pos()).frz.w.b===1};
-function cueButton(c,user,pad){const b=h("button",{class:"pbtn sm grp-cue",type:"button","data-cue":c.id,"data-kind":c.kind,title:pad?.title||c.n+(c.kind==="hold"?" · mantén pulsado":"")},user?user.name:pad?.n||c.n);
+function cueButton(c,user,pad){const label=user?user.name:pad?.n||c.n,b=h("button",{class:"pbtn sm grp-cue",type:"button","data-cue":c.id,"data-kind":c.kind,title:pad?.title||c.n+(c.kind==="hold"?" · mantén pulsado":"")},h("span",{},label));
   let ev=null,mom=false;
   b.addEventListener("pointerdown",e=>{if(e.button!==0)return;mom=c.kind==="hold"||(GRP.O.latch?e.shiftKey:!e.shiftKey)&&["rot","mod","form","tw"].includes(c.kind);
     if(!mom)return;e.preventDefault();try{b.setPointerCapture(e.pointerId)}catch(_){}ev=fire(c.id,user?user.o:{},true);mark(b,ev)});
@@ -14046,12 +14057,17 @@ function tickQueued(){const now=ORB.pos();for(const [b,ev] of queued)if(ev.t<=no
 function build(){
   root=h("nav",{id:"pGrupos",class:"grp-orbit-controls","aria-label":"Comandos de escena alrededor del círculo"});
   const left=h("div",{class:"grp-orbit-bank grp-orbit-left"}),right=h("div",{class:"grp-orbit-bank grp-orbit-right"});
-  PADS.forEach((pad,index)=>(index<6?left:right).append(cueButton(cueOf(pad.id),null,pad)));
+  PADS.forEach((pad,index)=>{const b=cueButton(cueOf(pad.id),null,pad);b.classList.add("grp-orbit-key");b.dataset.orbitTheme=index<6?"scene":index<8?"spatial":index<14?"extra":"spatial";(index<8?left:right).append(b)});
   const iah=btn("IAH",{"data-g":"iah",class:"pbtn grp-orbit-special grp-iah","aria-pressed":"false",title:"IAH dirige los movimientos de la escena"},()=>PLAY_IAH.toggle());
   const ancla=btn("Ancla graves",{"data-g":"ancla",class:"pbtn grp-orbit-special","aria-pressed":String(GRP.O.ancla)},e=>{GRP.setAncla(!GRP.O.ancla);e.currentTarget.setAttribute("aria-pressed",String(GRP.O.ancla));saveSoon()});
-  left.append(iah);right.append(ancla);root.append(left,right,h("span",{"data-g":"iahlog",class:"grp-iah-log mono",role:"status","aria-live":"polite"}));
-  el("pc")?.parentElement?.append(root);
+  const settings=h("div",{class:"grp-orbit-settings"},iah,ancla);
+  root.append(left,right,settings,h("span",{"data-g":"iahlog",class:"grp-iah-log mono",role:"status","aria-live":"polite"}));
+  const bay=el("pc")?.parentElement;bay?.append(root);if(bay){new ResizeObserver(()=>layoutOrbit(bay)).observe(bay);requestAnimationFrame(()=>layoutOrbit(bay))}
 }
+function layoutOrbit(bay){if(!root||root.hidden)return;const r=bay.getBoundingClientRect(),w=r.width,h=r.height;if(w<700||h<480){root.classList.add("grp-orbit-compact");return}root.classList.remove("grp-orbit-compact");
+  const cx=w/2,cy=h/2+8,radius=Math.min(w*.31,h*.405),margin=12,edge=radius+9,rail=Math.max(92,cx-edge-margin),top=Math.max(118,cy-radius*.73),bottom=Math.min(h-24,cy+radius*.91),step=(bottom-top)/7;
+  const polygon=(x,y,bw,bh,side)=>{const pts=Array.from({length:17},(_,n)=>{const t=n/16,dy=y+t*bh-cy,reach=Math.sqrt(Math.max(0,edge*edge-dy*dy)),bound=cx+(side?reach:-reach),px=Math.max(0,Math.min(bw,bound-x));return px.toFixed(1)+"px "+(t*100)+"%"}),outer=side?"100%":"0%";return "polygon("+[outer+" 0%",...pts,outer+" 100%"].join(",")+")"};
+  [root.querySelector(".grp-orbit-left"),root.querySelector(".grp-orbit-right")].forEach((col,side)=>[...col.children].forEach((b,i)=>{const bh=Math.max(48,Math.min(68,step-7)),y=top+i*step-bh/2,bw=Math.min(cx-margin,rail+(i>5?64:22)),x=side?w-margin-bw:margin;b.style.setProperty("--orbit-x",x+"px");b.style.setProperty("--orbit-y",y+"px");b.style.setProperty("--orbit-w",bw+"px");b.style.setProperty("--orbit-h",bh+"px");b.style.setProperty("--orbit-face",Math.max(78,rail-5)+"px");b.style.setProperty("--orbit-clip",polygon(x,y,bw,bh,side))}))}
 function applyMovement(v,dir){const tid=target();ensurePlaying();
   if(v.startsWith("ruta:"))GRP.fire(tid,"ruta",{dir,path:{type:v.slice(5),dir}});
   else if(v.startsWith("banco:")){const m=PLAY_DESK.motions[+v.slice(6)];if(!m)return;const [, ,speed,closed,sample]=m;
@@ -15641,6 +15657,8 @@ const SOUND_LIBRARY=(()=>{
     isInstrument:id=>items.some(item=>item.type==="sample"&&item.id===id&&item.group==="instrumentos"),
     // {library:true}: solo lo que lista la Biblioteca (Mesa, Estudio manual); sin opciones, el banco completo (Sound Healing).
     sourceGroups:(options={})=>Object.entries(groups).flatMap(([key,group])=>{
+      // Wellness is intentionally organic. Spatial/electronic FX remain in the
+      // shared package for DJ and DJ 8D, but are never offered by this library.
       if(key==="efectos")return [];
       const families=key==="instrumentos"?{mistico:"Instrumentos místicos",...group.families}:group.families;
       return Object.entries(families).flatMap(([family,name])=>{
