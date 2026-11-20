@@ -1441,9 +1441,9 @@ body.vp #ship>header.topbar{display:none}
 
 /* Aros físicos: exactamente el lenguaje radial de DJ 8D, sin reducir el círculo. */
 #play .grp-orbit-controls{position:absolute;inset:0;z-index:7;pointer-events:none}
-/* Los controles de Baños/Mesa viven junto a #pc. Cuando ese mismo lienzo se
-   monta dentro de DJ 8D, DJ ya crea su propia botonera: nunca mostrar ambas. */
-#ldjx.ldx-workspace #pGrupos{display:none!important}
+/* DJ es una plataforma independiente. Aunque su capa se abra sobre #play,
+   nunca puede heredar ni mostrar los controles exclusivos de Baños/Mesa. */
+body:has(#ldjx.ldx-workspace:not([hidden])) #pGrupos{display:none!important}
 #play .grp-orbit-bank{position:absolute;inset:0;pointer-events:none}
 #play .grp-orbit-key{--orbit-led:#70e9ee;--orbit-light:color-mix(in srgb,var(--orbit-led) 46%,#243747);--orbit-face-color:color-mix(in srgb,var(--orbit-led) 14%,#13232e);position:absolute!important;left:var(--orbit-x);top:var(--orbit-y);width:var(--orbit-w);height:var(--orbit-h);display:flex;align-items:center;justify-content:flex-start;box-sizing:border-box;min-width:0!important;min-height:0!important;margin:0;padding:7px 0 0!important;pointer-events:auto;border:1px solid color-mix(in srgb,var(--orbit-led) 48%,#1c2936)!important;border-radius:9px!important;clip-path:var(--orbit-clip);color:#e9f6fb!important;background:linear-gradient(#131c27 0%,var(--orbit-light) 5%,color-mix(in srgb,var(--orbit-light) 70%,#ebfaff) 8%,var(--orbit-face-color) 16%,#0a141e 85%,#101e2b 87%,#050a10 94%)!important;box-shadow:inset 0 -3px #04080d,inset 0 2px #fff2,0 4px 5px #0008!important;text-shadow:0 1px 2px #000;font:650 var(--orbit-font,14px)/1.07 UI;white-space:normal}
 #play .grp-orbit-right .grp-orbit-key{justify-content:flex-end}
@@ -14070,10 +14070,9 @@ function build(){
   const ancla=btn("Ancla graves",{"data-g":"ancla",class:"pbtn grp-orbit-special","aria-pressed":String(GRP.O.ancla)},e=>{GRP.setAncla(!GRP.O.ancla);e.currentTarget.setAttribute("aria-pressed",String(GRP.O.ancla));saveSoon()});
   const settings=h("div",{class:"grp-orbit-settings"},iah,ancla);
   root.append(left,right,settings,h("span",{"data-g":"iahlog",class:"grp-iah-log mono",role:"status","aria-live":"polite"}));
-  // Esta botonera pertenece a Baños/Mesa, no al nodo reutilizable del círculo.
-  // DJ 8D traslada el contenedor de #pc a su workspace; por eso el panel debe
-  // permanecer anclado a #play y nunca viajar con el círculo hacia DJ.
-  const bay=el("play");bay?.append(root);if(bay){new ResizeObserver(()=>layoutOrbit(bay)).observe(bay);requestAnimationFrame(()=>layoutOrbit(bay))}
+  // La geometría se calcula exclusivamente con el monitor central de Baños.
+  // La visibilidad queda aislada de DJ mediante el estado de su workspace.
+  const bay=el("pc")?.parentElement;bay?.append(root);if(bay){new ResizeObserver(()=>layoutOrbit(bay)).observe(bay);requestAnimationFrame(()=>layoutOrbit(bay))}
 }
 function layoutOrbit(bay){if(!root||root.hidden)return;const br=bay.getBoundingClientRect(),width=br.width,height=br.height,scale=height/732,centerX=width/2,centerY=height*.5,radius=Math.min(width,height)*.31;
   const left=9,right=width-9,clearance=radius+9,railWidth=Math.min(centerX-clearance-left,right-centerX-clearance);
