@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Orbital · Show Center</title>
+  <link rel="stylesheet" href="center.css">
+</head>
+<body>
+  <header>
+    <div class="head">
+      <div class="brand"><span class="mark" aria-hidden="true"></span> ORBITAL</div>
+      <nav aria-label="Pantallas de producción">
+        <a href="#center">Show Center</a><a href="#video">Video</a><a href="#cam">Cámara</a><a href="#luces">Luces</a>
+      </nav>
+      <span class="tag" id="connection">Buscando DJ</span>
+    </div>
+    <div class="deck">
+      <span id="transport-source">Transporte DJ</span>
+      <button id="prepare-demo" hidden>Preparar demo Orbital</button>
+      <button id="transport" hidden>Play DJ</button>
+      <b id="bpm"></b>
+      <span class="beats" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <span class="clock" id="position">Sin reloj</span>
+    </div>
+  </header>
+  <main id="stage"></main>
+  <script type="module" src="center.mjs"></script>
+</body>
+</html>
