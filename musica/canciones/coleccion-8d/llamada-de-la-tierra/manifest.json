@@ -1,0 +1,69 @@
+{
+  "title": "Llamada de la Tierra",
+  "duration": 227.08002083333332,
+  "tracks": [
+    {
+      "name": "Voz principal",
+      "file": "musica/canciones/coleccion-8d/llamada-de-la-tierra/00-lead-vocals.flac",
+      "sampleRate": 48000,
+      "frames": 10899841,
+      "channels": 2
+    },
+    {
+      "name": "Coros",
+      "file": "musica/canciones/coleccion-8d/llamada-de-la-tierra/01-backing-vocals.flac",
+      "sampleRate": 48000,
+      "frames": 10899841,
+      "channels": 2
+    },
+    {
+      "name": "Batería",
+      "file": "musica/canciones/coleccion-8d/llamada-de-la-tierra/02-drums.flac",
+      "sampleRate": 48000,
+      "frames": 10899841,
+      "channels": 2
+    },
+    {
+      "name": "Bajo",
+      "file": "musica/canciones/coleccion-8d/llamada-de-la-tierra/03-bass.flac",
+      "sampleRate": 48000,
+      "frames": 10899841,
+      "channels": 2
+    },
+    {
+      "name": "Guitarra",
+      "file": "musica/canciones/coleccion-8d/llamada-de-la-tierra/04-guitar.flac",
+      "sampleRate": 48000,
+      "frames": 10899841,
+      "channels": 2
+    },
+    {
+      "name": "Teclado",
+      "file": "musica/canciones/coleccion-8d/llamada-de-la-tierra/05-keyboard.flac",
+      "sampleRate": 48000,
+      "frames": 10899841,
+      "channels": 2
+    },
+    {
+      "name": "Percusión",
+      "file": "musica/canciones/coleccion-8d/llamada-de-la-tierra/06-percussion.flac",
+      "sampleRate": 48000,
+      "frames": 10899841,
+      "channels": 2
+    },
+    {
+      "name": "Sintetizador",
+      "file": "musica/canciones/coleccion-8d/llamada-de-la-tierra/07-synth.flac",
+      "sampleRate": 48000,
+      "frames": 10899841,
+      "channels": 2
+    },
+    {
+      "name": "Otros",
+      "file": "musica/canciones/coleccion-8d/llamada-de-la-tierra/08-other.flac",
+      "sampleRate": 48000,
+      "frames": 10899841,
+      "channels": 2
+    }
+  ]
+}
