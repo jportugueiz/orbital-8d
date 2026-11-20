@@ -9245,7 +9245,7 @@ const SH_SONGS=(()=>{
   const button=(label,onclick)=>h("button",{type:"button",class:"btn",onclick},label);
   const tell=s=>{note.textContent=s};
   const catalog=()=>EXP.LS.get(catalogKey,[]);
-  const position=()=>when===null?offset:Math.min(duration,offset+Math.max(0,ctx.currentTime-when));
+  const position=()=>when===null||streamRun?.waiting?offset:Math.min(duration,offset+Math.max(0,ctx.currentTime-when));
 
   function libraryOptions(){
     const option=(value,label)=>h("option",{value},label);
@@ -9352,7 +9352,7 @@ const SH_SONGS=(()=>{
     }
     return decoded;
   }
-  let preloadAbort=null,openingChunk=null;
+  let preloadAbort=null,openingChunk=null,requestedLoad=null;
   function cancelLoad(){++loadToken;loading=false;preloadAbort?.abort();preloadAbort=null;openingChunk=null}
   async function openSong(items,title,songId,suffix=[]){
     pause();
@@ -9404,7 +9404,7 @@ const SH_SONGS=(()=>{
     }catch(e){
       if(token===loadToken){library.value=id;tell("No se pudo abrir la canción. "+e.message)}
     }finally{
-      if(token===loadToken){loading=false;paint()}
+      if(token===loadToken){loading=false;paint();if(requestedLoad===token&&id===songId&&openingChunk){requestedLoad=null;void begin()}}
     }
   }
   function importFiles(batch){
@@ -9698,11 +9698,26 @@ const SH_SONGS=(()=>{
     const ahead=at-ctx.currentTime;
     if(chunk.buffers&&ahead<=1&&ahead>=.04)playChunk(run,at,0);
     else if(ahead<.04){
-      const resumeAt=chunk.index*chunkSeconds;
-      pause();
-      offset=resumeAt;
-      paint();
-      tell((chunk.error?.message||"El audio tardó en cargar")+". Pulsa Play para continuar.");
+      // El fragmento anterior termina en este punto. Conserva la descarga en curso.
+      if(!run.waiting){
+        run.waiting=true;
+        offset=chunk.index*chunkSeconds;
+        clearInterval(interval);interval=null;
+        const boundary=offset;
+        // Pausa también las pistas importadas para mantener el reloj del conjunto.
+        for(const t of tracks.filter(t=>t.buffer))for(const input of t.inputs||[]){
+          try{input.stop()}catch(e){}
+        }
+        tell("Esperando audio para continuar…");
+        chunk.ready.then(()=>{
+          if(streamRun!==run)return;
+          if(chunk.error){pause();offset=boundary;paint();tell("Error de carga: "+chunk.error.message);return}
+          when=ctx.currentTime+.08;offset=boundary;
+          for(const t of tracks)if(t.buffer&&t._v&&boundary<t.duration)playBuffer(t,t.buffer,when,boundary);
+          playChunk(run,when,0);run.waiting=false;interval=setInterval(tick,30);
+          tell("Reproduciendo con un reloj común.");
+        });
+      }
       return false;
     }
     return true;
@@ -9727,7 +9742,8 @@ const SH_SONGS=(()=>{
     }
   }
   async function begin(){
-    if(when!==null||pending||loading||!tracks.length)return;
+    if(loading){requestedLoad=loadToken;return}
+    if(when!==null||pending||!tracks.length)return;
     const request=++playToken;
     pending=request;
     paint();
@@ -9782,6 +9798,7 @@ const SH_SONGS=(()=>{
     }
   }
   function pause(){
+    requestedLoad=null;
     ++playToken;
     pending=null;
     if(streamRun){streamRun.abort.abort();streamRun=null}
@@ -12835,10 +12852,10 @@ function init(){cv=$("#pc");PLAY_DESK.init();PLAY_GRUPOS.init();initScript();axe
     unlock();
     if(S.sources.length&&!S.playing)startTracks();
     PLAY_DESK.startLayers();
-    if(product==="healing"&&SH_SONGS.tracks.length)void SH_SONGS.begin();
+    if(product==="healing")void SH_SONGS.begin();
   };
   $("#pStopB").onclick=()=>{/* ■ todo */
-    if(product==="healing"&&SH_SONGS.tracks.length)SH_SONGS.stop();
+    if(product==="healing")SH_SONGS.stop();
     PLAY_DESK.stopLayers();
     if(S.playing)APP.stop();
   };
