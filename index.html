@@ -9555,10 +9555,13 @@ const SH_SONGS=(()=>{
    for(const [t,g] of groupRoutes){let u=(seconds-g.start)/(g.end-g.start);t.autoPose=sample(g,u);if(u>=1)groupRoutes.delete(t)}
    if(ORB.S.reduce||seconds<nextGesture)return;
    nextGesture=seconds+.55;
-   const strongest=Math.max(.001,...tracks.filter(t=>!t.mute&&t.pulsePeak>0).map(t=>t.phraseLevel||0));
-   const audible=tracks.filter(t=>!t.mute&&t.pulsePeak>0&&t.phraseLevel>Math.max(.0015,strongest*.12));
+   const isolated=tracks.some(t=>t.solo);
+   const available=tracks.filter(t=>!t.mute&&(!isolated||t.solo)&&seconds<t.duration);
+   const weight=new Map(available.map(t=>[t,phraseWeight(t,seconds)]));
+   const strongest=Math.max(.001,...weight.values());
+   const audible=available.filter(t=>weight.get(t)>Math.max(.0015,strongest*.12));
    if(!audible.length)return;
-   const rank=t=>t.phraseLevel*(1+Math.min(1,t.phraseLevel/Math.max(.003,t.bedLevel)-1)*.45);
+   const rank=t=>weight.get(t)*(1+.25*clamp((t.phraseLevel||0)/Math.max(.003,t.bedLevel||0)-1,-1,1));
    const ranked=audible.slice().sort((a,b)=>rank(b)-rank(a));
    const lead=ranked[0],solo=ranked.length===1||rank(lead)>rank(ranked[1])*1.7;
    const key=solo?"solo:"+lead.id:"conjunto:"+audible.map(t=>t.id).join(",");
@@ -9610,6 +9613,28 @@ const SH_SONGS=(()=>{
       t._v.lvl.gain.setTargetAtTime(target,at,.035);
     }
   }
+  // Lectura previa por pista. Las ventanas siguen el reloj musical al pausar o buscar.
+  function readAhead(track,buffer,start){
+    const first=Math.round(start*2);
+    const frames=track.phraseMap||(track.phraseMap=[]);
+    if(frames[first]!==undefined)return;
+    const width=Math.round(buffer.sampleRate/2);
+    const channels=Array.from({length:buffer.numberOfChannels},(_,i)=>buffer.getChannelData(i));
+    for(let a=0,slot=first;a<buffer.length;a+=width,slot++){
+      let power=0,edge=0,count=0;
+      const end=Math.min(buffer.length,a+width);
+      for(const ch of channels)for(let i=a+1;i<end;i+=61){
+        power+=ch[i]*ch[i];edge+=(ch[i]-ch[i-1])**2;count++;
+      }
+      frames[slot]=Math.sqrt(power/Math.max(1,count))+.4*Math.sqrt(edge/Math.max(1,count));
+    }
+  }
+  function phraseWeight(track,seconds){
+    const map=track.phraseMap,k=Math.floor(seconds*2);
+    if(!map||map[k]===undefined)return track.phraseLevel||0;
+    const now=map[k],next=map[k+1]??now,later=map[k+2]??next;
+    return (.65*now+.25*next+.10*later)*ORB.dB(track.vol_db);
+  }
   function prepareChunk(run,index){
     const chunk={index,buffers:null,error:null};
     const at=index*chunkSeconds;
@@ -9620,6 +9645,7 @@ const SH_SONGS=(()=>{
       const buffer=await ctx.decodeAudioData(await response.arrayBuffer());
       const expected=Math.min(chunkSeconds,t.duration-at);
       if(Math.abs(buffer.duration-expected)>2/ctx.sampleRate)throw new Error("Fragmento desalineado de "+t.label);
+      readAhead(t,buffer,at);
       return [t,buffer];
     })).then(buffers=>{chunk.buffers=buffers},error=>{chunk.error=error});
     return chunk;
@@ -9687,6 +9713,7 @@ const SH_SONGS=(()=>{
       ORB.M.out.gain.cancelScheduledValues(ctx.currentTime);
       ORB.M.out.gain.setTargetAtTime(1,ctx.currentTime,.05);
       if(offset>=duration){offset=0;resetMotion()}
+      for(const t of tracks)if(t.buffer)readAhead(t,t.buffer,0);
       const streamed=tracks.filter(t=>t.stream&&t.duration>offset);
       if(streamed.length){
         const index=Math.floor(offset/chunkSeconds);
