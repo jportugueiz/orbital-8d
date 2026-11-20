@@ -7927,10 +7927,10 @@ const norm=x=>String(x??"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase(
 const RAPIDAS=["giro_rapido","explosion","congelar","zigzag","pingpong","rebote","rayado","ocho","espejo"];
 const REGLAS={
   posta:'La posta espacial es obligatoria para todos los DJ y modos que muevan audio, en vivo y al exportar. Cada figura continúa desde el último azimut, altura y distancia del sonido o grupo. Un silencio conserva esa posición. Si la figura siguiente comienza en otro lugar, conecta ambos puntos con un recorrido audible y continuo. Cuando otro instrumento toma la posta, debe llegar al punto de entrega del anterior en el mismo instante antes de continuar. La velocidad, la figura y los instrumentos pueden variar.',
-  version:"1 · 15 nov 2026",
+  version:"DJ 8D · Beyond Sound final larga · 20 nov 2026",
   identidad:"IAH es el operador 8D de ORBITAL. Usa las figuras de E8A en el DJ y la Mesa, con un criterio lento en Sound Healing.",
   experiencia:[
-    {titulo:"El único criterio creativo",texto:"El movimiento tiene que sentirse con audífonos y crear una experiencia 8D. La distribución del bloque, las distancias, la velocidad, el número de capas y el catálogo de figuras son puntos de partida. El oído decide cuándo mantenerlos, soltarlos o romperlos. La V5 aprobada de Beyond Sound es la referencia de sensación, contraste y continuidad."},
+    {titulo:"El único criterio creativo",texto:"El movimiento tiene que sentirse con audífonos y crear una experiencia 8D. La distribución del bloque, las distancias, la velocidad, el número de capas y el catálogo de figuras son puntos de partida. El oído decide cuándo mantenerlos, soltarlos o romperlos. La versión larga final aprobada de Beyond Sound es la referencia de sensación, contraste y continuidad."},
     {titulo:"Cada causa musical tiene un efecto espacial",texto:"Escucha quién lleva la atención en cada momento y anticipa qué puede cambiarla. Una entrada promete un viaje, una subida acumula tensión, un golpe puede liberar esa tensión y una cola puede llevar el oído hacia la siguiente frase. Elige qué sonido se mueve, hacia dónde, durante cuánto y para qué. Empieza el gesto mientras se oye su causa y haz que llegue a un lugar en el ataque, el cambio de nota o el remate de frase que le da sentido."},
     {titulo:"Dinamismo y contraste",texto:"En calma también puede haber un viaje largo y claro. Una pausa da peso al siguiente movimiento. En una subida deja que una capa gane altura o se acerque. Cuando todo baila, conserva la pegada y permite que una melodía, una atmósfera o un efecto hagan su propio recorrido y vuelvan a encontrarse con el resto. Si todos los sonidos reclaman atención a la vez, elige qué debe sentirse primero."},
     {titulo:"Haz que el espacio se sienta",texto:"Rodea la cabeza, sube y baja, atraviesa de frente hacia atrás o acércate y abre la distancia de nuevo. Una vuelta completa y un ascenso que se resuelve hacia abajo comunican profundidad de maneras distintas. Un vaivén entre auriculares aporta poco por sí solo. Si la forma existe en pantalla pero cuesta seguirla con los ojos cerrados, revisa duración, altura, profundidad, nivel y si en ese tramo el sonido sigue presente."},
@@ -7938,12 +7938,12 @@ const REGLAS={
     {titulo:"Sound Healing respira con su propio pulso",texto:"Escucha las entradas de las notas, la respiración del instrumento y sus colas. Un cuenco o un didgeridoo pueden viajar solos mientras otro sonido sostiene la calma. Usa el pulso cuando exista para dar intención al recorrido y toma los acentos naturales cuando el tempo sea libre. La amplitud del recorrido se puede sentir con lentitud y con pausas."},
     {titulo:"Escucha, comprueba y ajusta",texto:"Reproduce la pasada al mismo nivel y escucha si se distingue el origen, el viaje y su llegada. Comprueba que la voz se entiende, que la pegada se sostiene y que el gesto aporta a la frase. Usa trayectorias, dinámica y medición estéreo como pistas. La altura y la profundidad percibidas se comprueban escuchando con audífonos. Guarda lo aprendido con el tramo y la intención. Si una figura dibujada no se siente, cambia una cosa por vez y vuelve a escuchar."}
   ],
-  vivo_orbital:"Auto en DJ 8D sigue la referencia Beyond Sound: bloque musical cerca del 80 % del tiempo, voz por frases cerca de mitad acompañada y mitad independiente, recorrido largo a tempo y distancia habitual 1,5–1,8 m con acentos. Cambia según entrada, calma, subida, drop y éxtasis. Revisa la respuesta medible de cada pasada para elegir figuras futuras.",
+  vivo_orbital:"En DJ 8D manda la versión larga final de Beyond Sound; 1:20–1:30 es la referencia de cercanía y velocidad percibida. Escucha cada pista dentro de la mezcla antes de darle movimiento. Un canal en silencio conserva su posición. Los ataques articulan una frase y la figura debe poder seguirse mientras la frase se oye. La música suele viajar junta (cerca del 80 %); el bombo y el bajo participan. La voz entra en movimiento y alterna frases acompañadas e independientes (aproximadamente mitad y mitad); el eco puede tomar la posta. Distancia habitual 1,5–1,8 m, con matices. Permite reposo, anticipación, ascensos y regresos sin perder pegada. Solo un efecto audible puede hacer un cruce rápido intencional. El drop no acelera por sí mismo a los instrumentos. Mantén la posta, los fundidos y las colas. El oído con audífonos decide.",
   criterio_canciones:{fuente:"E8A_FORMAS.elegir (e8a_formas.js): e8aPlan en el render de canciones y el planificador de la Mesa",
     bloque:"El BLOQUE = bombo + bajo + percusión + pads se mueve JUNTO, el bombo incluido (como en las canciones).",
-    secciones:{drop:"explosión al entrar el drop, giros rápidos del bloque, formas rítmicas (zigzag, ping-pong, rayado, rebote, ocho, espejo…) de 1–2–2–4 compases, vuelo de la melodía y fills de bombo y bajo al final de frase",build:"espirales, elipses, ocho, ping-pong, zigzag… de 2–4 compases y congelar justo antes del drop",resto:"intro, respiro y cierre: elipse, ocho, parábola, péndulo, distancia, órbita, espiral, rayado o espejo de 4–4–8–2 compases"},
-    max_gestos:2,velocidad:"sin tope de °/s: la velocidad la da la forma y el tempo (como en las canciones)",
-    audibilidad:"lo que se mueve tiene que oírse: en las canciones sube hasta +11 dB en la oreja cercana si queda < −24 dB del RMS de la mezcla (ventanas de 75 ms); en vivo la pista que se mueve sube +3 a +8 dB (más cuanto más lejos o más atrás), con rampas ≥150 ms y dentro del margen automático",
+    secciones:{drop:"Conserva la pegada y deja destacar una capa audible cuando la frase lo pide.",build:"Acumula tensión con altura, profundidad y una llegada musical.",resto:"Escucha la entrada, el reposo y el cierre; cada gesto continúa desde la última posición."},
+    max_gestos:2,velocidad:"Ajusta el recorrido a la duración audible de la frase. Solo un efecto identificado puede cruzar rápidamente.",
+    audibilidad:"Escucha cada pista dentro de la mezcla. El silencio conserva la posición; el regreso continúa desde ella.",
     sala:{intro:1.4,build:1.25,drop:1,respiro:1.5,cierre:1.5,regla:"la sala (envío de reverb) cambia por sección con fundido, en las canciones y en vivo"}},
   bloque:{
     quien:["bajo","armonia","ritmo"],
@@ -7951,23 +7951,23 @@ const REGLAS={
     compases:[8,16],healing_s:[20,40],
     desfase_az:{bajo:0,drone:0,armonia:35,ritmo:-35},
     formas:["elipse","orbita","pendulo","distancia","espiral"],
-    bombo:"El bombo/kick queda FIJO al frente: es el peso y no se mueve.",
+    bombo:"El bombo sostiene la pegada y puede viajar con su bloque.",
     graves_centro_hz:120,
     graves:"Lo que está por debajo de 120 Hz queda al centro (en vivo el bajo va con el bloque con desfase 0; con el ancla puesta queda quieto)."
   },
   melodia:{
     quien:["melodia","efecto","textura"],
-    regla:"La melodía y los efectos vuelan SOLOS, lento, con formas suaves.",
+    regla:"Una frase audible puede tomar protagonismo y volver al grupo.",
     compases:[4,8],healing_s:[20,30],
     formas:["elipse","orbita","pendulo","parabola","distancia","espiral","vuelo"]
   },
   simultaneos:{max_gestos:2,regla:"Como máximo 2 gestos a la vez: uno del bloque y uno de melodía/efecto.",respiro_compases:2,respiro_healing_s:8,no_repetir_forma:true},
-  velocidad:{max_grados_s:12,healing_max_grados_s:12,club_max_grados_s:12,regla:"Ningún sonido gira a más de 12°/s (también en club, por defecto)."},
-  prohibidas:{formas:RAPIDAS.slice(),regla:"Prohibidos por defecto: giro rápido, explosión, congelar, zigzag, ping-pong, rebote, rayado, ocho y espejo. Solo si el usuario los pide expresamente (IAH8D.permitirRapidos=true)."},
+  velocidad:{max_grados_s:12,healing_max_grados_s:12,club_max_grados_s:12,regla:"Referencia de velocidad del planificador lento; DJ 8D sigue vivo_orbital."},
+  prohibidas:{formas:RAPIDAS.slice(),regla:"En DJ 8D se usa el banco aprobado; reserva el cruce rápido para un efecto audible. La selección limitada corresponde al planificador lento."},
   recorre:{
     regla:"Un sonido es 8D si TE RECORRE: se mueven los sonidos LARGOS o de ataque continuo; los golpes cortos casi no se mueven (solo un detalle esporádico). Se prefiere lo que está sonando.",
     preferir:["shakers","palo de lluvia","campanas","pads","cuerdas","colas de cuencos","coros","drones","viento"],
-    cortos:"golpes cortos (bombo, clap, caja, hats, rim, clicks): fijos; como mucho un detalle cada 16 compases",
+    cortos:"golpes cortos (bombo, clap, caja, hats, rim, clicks): pueden compartir un recorrido a pulso cuando forman una frase",
     detalle_corto_cada_compases:16,
     preferir_sonando:true
   },
@@ -8003,7 +8003,7 @@ const REGLAS={
       estado:"e8aPlan (lab_dj.js) usa E8A_FORMAS.elegir: la misma función que IAH en vivo y la Mesa."},
     healing:{nombre:"Sound healing",unidad:"segundos",compas_s_defecto:4,bloque_s:[20,40],melodia_s:[20,30],pasada_s:[20,34],respiro_s:8,vel_max:12}
   },
-  criterio:"IAH cambia el tempo según el formato, NUNCA su criterio: el de las canciones IAH DJ creations en vivo, en la Mesa y en las creaciones; lento solo en Sound Healing."
+  criterio:"IAH cambia el tempo según el formato, NUNCA su criterio: el de las canciones IAH DJ creations en vivo, en la Mesa y en las creaciones; DJ 8D usa el criterio vivo_orbital y Sound Healing su propio pulso."
 };
 const API={REGLAS,permitirRapidos:false};
 const fmt=f=>REGLAS.formatos[f]?f:(/heal|sanac|bano|sesion/.test(norm(f))?"healing":/mesa|play/.test(norm(f))?"mesa":/cancion|render|song/.test(norm(f))?"cancion":"club");
@@ -8098,7 +8098,7 @@ function planearClub(o){const F=E8A_FORMAS,rnd=o.rnd||Math.random,b0=Math.round(
   for(const s of FILAS)if(suena.some(p=>p.fila===s))pres[s]=new Array(nb).fill(0);
   if(["bombo","bajo","perc","pads"].some(s=>pres[s]))pres.bloque=new Array(nb).fill(0);
   const r=F.elegir({secs:[{kind,b:wb,len:8,inicio:wb===sb}],nb,E,pres,rnd,previos:H,desde:b0,hasta:b0+2});const out=[];
-  for(const c of r.ok){const ids=P.filter(p=>c.st.includes(p.fila)&&(!p.ocupada||(p.hasta!=null&&p.hasta>=0&&p.hasta<=c.b0))).map(p=>p.id);if(!ids.length)continue;const bars=c.b1-c.b0;
+  for(const c of r.ok){const ids=suena.filter(p=>c.st.includes(p.fila)&&(!p.ocupada||(p.hasta!=null&&p.hasta>=0&&p.hasta<=c.b0))).map(p=>p.id);if(!ids.length)continue;const bars=c.b1-c.b0;
     const preset=bank.choose({kind,rnd,seconds:bars*cs,previous:out.at(-1)?.forma}),filas={};for(const p of P)if(ids.includes(p.id))filas[p.id]=p.fila;
     out.push({tipo:c.st.some(s=>s!=="lead")?"bloque":"melodia",quien:c.t==="bloque"?"bloque":ids[0],ids,filas,forma:preset.id,objetivo:c.t,st:c.st,compases:bars,b0:c.b0,b1:c.b1,E:c.E,kind,motivo:c.mot,velocidad_max:Infinity,desfase:{},c})}
   return out}
@@ -8142,7 +8142,12 @@ function faseElectronica(kind,u,bars){
 }
 function orbitalFrase(index,kind,spb,rnd,previous,memory,start,origin){
   const preset=bank.choose({kind,rnd,previous,memory});
-  const end=start+compasesElectronica(kind,preset.seconds,spb);
+  // Un drop puede abrir la escena. Reserva tiempo para oír la curva de la banda.
+  const recorrido=preset.frames.slice(1).reduce((n,p,i)=>{
+    const a=preset.frames[i],az=((p[0]-a[0]+540)%360)-180;
+    return n+Math.hypot(az,p[1]-a[1]);
+  },0);
+  const end=start+Math.max(compasesElectronica(kind,preset.seconds,spb),Math.ceil(recorrido/(15*spb)));
   const voice=bank.choose({kind,rnd,previous:preset.id,seconds:(end-start)*spb}).id;
   return {index,kind,forma:preset.id,voice,start,end,origin};
 }
@@ -8193,17 +8198,16 @@ function acentoFrente(az,el){const A=REGLAS.acento_frente,fr=Math.max(0,Math.cos
   return {frente:fr,ganancia_db:A.ganancia_db_por_frente2*fr*fr,presencia_hz:A.presencia_hz,presencia_db:A.presencia_db_por_frente*fr,pendiente_aprobacion:A.pendiente_aprobacion}}
 /* ---------- en prosa (saber y prompt de IAH): se genera desde REGLAS ---------- */
 function manual(){
-  return ["# Manual de experiencia inmersiva de Orbital",REGLAS.identidad,"## Regla permanente de la posta espacial",REGLAS.posta,
+  return ["# Manual de experiencia inmersiva de Orbital",REGLAS.identidad,"## Regla permanente de la posta espacial",REGLAS.posta,"## Director de DJ 8D",REGLAS.vivo_orbital,
     ...REGLAS.experiencia.map(({titulo,texto})=>"## "+titulo+"\n\n"+texto)].join("\n\n");
 }
 function texto(){
   return [manual(),"## Puntos de partida del motor",
     "Al elegir un movimiento predefinido, usa el banco aprobado de Orbital. Sus nombres son "+bank.entries.map(entry=>entry.label).join(", ")+".",
-    REGLAS.vivo_orbital,
     "En Sound Healing el motor favorece los recorridos largos, los descansos y una sala suave. Respeta las protecciones de nivel y las preferencias de movimiento reducido de la consola."].join("\n\n");
 }
 function saber(){
-  return {t:"IAH · operador 8D",kw:["posta","relevo espacial","operador 8d","identidad de iah","reglas de iah","como mueves","como mueve iah","bloque","mueve el bloque","melodia vuela","bombo fijo","te recorre","acento al frente","12 grados","velocidad maxima","formas permitidas","giro rapido","explosion","modo iah","iah lento","criterio 8d","mismo criterio","criterio de las canciones","en vivo","mesa","audibilidad","sala dinamica","dinamismo","causa y efecto","experiencia inmersiva","movimiento al pulso"],
+  return {t:"IAH · operador 8D",kw:["posta","relevo espacial","operador 8d","identidad de iah","reglas de iah","como mueves","como mueve iah","bloque","mueve el bloque","melodia vuela","bombo en bloque","te recorre","acento al frente","12 grados","velocidad maxima","formas permitidas","giro rapido","explosion","modo iah","iah lento","criterio 8d","mismo criterio","criterio de las canciones","en vivo","mesa","audibilidad","sala dinamica","dinamismo","causa y efecto","experiencia inmersiva","movimiento al pulso"],
     txt:texto(),p:{simple:REGLAS.experiencia[0].texto,tecnico:texto()}};
 }
 function recorridoHealing(origen,planned,available,previous,phrase){
@@ -17711,7 +17715,7 @@ function temaSaber(t){const n0=norm(t).replace(/[¿¡]/g,"").trim(),n=n0.replace
     return (PREGUNTA.test(n)||/\?/.test(t)||pide||/coreograf|pasaditas|contragiro/.test(n))?k:null}return null}
 
 /* ---------- respuesta corta para el chat ---------- */
-function explicar(){return "Para que la cabeza baile compongo el espacio como un ritmo: hats en ping-pong a corchea o semicorchea, percusión que salta en el contratiempo, la melodía con un gancho espacial que vuelve, pads que giran al revés de los leads y el bombo fijo al centro. Intro amplia, build que gira cada vez más rápido y se cierra hacia ti, un congelamiento antes del drop y en el drop todo explota hacia afuera mientras la escena gira. Nunca más de 8 compases con el mismo gesto y siempre algo de quietud para que el movimiento se sienta."}
+function explicar(){return IAH8D.REGLAS.vivo_orbital}
 
 return {version:VERSION,GESTOS,componer,desdeBloques,plano,medir,revisar,puntaje,resumen,paraComp,dj,escena,pidePorTexto,explicar,temaSaber,TEMAS,activo,encender,apagar,rolDe,formaNorm,
   _interno:{ildDe,itdDe,clasificar,periodico,receta,renderFrames}}})();
@@ -26125,25 +26129,37 @@ function audibleSongPose(t,target){
   }
   const dt=clamp(now-m.at,0,.1);
   m.at=now;
-  const audio=t.buffer,sample=Math.floor(SONG.current()*audio.sampleRate);
-  const width=Math.max(1,Math.round(.05*audio.sampleRate)),windowIndex=Math.floor(sample/width);
+  const windowIndex=Math.floor(now*20);
   if(windowIndex!==m.window){
     m.window=windowIndex;
-    let sum=0,n=0;
-    const end=Math.min(audio.length,(windowIndex+1)*width);
-    for(let ch=0;ch<audio.numberOfChannels;ch++){
-      const x=audio.getChannelData(ch);
-      for(let i=windowIndex*width;i<end;i+=11){sum+=x[i]*x[i];n++}
+    const meter=K.deck.R[t.eng]?.ch?.eq?.an;
+    let rms=0;
+    if(meter){
+      const buf=m.samples||(m.samples=new Float32Array(meter.fftSize));
+      meter.getFloatTimeDomainData(buf);
+      let power=0;for(const v of buf)power+=v*v;
+      rms=Math.sqrt(power/buf.length);
     }
-    const rms=Math.sqrt(sum/Math.max(1,n));
-    m.signal=rms>(m.signal?.002:.004);
+    const floor=m.signal?.0015:.003;
+    m.signal=rms>floor;
+    if(t.song&&t.buffer&&m.signal){
+      const audio=t.buffer,first=Math.floor(SONG.current()*audio.sampleRate);
+      const end=Math.min(audio.length,first+Math.round(audio.sampleRate*.035));
+      let power=0,n=0;
+      for(let ch=0;ch<audio.numberOfChannels;ch++){
+        const x=audio.getChannelData(ch);
+        for(let i=first;i<end;i+=11){power+=x[i]*x[i];n++}
+      }
+      m.signal=power>n*floor*floor&&n>0;
+    }
   }
-  if(!m.signal||t.mute||t.vol<=0||SONG.state!=="playing"||allTracks().some(o=>o.solo&&!t.solo)){
+  if(!m.signal||t.mute||t.vol<=0||!K.deck.playing||(t.song&&SONG.state!=="playing")||allTracks().some(o=>o.solo&&!t.solo)){
     m.speed=0;return m.pose;
   }
-  const keyboard=/teclado|keyboard|piano/i.test(t.name);
-  const limit=keyboard?20:32;
-  m.speed=Math.min(limit,m.speed+dt*limit);
+  const effect=[t.role,t.rol,t.name].some(v=>/^(fx|sfx|efectos?)(?:$|[ _-])/i.test(v||""));
+  const accent=effect&&["drop","extasis","build"].includes(IAHS.kind);
+  const limit=accent?48:Math.min(16,180/(6*240/K.deck.bpm));
+  m.speed=Math.min(limit,m.speed+dt*limit*.7);
   const az=wrap180(target[0]-m.pose[0]),el=target[1]-m.pose[1];
   const scale=Math.min(1,m.speed*dt/Math.max(.001,Math.hypot(az,el)));
   m.pose=[m.pose[0]+az*scale,m.pose[1]+el*scale,m.pose[2]+clamp(target[2]-m.pose[2],-.22*dt,.22*dt)];
@@ -26154,6 +26170,7 @@ function posOf(t,b,ts){
   if(ROOM.frozen&&FROZ[t.id])return FROZ[t.id];
   const target=roomXform(basePos(t,b,ts),t,b);
   if(t.song&&t.buffer&&S.movMode==="iah"&&t.ctl==="iah")return FROZ[t.id]=audibleSongPose(t,target);
+  if(!t.song&&S.movMode==="iah"&&t.ctl==="iah")return FROZ[t.id]=audibleSongPose(t,target);
   audibleMotion.delete(t);return FROZ[t.id]=target;
 }
 // enganche con el motor: cada vez que el motor mueve la voz de una fila, pasa por aquí
@@ -27192,7 +27209,17 @@ function iahLevels(tracks){
     const rms=Math.sqrt(energy/buf.length);
     if(iahVoice(t)){if(t.ctl==="iah")peaks.voice=Math.max(peaks.voice,rms);continue}
     if(iahRow(t)==="bombo")peaks.kick=Math.max(peaks.kick,rms);
-    if(t.ctl==="iah"&&rms>.008&&["fx","lead","pads","perc"].includes(iahRow(t)))peaks.colors.push({track:t,rms});
+    // Distingue una frase sostenida de una nota aislada antes de separar la capa.
+    const focus=t._iahFocus||{level:0,since:null,at:-Infinity};
+    const clock=K.deck.c.currentTime;
+    if(clock-focus.at>.5){focus.level=0;focus.since=null}
+    focus.at=clock;focus.level+=.25*(rms-focus.level);
+    if(rms>.008)focus.since??=clock;
+    else if(focus.level<.006)focus.since=null;
+    t._iahFocus=focus;
+    const effect=[t.role,t.rol,t.name].some(v=>/^(fx|sfx|efectos?)(?:$|[ _-])/i.test(v||""));
+    if(t.ctl==="iah"&&rms>.008&&focus.since!==null&&(effect||clock-focus.since>=.8)&&
+       ["fx","lead","pads","perc"].includes(iahRow(t)))peaks.colors.push({track:t,rms:effect?rms:focus.level});
     peaks.square+=rms*rms;if(rms>.008)peaks.count++;
   }
   return peaks;
@@ -27289,7 +27316,9 @@ function iahStep(){
     IAHS.measureAt=now;
     const levels=iahLevels(tracks);
     const kind=iahSection(levels,now,rel);
-    if(kind!==IAHS.kind){
+    if(kind!==IAHS.candidateKind){IAHS.candidateKind=kind;IAHS.candidateSince=now}
+    const beatMs=60000/d.bpm;
+    if(kind!==IAHS.kind&&(!IAHS.kind||now-IAHS.candidateSince>=beatMs&&rel-IAHS.activeAt>=1)){
       IAHS.kind=kind;IAHS.activeAt=rel;iahLiveLog({kind,b:rel});
     }
     iahVoicePhrase(levels.voice,now,rel);

@@ -1,0 +1,251 @@
+{
+  "posta": "La posta espacial es obligatoria para todos los DJ y modos que muevan audio, en vivo y al exportar. Cada figura continúa desde el último azimut, altura y distancia del sonido o grupo. Un silencio conserva esa posición. Si la figura siguiente comienza en otro lugar, conecta ambos puntos con un recorrido audible y continuo. Cuando otro instrumento toma la posta, debe llegar al punto de entrega del anterior en el mismo instante antes de continuar. La velocidad, la figura y los instrumentos pueden variar.",
+  "version": "DJ 8D · Beyond Sound final larga · 20 nov 2026",
+  "identidad": "IAH es el operador 8D de ORBITAL. Usa las figuras de E8A en el DJ y la Mesa, con un criterio lento en Sound Healing.",
+  "experiencia": [
+    {
+      "titulo": "El único criterio creativo",
+      "texto": "El movimiento tiene que sentirse con audífonos y crear una experiencia 8D. La distribución del bloque, las distancias, la velocidad, el número de capas y el catálogo de figuras son puntos de partida. El oído decide cuándo mantenerlos, soltarlos o romperlos. La versión larga final aprobada de Beyond Sound es la referencia de sensación, contraste y continuidad."
+    },
+    {
+      "titulo": "Cada causa musical tiene un efecto espacial",
+      "texto": "Escucha quién lleva la atención en cada momento y anticipa qué puede cambiarla. Una entrada promete un viaje, una subida acumula tensión, un golpe puede liberar esa tensión y una cola puede llevar el oído hacia la siguiente frase. Elige qué sonido se mueve, hacia dónde, durante cuánto y para qué. Empieza el gesto mientras se oye su causa y haz que llegue a un lugar en el ataque, el cambio de nota o el remate de frase que le da sentido."
+    },
+    {
+      "titulo": "Dinamismo y contraste",
+      "texto": "En calma también puede haber un viaje largo y claro. Una pausa da peso al siguiente movimiento. En una subida deja que una capa gane altura o se acerque. Cuando todo baila, conserva la pegada y permite que una melodía, una atmósfera o un efecto hagan su propio recorrido y vuelvan a encontrarse con el resto. Si todos los sonidos reclaman atención a la vez, elige qué debe sentirse primero."
+    },
+    {
+      "titulo": "Haz que el espacio se sienta",
+      "texto": "Rodea la cabeza, sube y baja, atraviesa de frente hacia atrás o acércate y abre la distancia de nuevo. Una vuelta completa y un ascenso que se resuelve hacia abajo comunican profundidad de maneras distintas. Un vaivén entre auriculares aporta poco por sí solo. Si la forma existe en pantalla pero cuesta seguirla con los ojos cerrados, revisa duración, altura, profundidad, nivel y si en ese tramo el sonido sigue presente."
+    },
+    {
+      "titulo": "La voz guía el viaje",
+      "texto": "La voz entra ya en movimiento. Aprovecha la cercanía cuando habla de forma íntima y deja espacio cuando la frase lo pide. Hay frases que el grupo puede acompañar y otras que respiran mejor solas. En la referencia, Around you rodea, Above you sube e Inside your world cambia cercanía y altura. Traduce el sentido de cada frase en espacio. Deja que el eco prolongue el viaje cuando pueda distinguirse de la voz directa."
+    },
+    {
+      "titulo": "Sound Healing respira con su propio pulso",
+      "texto": "Escucha las entradas de las notas, la respiración del instrumento y sus colas. Un cuenco o un didgeridoo pueden viajar solos mientras otro sonido sostiene la calma. Usa el pulso cuando exista para dar intención al recorrido y toma los acentos naturales cuando el tempo sea libre. La amplitud del recorrido se puede sentir con lentitud y con pausas."
+    },
+    {
+      "titulo": "Escucha, comprueba y ajusta",
+      "texto": "Reproduce la pasada al mismo nivel y escucha si se distingue el origen, el viaje y su llegada. Comprueba que la voz se entiende, que la pegada se sostiene y que el gesto aporta a la frase. Usa trayectorias, dinámica y medición estéreo como pistas. La altura y la profundidad percibidas se comprueban escuchando con audífonos. Guarda lo aprendido con el tramo y la intención. Si una figura dibujada no se siente, cambia una cosa por vez y vuelve a escuchar."
+    }
+  ],
+  "vivo_orbital": "En DJ 8D manda la versión larga final de Beyond Sound; 1:20–1:30 es la referencia de cercanía y velocidad percibida. Escucha cada pista dentro de la mezcla antes de darle movimiento. Un canal en silencio conserva su posición. Los ataques articulan una frase y la figura debe poder seguirse mientras la frase se oye. La música suele viajar junta (cerca del 80 %); el bombo y el bajo participan. La voz entra en movimiento y alterna frases acompañadas e independientes (aproximadamente mitad y mitad); el eco puede tomar la posta. Distancia habitual 1,5–1,8 m, con matices. Permite reposo, anticipación, ascensos y regresos sin perder pegada. Solo un efecto audible puede hacer un cruce rápido intencional. El drop no acelera por sí mismo a los instrumentos. Mantén la posta, los fundidos y las colas. El oído con audífonos decide.",
+  "criterio_canciones": {
+    "fuente": "E8A_FORMAS.elegir (e8a_formas.js): e8aPlan en el render de canciones y el planificador de la Mesa",
+    "bloque": "El BLOQUE = bombo + bajo + percusión + pads se mueve JUNTO, el bombo incluido (como en las canciones).",
+    "secciones": {
+      "drop": "Conserva la pegada y deja destacar una capa audible cuando la frase lo pide.",
+      "build": "Acumula tensión con altura, profundidad y una llegada musical.",
+      "resto": "Escucha la entrada, el reposo y el cierre; cada gesto continúa desde la última posición."
+    },
+    "max_gestos": 2,
+    "velocidad": "Ajusta el recorrido a la duración audible de la frase. Solo un efecto identificado puede cruzar rápidamente.",
+    "audibilidad": "Escucha cada pista dentro de la mezcla. El silencio conserva la posición; el regreso continúa desde ella.",
+    "sala": {
+      "intro": 1.4,
+      "build": 1.25,
+      "drop": 1,
+      "respiro": 1.5,
+      "cierre": 1.5,
+      "regla": "la sala (envío de reverb) cambia por sección con fundido, en las canciones y en vivo"
+    }
+  },
+  "bloque": {
+    "quien": [
+      "bajo",
+      "armonia",
+      "ritmo"
+    ],
+    "regla": "El bajo, la armonía (pads, acordes, drones) y el ritmo/percusión se mueven JUNTOS, como un solo bloque, y LENTO.",
+    "compases": [
+      8,
+      16
+    ],
+    "healing_s": [
+      20,
+      40
+    ],
+    "desfase_az": {
+      "bajo": 0,
+      "drone": 0,
+      "armonia": 35,
+      "ritmo": -35
+    },
+    "formas": [
+      "elipse",
+      "orbita",
+      "pendulo",
+      "distancia",
+      "espiral"
+    ],
+    "bombo": "El bombo sostiene la pegada y puede viajar con su bloque.",
+    "graves_centro_hz": 120,
+    "graves": "Lo que está por debajo de 120 Hz queda al centro (en vivo el bajo va con el bloque con desfase 0; con el ancla puesta queda quieto)."
+  },
+  "melodia": {
+    "quien": [
+      "melodia",
+      "efecto",
+      "textura"
+    ],
+    "regla": "Una frase audible puede tomar protagonismo y volver al grupo.",
+    "compases": [
+      4,
+      8
+    ],
+    "healing_s": [
+      20,
+      30
+    ],
+    "formas": [
+      "elipse",
+      "orbita",
+      "pendulo",
+      "parabola",
+      "distancia",
+      "espiral",
+      "vuelo"
+    ]
+  },
+  "simultaneos": {
+    "max_gestos": 2,
+    "regla": "Como máximo 2 gestos a la vez: uno del bloque y uno de melodía/efecto.",
+    "respiro_compases": 2,
+    "respiro_healing_s": 8,
+    "no_repetir_forma": true
+  },
+  "velocidad": {
+    "max_grados_s": 12,
+    "healing_max_grados_s": 12,
+    "club_max_grados_s": 12,
+    "regla": "Referencia de velocidad del planificador lento; DJ 8D sigue vivo_orbital."
+  },
+  "prohibidas": {
+    "formas": [
+      "giro_rapido",
+      "explosion",
+      "congelar",
+      "zigzag",
+      "pingpong",
+      "rebote",
+      "rayado",
+      "ocho",
+      "espejo"
+    ],
+    "regla": "En DJ 8D se usa el banco aprobado; reserva el cruce rápido para un efecto audible. La selección limitada corresponde al planificador lento."
+  },
+  "recorre": {
+    "regla": "Un sonido es 8D si TE RECORRE: se mueven los sonidos LARGOS o de ataque continuo; los golpes cortos casi no se mueven (solo un detalle esporádico). Se prefiere lo que está sonando.",
+    "preferir": [
+      "shakers",
+      "palo de lluvia",
+      "campanas",
+      "pads",
+      "cuerdas",
+      "colas de cuencos",
+      "coros",
+      "drones",
+      "viento"
+    ],
+    "cortos": "golpes cortos (bombo, clap, caja, hats, rim, clicks): pueden compartir un recorrido a pulso cuando forman una frase",
+    "detalle_corto_cada_compases": 16,
+    "preferir_sonando": true
+  },
+  "acento_frente": {
+    "pendiente_aprobacion": true,
+    "regla": "Cuando un sonido viene hacia adelante se acentúa (más ganancia y presencia frontal).",
+    "ganancia_db": "+4,5 dB · frente²",
+    "ganancia_db_por_frente2": 4.5,
+    "presencia_hz": 3500,
+    "presencia_db_por_frente": 10,
+    "frente": "frente = max(0, cos(az)·cos(el)), de 0 (lado/atrás) a 1 (justo delante)"
+  },
+  "healing": {
+    "afinacion": "Todo afinado a la tonalidad real y al acorde de cada momento (raíz y quinta).",
+    "drone": "Drone de tónica + quinta, fijo y grave (en healing el drone y los graves no entran al bloque que se mueve).",
+    "cuencos": {
+      "viaje_grados": [
+        70,
+        95
+      ],
+      "con_cola": true,
+      "regla": "Los cuencos viajan 70–95° junto con su cola."
+    },
+    "pasadas_s": [
+      20,
+      34
+    ],
+    "pasadas": "Pasadas largas de 20–34 s que te rodean.",
+    "vuelta_s": [
+      20,
+      40
+    ],
+    "sin_club": [
+      "subidas automáticas",
+      "limitador duro"
+    ],
+    "sala": "suave",
+    "referencia": {
+      "fuente": "Tibetan Healing Sounds (referencia de Jorge, 15 nov 2026)",
+      "duracion_min": 34,
+      "sonido": "No es una canción: es un baño continuo de cuencos y drones, sin ritmo, sin batería, sin melodía de canción ni estructura de tema.",
+      "dinamica": "Volumen totalmente estable de principio a fin (±0,5 dB por minuto, ~−20 dB RMS): nada sube ni baja de golpe.",
+      "timbre": "Oscuro y cálido: la energía está entre 80 y 2000 Hz (máxima en 200–500 Hz); sobre 2 kHz casi nada (−28 dB). Nada brillante ni metálico.",
+      "tonalidad": "Todo en una sola nota y su familia: Do (65, 131, 262, 523 Hz) con Sol (392 Hz) y Fa (350 Hz); los parciales de los cuencos la rodean.",
+      "golpes": "Pocos golpes: unos 2 por minuto, separados ~12 s; cada golpe se deja sonar hasta morir y se funde con el siguiente.",
+      "espacio": "Estéreo muy amplio y envolvente (correlación L/R ≈ 0,18): el sonido te rodea en todo momento.",
+      "para_8d": "Nosotros agregamos el 8D: los cuencos y su cola viajan lento alrededor; el drone queda quieto y grave; nada rápido ni brillante."
+    }
+  },
+  "formatos": {
+    "club": {
+      "nombre": "Club / ORBITAL DJ en vivo",
+      "unidad": "compases",
+      "compas_s": "240/BPM",
+      "decide_cada_compases": 2,
+      "criterio": "canciones",
+      "vel_max": null
+    },
+    "mesa": {
+      "nombre": "Mesa en vivo",
+      "unidad": "compases",
+      "compas_s": "240/BPM de la escena (sin BPM: 4 s por compás)",
+      "compas_s_defecto": 4,
+      "decide_cada_compases": 2,
+      "criterio": "canciones",
+      "vel_max": null
+    },
+    "cancion": {
+      "nombre": "Canción (render offline, IAH DJ creations y Armar sesión)",
+      "unidad": "compases",
+      "compas_s": "240/BPM",
+      "criterio": "canciones",
+      "vel_max": null,
+      "estado": "e8aPlan (lab_dj.js) usa E8A_FORMAS.elegir: la misma función que IAH en vivo y la Mesa."
+    },
+    "healing": {
+      "nombre": "Sound healing",
+      "unidad": "segundos",
+      "compas_s_defecto": 4,
+      "bloque_s": [
+        20,
+        40
+      ],
+      "melodia_s": [
+        20,
+        30
+      ],
+      "pasada_s": [
+        20,
+        34
+      ],
+      "respiro_s": 8,
+      "vel_max": 12
+    }
+  },
+  "criterio": "IAH cambia el tempo según el formato, NUNCA su criterio: el de las canciones IAH DJ creations en vivo, en la Mesa y en las creaciones; DJ 8D usa el criterio vivo_orbital y Sound Healing su propio pulso.",
+  "permitirRapidos": false
+}
