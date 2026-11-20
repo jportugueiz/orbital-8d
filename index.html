@@ -26115,7 +26115,47 @@ function basePos(t,b,ts){if(t.man)return t.man;const d=K.deck,R=d&&d.R[t.eng],ti
   try{return K.movPos(row,mov,b-ll,d&&d.arrBar?d.arrBar(b):null)}catch(e){return [0,0,.8]}}
 const FROZ={};
 // arrastrando (t.man): la mano ya está en coordenadas finales, con la sala aplicada → no se vuelve a rotar
-function posOf(t,b,ts){if(t.man)return FROZ[t.id]=t.man;if(ROOM.frozen&&FROZ[t.id])return FROZ[t.id];const P=roomXform(basePos(t,b,ts),t,b);FROZ[t.id]=P;return P}
+const audibleMotion=new WeakMap();
+function audibleSongPose(t,target){
+  const now=K.deck.c.currentTime;
+  let m=audibleMotion.get(t);
+  if(!m){
+    m={at:now,pose:(FROZ[t.id]||target).slice(),window:-1,signal:false,speed:0};
+    audibleMotion.set(t,m);
+  }
+  const dt=clamp(now-m.at,0,.1);
+  m.at=now;
+  const audio=t.buffer,sample=Math.floor(SONG.current()*audio.sampleRate);
+  const width=Math.max(1,Math.round(.05*audio.sampleRate)),windowIndex=Math.floor(sample/width);
+  if(windowIndex!==m.window){
+    m.window=windowIndex;
+    let sum=0,n=0;
+    const end=Math.min(audio.length,(windowIndex+1)*width);
+    for(let ch=0;ch<audio.numberOfChannels;ch++){
+      const x=audio.getChannelData(ch);
+      for(let i=windowIndex*width;i<end;i+=11){sum+=x[i]*x[i];n++}
+    }
+    const rms=Math.sqrt(sum/Math.max(1,n));
+    m.signal=rms>(m.signal?.002:.004);
+  }
+  if(!m.signal||t.mute||t.vol<=0||SONG.state!=="playing"||allTracks().some(o=>o.solo&&!t.solo)){
+    m.speed=0;return m.pose;
+  }
+  const keyboard=/teclado|keyboard|piano/i.test(t.name);
+  const limit=keyboard?20:32;
+  m.speed=Math.min(limit,m.speed+dt*limit);
+  const az=wrap180(target[0]-m.pose[0]),el=target[1]-m.pose[1];
+  const scale=Math.min(1,m.speed*dt/Math.max(.001,Math.hypot(az,el)));
+  m.pose=[m.pose[0]+az*scale,m.pose[1]+el*scale,m.pose[2]+clamp(target[2]-m.pose[2],-.22*dt,.22*dt)];
+  return m.pose;
+}
+function posOf(t,b,ts){
+  if(t.man)return FROZ[t.id]=t.man;
+  if(ROOM.frozen&&FROZ[t.id])return FROZ[t.id];
+  const target=roomXform(basePos(t,b,ts),t,b);
+  if(t.song&&t.buffer&&S.movMode==="iah"&&t.ctl==="iah")return FROZ[t.id]=audibleSongPose(t,target);
+  audibleMotion.delete(t);return FROZ[t.id]=target;
+}
 // enganche con el motor: cada vez que el motor mueve la voz de una fila, pasa por aquí
 function posHook(id,P,time){const t=engTrack(id);if(!t)return P;const d=K.deck;const b=d?d.barAt(time):nowBar();const ts=performance.now()/1000+(d?time-d.c.currentTime:0);return posOf(t,b,ts)}
 
@@ -27163,7 +27203,7 @@ function iahDropLayer(levels,b){
   if(!["build","drop","extasis"].includes(IAHS.kind)||levels.count<3||IAHS.voiceLead&&levels.voice>.008)return;
   const available=Math.max(0,phrase.end*.20-IAHS.splitBars);
   const end=Math.min(phrase.end,b+available),seconds=(end-b)*240/K.deck.bpm;
-  if(seconds<2.5)return;
+  if(seconds<6)return;
   const candidates=levels.colors.sort((a,z)=>z.rms-a.rms);
   const chosen=candidates.find(c=>c.track!==previous?.track&&c.rms>=candidates[0].rms*.48)||candidates[0];
   if(!chosen)return;
