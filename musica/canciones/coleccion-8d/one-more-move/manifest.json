@@ -1,0 +1,55 @@
+{
+  "title": "One More Move",
+  "duration": 274.68,
+  "tracks": [
+    {
+      "name": "Batería",
+      "file": "musica/canciones/coleccion-8d/one-more-move/00-drums.flac",
+      "sampleRate": 48000,
+      "frames": 13184640,
+      "channels": 2
+    },
+    {
+      "name": "Bajo",
+      "file": "musica/canciones/coleccion-8d/one-more-move/01-bass.flac",
+      "sampleRate": 48000,
+      "frames": 13184640,
+      "channels": 2
+    },
+    {
+      "name": "Teclado",
+      "file": "musica/canciones/coleccion-8d/one-more-move/02-keyboard.flac",
+      "sampleRate": 48000,
+      "frames": 13184640,
+      "channels": 2
+    },
+    {
+      "name": "Percusión",
+      "file": "musica/canciones/coleccion-8d/one-more-move/03-percussion.flac",
+      "sampleRate": 48000,
+      "frames": 13184640,
+      "channels": 2
+    },
+    {
+      "name": "Sintetizador",
+      "file": "musica/canciones/coleccion-8d/one-more-move/04-synth.flac",
+      "sampleRate": 48000,
+      "frames": 13184640,
+      "channels": 2
+    },
+    {
+      "name": "Otros",
+      "file": "musica/canciones/coleccion-8d/one-more-move/05-other.flac",
+      "sampleRate": 48000,
+      "frames": 13184640,
+      "channels": 2
+    },
+    {
+      "name": "Metales",
+      "file": "musica/canciones/coleccion-8d/one-more-move/06-brass.flac",
+      "sampleRate": 48000,
+      "frames": 13184640,
+      "channels": 2
+    }
+  ]
+}
