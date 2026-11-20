@@ -1,0 +1,587 @@
+[
+  {
+    "id": "canopy-silence",
+    "name": "Canopy Silence",
+    "tracks": [
+      {
+        "name": "Voz principal",
+        "source": "canopy-silence/00-lead-vocals",
+        "frames": 11235840
+      },
+      {
+        "name": "Batería",
+        "source": "canopy-silence/01-drums",
+        "frames": 11235840
+      },
+      {
+        "name": "Bajo",
+        "source": "canopy-silence/02-bass",
+        "frames": 11235840
+      },
+      {
+        "name": "Guitarra",
+        "source": "canopy-silence/03-guitar",
+        "frames": 11235840
+      },
+      {
+        "name": "Teclado",
+        "source": "canopy-silence/04-keyboard",
+        "frames": 11235840
+      },
+      {
+        "name": "Percusión",
+        "source": "canopy-silence/05-percussion",
+        "frames": 11235840
+      },
+      {
+        "name": "Cuerdas",
+        "source": "canopy-silence/06-strings",
+        "frames": 11235840
+      },
+      {
+        "name": "Sintetizador",
+        "source": "canopy-silence/07-synth",
+        "frames": 11235840
+      },
+      {
+        "name": "Otros",
+        "source": "canopy-silence/08-other",
+        "frames": 11235840
+      },
+      {
+        "name": "Metales",
+        "source": "canopy-silence/09-brass",
+        "frames": 11235840
+      },
+      {
+        "name": "Vientos",
+        "source": "canopy-silence/10-woodwinds",
+        "frames": 11235840
+      }
+    ]
+  },
+  {
+    "id": "forest-rain",
+    "name": "Forest Rain",
+    "tracks": [
+      {
+        "name": "Voz principal",
+        "source": "forest-rain/00-lead-vocals",
+        "frames": 17379840
+      },
+      {
+        "name": "Batería",
+        "source": "forest-rain/01-drums",
+        "frames": 17379840
+      },
+      {
+        "name": "Bajo",
+        "source": "forest-rain/02-bass",
+        "frames": 17379840
+      },
+      {
+        "name": "Guitarra",
+        "source": "forest-rain/03-guitar",
+        "frames": 17379840
+      },
+      {
+        "name": "Teclado",
+        "source": "forest-rain/04-keyboard",
+        "frames": 17379840
+      },
+      {
+        "name": "Percusión",
+        "source": "forest-rain/05-percussion",
+        "frames": 17379840
+      },
+      {
+        "name": "Cuerdas",
+        "source": "forest-rain/06-strings",
+        "frames": 17379840
+      },
+      {
+        "name": "Sintetizador",
+        "source": "forest-rain/07-synth",
+        "frames": 17379840
+      },
+      {
+        "name": "Otros",
+        "source": "forest-rain/08-other",
+        "frames": 17379840
+      },
+      {
+        "name": "Metales",
+        "source": "forest-rain/09-brass",
+        "frames": 17379840
+      },
+      {
+        "name": "Vientos",
+        "source": "forest-rain/10-woodwinds",
+        "frames": 17379840
+      }
+    ]
+  },
+  {
+    "id": "garden-pond-nocturne",
+    "name": "Garden Pond Nocturne",
+    "tracks": [
+      {
+        "name": "Voz principal",
+        "source": "garden-pond-nocturne/00-lead-vocals",
+        "frames": 17274240
+      },
+      {
+        "name": "Batería",
+        "source": "garden-pond-nocturne/01-drums",
+        "frames": 17274240
+      },
+      {
+        "name": "Bajo",
+        "source": "garden-pond-nocturne/02-bass",
+        "frames": 17274240
+      },
+      {
+        "name": "Guitarra",
+        "source": "garden-pond-nocturne/03-guitar",
+        "frames": 17274240
+      },
+      {
+        "name": "Teclado",
+        "source": "garden-pond-nocturne/04-keyboard",
+        "frames": 17274240
+      },
+      {
+        "name": "Percusión",
+        "source": "garden-pond-nocturne/05-percussion",
+        "frames": 17274240
+      },
+      {
+        "name": "Sintetizador",
+        "source": "garden-pond-nocturne/06-synth",
+        "frames": 17274240
+      },
+      {
+        "name": "Otros",
+        "source": "garden-pond-nocturne/07-other",
+        "frames": 17274240
+      },
+      {
+        "name": "Metales",
+        "source": "garden-pond-nocturne/08-brass",
+        "frames": 17274240
+      },
+      {
+        "name": "Vientos",
+        "source": "garden-pond-nocturne/09-woodwinds",
+        "frames": 17274240
+      }
+    ]
+  },
+  {
+    "id": "high-valley-stream-version-2",
+    "name": "High Valley Stream (versión 2)",
+    "tracks": [
+      {
+        "name": "Voz principal",
+        "source": "high-valley-stream-version-2/00-lead-vocals",
+        "frames": 17260800
+      },
+      {
+        "name": "Coros",
+        "source": "high-valley-stream-version-2/01-backing-vocals",
+        "frames": 17260800
+      },
+      {
+        "name": "Batería",
+        "source": "high-valley-stream-version-2/02-drums",
+        "frames": 17260800
+      },
+      {
+        "name": "Bajo",
+        "source": "high-valley-stream-version-2/03-bass",
+        "frames": 17260800
+      },
+      {
+        "name": "Guitarra",
+        "source": "high-valley-stream-version-2/04-guitar",
+        "frames": 17260800
+      },
+      {
+        "name": "Teclado",
+        "source": "high-valley-stream-version-2/05-keyboard",
+        "frames": 17260800
+      },
+      {
+        "name": "Percusión",
+        "source": "high-valley-stream-version-2/06-percussion",
+        "frames": 17260800
+      },
+      {
+        "name": "Cuerdas",
+        "source": "high-valley-stream-version-2/07-strings",
+        "frames": 17260800
+      },
+      {
+        "name": "Sintetizador",
+        "source": "high-valley-stream-version-2/08-synth",
+        "frames": 17260800
+      },
+      {
+        "name": "Otros",
+        "source": "high-valley-stream-version-2/09-other",
+        "frames": 17260800
+      },
+      {
+        "name": "Vientos",
+        "source": "high-valley-stream-version-2/10-woodwinds",
+        "frames": 17260800
+      }
+    ]
+  },
+  {
+    "id": "high-valley-stream",
+    "name": "High Valley Stream",
+    "tracks": [
+      {
+        "name": "Voz principal",
+        "source": "high-valley-stream/00-lead-vocals",
+        "frames": 17274240
+      },
+      {
+        "name": "Coros",
+        "source": "high-valley-stream/01-backing-vocals",
+        "frames": 17274240
+      },
+      {
+        "name": "Batería",
+        "source": "high-valley-stream/02-drums",
+        "frames": 17274240
+      },
+      {
+        "name": "Bajo",
+        "source": "high-valley-stream/03-bass",
+        "frames": 17274240
+      },
+      {
+        "name": "Guitarra",
+        "source": "high-valley-stream/04-guitar",
+        "frames": 17274240
+      },
+      {
+        "name": "Teclado",
+        "source": "high-valley-stream/05-keyboard",
+        "frames": 17274240
+      },
+      {
+        "name": "Percusión",
+        "source": "high-valley-stream/06-percussion",
+        "frames": 17274240
+      },
+      {
+        "name": "Cuerdas",
+        "source": "high-valley-stream/07-strings",
+        "frames": 17274240
+      },
+      {
+        "name": "Sintetizador",
+        "source": "high-valley-stream/08-synth",
+        "frames": 17274240
+      },
+      {
+        "name": "Otros",
+        "source": "high-valley-stream/09-other",
+        "frames": 17274240
+      },
+      {
+        "name": "Metales",
+        "source": "high-valley-stream/10-brass",
+        "frames": 17274240
+      },
+      {
+        "name": "Vientos",
+        "source": "high-valley-stream/11-woodwinds",
+        "frames": 17274240
+      }
+    ]
+  },
+  {
+    "id": "limestone-stream",
+    "name": "Limestone Stream",
+    "tracks": [
+      {
+        "name": "Voz principal",
+        "source": "limestone-stream/00-lead-vocals",
+        "frames": 10012800
+      },
+      {
+        "name": "Batería",
+        "source": "limestone-stream/01-drums",
+        "frames": 10012800
+      },
+      {
+        "name": "Bajo",
+        "source": "limestone-stream/02-bass",
+        "frames": 10012800
+      },
+      {
+        "name": "Guitarra",
+        "source": "limestone-stream/03-guitar",
+        "frames": 10012800
+      },
+      {
+        "name": "Teclado",
+        "source": "limestone-stream/04-keyboard",
+        "frames": 10012800
+      },
+      {
+        "name": "Percusión",
+        "source": "limestone-stream/05-percussion",
+        "frames": 10012800
+      },
+      {
+        "name": "Cuerdas",
+        "source": "limestone-stream/06-strings",
+        "frames": 10012800
+      },
+      {
+        "name": "Sintetizador",
+        "source": "limestone-stream/07-synth",
+        "frames": 10012800
+      },
+      {
+        "name": "Otros",
+        "source": "limestone-stream/08-other",
+        "frames": 10012800
+      },
+      {
+        "name": "Metales",
+        "source": "limestone-stream/09-brass",
+        "frames": 10012800
+      },
+      {
+        "name": "Vientos",
+        "source": "limestone-stream/10-woodwinds",
+        "frames": 10012800
+      }
+    ]
+  },
+  {
+    "id": "nighttime-waves",
+    "name": "Nighttime Waves",
+    "tracks": [
+      {
+        "name": "Coros",
+        "source": "nighttime-waves/00-backing-vocals",
+        "frames": 17276160
+      },
+      {
+        "name": "Batería",
+        "source": "nighttime-waves/01-drums",
+        "frames": 17276160
+      },
+      {
+        "name": "Bajo",
+        "source": "nighttime-waves/02-bass",
+        "frames": 17276160
+      },
+      {
+        "name": "Guitarra",
+        "source": "nighttime-waves/03-guitar",
+        "frames": 17276160
+      },
+      {
+        "name": "Teclado",
+        "source": "nighttime-waves/04-keyboard",
+        "frames": 17276160
+      },
+      {
+        "name": "Percusión",
+        "source": "nighttime-waves/05-percussion",
+        "frames": 17276160
+      },
+      {
+        "name": "Cuerdas",
+        "source": "nighttime-waves/06-strings",
+        "frames": 17276160
+      },
+      {
+        "name": "Sintetizador",
+        "source": "nighttime-waves/07-synth",
+        "frames": 17276160
+      }
+    ]
+  },
+  {
+    "id": "stream-resonance",
+    "name": "Stream Resonance",
+    "tracks": [
+      {
+        "name": "Voz principal",
+        "source": "stream-resonance/00-lead-vocals",
+        "frames": 17270400
+      },
+      {
+        "name": "Coros",
+        "source": "stream-resonance/01-backing-vocals",
+        "frames": 17270400
+      },
+      {
+        "name": "Batería",
+        "source": "stream-resonance/02-drums",
+        "frames": 17270400
+      },
+      {
+        "name": "Bajo",
+        "source": "stream-resonance/03-bass",
+        "frames": 17270400
+      },
+      {
+        "name": "Guitarra",
+        "source": "stream-resonance/04-guitar",
+        "frames": 17270400
+      },
+      {
+        "name": "Teclado",
+        "source": "stream-resonance/05-keyboard",
+        "frames": 17270400
+      },
+      {
+        "name": "Percusión",
+        "source": "stream-resonance/06-percussion",
+        "frames": 17270400
+      },
+      {
+        "name": "Cuerdas",
+        "source": "stream-resonance/07-strings",
+        "frames": 17270400
+      },
+      {
+        "name": "Sintetizador",
+        "source": "stream-resonance/08-synth",
+        "frames": 17270400
+      },
+      {
+        "name": "Otros",
+        "source": "stream-resonance/09-other",
+        "frames": 17270400
+      },
+      {
+        "name": "Metales",
+        "source": "stream-resonance/10-brass",
+        "frames": 17270400
+      },
+      {
+        "name": "Vientos",
+        "source": "stream-resonance/11-woodwinds",
+        "frames": 17270400
+      }
+    ]
+  },
+  {
+    "id": "wind-through-dry-grass",
+    "name": "Wind Through Dry Grass",
+    "tracks": [
+      {
+        "name": "Voz principal",
+        "source": "wind-through-dry-grass/00-lead-vocals",
+        "frames": 17552640
+      },
+      {
+        "name": "Coros",
+        "source": "wind-through-dry-grass/01-backing-vocals",
+        "frames": 17552640
+      },
+      {
+        "name": "Batería",
+        "source": "wind-through-dry-grass/02-drums",
+        "frames": 17552640
+      },
+      {
+        "name": "Bajo",
+        "source": "wind-through-dry-grass/03-bass",
+        "frames": 17552640
+      },
+      {
+        "name": "Guitarra",
+        "source": "wind-through-dry-grass/04-guitar",
+        "frames": 17552640
+      },
+      {
+        "name": "Teclado",
+        "source": "wind-through-dry-grass/05-keyboard",
+        "frames": 17552640
+      },
+      {
+        "name": "Percusión",
+        "source": "wind-through-dry-grass/06-percussion",
+        "frames": 17552640
+      },
+      {
+        "name": "Cuerdas",
+        "source": "wind-through-dry-grass/07-strings",
+        "frames": 17552640
+      },
+      {
+        "name": "Sintetizador",
+        "source": "wind-through-dry-grass/08-synth",
+        "frames": 17552640
+      },
+      {
+        "name": "Otros",
+        "source": "wind-through-dry-grass/09-other",
+        "frames": 17552640
+      },
+      {
+        "name": "Metales",
+        "source": "wind-through-dry-grass/10-brass",
+        "frames": 17552640
+      },
+      {
+        "name": "Vientos",
+        "source": "wind-through-dry-grass/11-woodwinds",
+        "frames": 17552640
+      }
+    ]
+  },
+  {
+    "id": "winter-pines-and-ice-creek",
+    "name": "Winter Pines and Ice Creek",
+    "tracks": [
+      {
+        "name": "Bajo",
+        "source": "winter-pines-and-ice-creek/00-bass",
+        "frames": 10080000
+      },
+      {
+        "name": "Guitarra",
+        "source": "winter-pines-and-ice-creek/01-guitar",
+        "frames": 10080000
+      },
+      {
+        "name": "Teclado",
+        "source": "winter-pines-and-ice-creek/02-keyboard",
+        "frames": 10080000
+      },
+      {
+        "name": "Cuerdas",
+        "source": "winter-pines-and-ice-creek/03-strings",
+        "frames": 10080000
+      },
+      {
+        "name": "Sintetizador",
+        "source": "winter-pines-and-ice-creek/04-synth",
+        "frames": 10080000
+      },
+      {
+        "name": "Otros",
+        "source": "winter-pines-and-ice-creek/05-other",
+        "frames": 10080000
+      },
+      {
+        "name": "Vientos",
+        "source": "winter-pines-and-ice-creek/06-woodwinds",
+        "frames": 10080000
+      }
+    ]
+  }
+]

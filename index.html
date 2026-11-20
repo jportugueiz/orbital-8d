@@ -9605,7 +9605,7 @@ const SH_SONGS=(()=>{
     const at=index*chunkSeconds;
     const file=String(index).padStart(3,"0")+".flac";
     chunk.ready=Promise.all(run.tracks.filter(t=>t.duration>at).map(async t=>{
-      const response=await fetch(collectionPath+t.stream.source+"/"+file,{signal:run.abort.signal});
+      const response=await fetch((location.hostname==="jportugueiz.github.io"?"https://raw.githubusercontent.com/jportugueiz/orbital-8d/sound-healing-audio-v1/":collectionPath)+t.stream.source+"/"+file,{signal:run.abort.signal});
       if(!response.ok)throw new Error("Falta un fragmento de "+t.label);
       const buffer=await ctx.decodeAudioData(await response.arrayBuffer());
       const expected=Math.min(chunkSeconds,t.duration-at);
@@ -9834,7 +9834,7 @@ const SH_SONGS=(()=>{
       col:t.color,sel:selected.has(t.id),level:0,big:.95
     }));
   }
-  return {mount,pause,stop,visualSources,get playing(){return when!==null}};
+  return {mount,pause,stop,setMotion,visualSources,get playing(){return when!==null}};
 })();
 
 /* =====================================================================
@@ -13671,7 +13671,7 @@ const PLAY_DESK=(()=>{
       const batch=dialog===soundsDialog;
       let preparing=false;
       const prepare=h("button",{class:"pbtn",type:"button",onclick:()=>{
-        preparing=true;prepare.hidden=true;apply.hidden=false;draw();
+        preparing=true;prepare.hidden=true;apply.hidden=false;search.value="";draw();search.focus();
       }},"Cargar sonidos");
       const apply=h("button",{class:"pbtn",type:"button",onclick:()=>{
         SOUND_LIBRARY.stopPreview();
@@ -13689,7 +13689,7 @@ const PLAY_DESK=(()=>{
       const draw=()=>{
         const {title,cards}=stack.at(-1);
         const query=normalize(search.value.trim());
-        const visible=query?leaves(cards).filter(card=>normalize(card.title).includes(query)):cards;
+        const visible=(query||preparing)?leaves(cards).filter(card=>normalize(card.title).includes(query)):cards;
         label.textContent=stack.map(level=>level.title).join(" / ");
         back.hidden=stack.length<2;
         count.textContent=visible.length?visible.length+" opciones":title==="Instrumentos místicos"&&!query
@@ -13699,6 +13699,7 @@ const PLAY_DESK=(()=>{
           type:"button",class:"play-photo-choice",
           onclick:event=>{
             if(card.cards){stack.push(card);search.value="";draw()}
+            else if(preparing&&card.sound){const check=tile.parentElement.querySelector("input");check.click()}
             else if(event.detail<2)card.listen();
           },
           ondblclick:()=>{
@@ -13713,7 +13714,7 @@ const PLAY_DESK=(()=>{
             if(!preparing)card.choose();
           }
         },card.photo?h("img",{src:card.photo,alt:"",loading:"lazy"}):null,
-        h("span",{},card.title),h("small",{},card.cards?leaves(card.cards).length+" pistas →":preparing?"Escuchar":"Clic: escuchar · Doble clic: cargar"));
+        h("span",{},card.title),h("small",{},card.cards?leaves(card.cards).length+" pistas →":preparing?"Marcar o desmarcar":"Clic: escuchar · Doble clic: cargar"));
           if(!preparing||!card.sound)return tile;
           const check=h("input",{type:"checkbox","aria-label":"Seleccionar "+card.title});
           check.checked=selectedSounds.has(card.sound.id);
@@ -13722,7 +13723,7 @@ const PLAY_DESK=(()=>{
             if(check.checked)selectedSounds.set(card.sound.id,card.sound);else selectedSounds.delete(card.sound.id);
             syncBatch();
           };
-          return h("div",{class:"play-batch-card"},tile,h("label",{},check," Seleccionar"));
+          return h("div",{class:"play-batch-card"},tile,h("button",{type:"button",class:"pbtn",onclick:()=>card.listen()},"Escuchar"),h("label",{},check," Seleccionar"));
         }));
         if(batch)syncBatch();
       };
@@ -14467,9 +14468,42 @@ function mover(g,b){const u=clamp((b-g.b0)/g.bars,0,1),ramp=Math.min(.5,g.bars*.
   for(const x of g.m){const H=x.H;
     {const A=x.Rs,ix=u*(A.length-1),i0=Math.min(A.length-2,Math.floor(ix)),fr=ix-i0,p0=A[i0],p1=A[i0+1];
       escribir(x,p0[0]+(p1[0]-p0[0])*fr-x.rot,p0[1]+(p1[1]-p0[1])*fr,(p0[2]+(p1[2]-p0[2])*fr)/x.sc)}}}
-function terminar(g){for(const x of g.m)if(S.sources.includes(x.s)&&x.s.live===x.L)devolver(x.s);g.m=[];g.done=true}
+function terminar(g){
+  for(const x of g.m){
+    if(x.s.live!==x.L)continue;
+    ST.sig.set(x.s.id,sigOf(x.s));
+  }
+  g.m=[];g.done=true;
+}
 /* ---------- decisión: la toma IAH8D.planear (el mismo criterio de ORBITAL DJ, canciones y healing) ---------- */
-function decidir(b,now){const b0=ST.force?b:Math.ceil(b+.02);ST.force=false;
+function wellnessGesture(b,now,profile){
+  if(ST.g.length||b<(ST.restUntil||0)||S.reduce)return;
+  if(profile==="healing"&&SH_SONGS.playing)return;
+  const available=pads().filter(s=>sonando(s)&&libre(s,now)&&!anclado(s));
+  const featured=available.filter(s=>/cuenco|bowl|didg|didj|quena|charango/i.test(s.label+" "+s.inst));
+  const preferred=featured.length&&ST.hist.length%2===0?featured:available;
+  const source=preferred.find(s=>!ST.hist.some(h=>h.source===s.id))||preferred.filter(s=>s.id!==ST.hist.at(-1)?.source)[0]||preferred[0];
+  if(!source)return;
+  const x=tomar(source),H=x.H,beat=spb();
+  let pts,seconds,label,id;
+  if(profile==="healing"){
+    const route=IAH8D.recorridoHealing(H,32,Infinity,ST.hist.at(-1)?.forma,beat);
+    ({pts,seconds,label,id}=route);
+  }else{
+    seconds=beat*Math.max(8,Math.ceil(48/beat));label="Arco suave";id="arco";
+    const sign=ST.hist.length%2?-1:1;
+    pts=Array.from({length:97},(_,i)=>{const u=sm(i/96),wave=Math.sin(Math.PI*u);return [H[0]+sign*35*u,H[1]+7*wave,H[2]+.12*wave]});
+  }
+  const bars=seconds/beat;
+  x.Rs=pts;x.rot=0;x.sc=1;
+  ST.g.push({m:[x],b0:b,b1:b+bars,bars,wellness:true});
+  ST.hist.push({source:source.id,forma:id});if(ST.hist.length>24)ST.hist.shift();
+  ST.restUntil=b+bars+(profile==="healing"?1:2);anotar(label,nombre(source));
+}
+function decidir(b,now){
+  const profile=document.body.dataset.orbitalProduct;
+  if(profile==="frequency"||profile==="healing"){wellnessGesture(b,now,profile);return}
+const b0=ST.force?b:Math.ceil(b+.02);ST.force=false;
   const pistas=pads().map(s=>{const c=parte(s);return {id:s.id,clase:c.clase,sub:c.sub,largo:c.largo,sonando:sonando(s),ocupada:own(s)||!libre(s,now)||anclado(s)}});
   // sección en vivo y el criterio de las canciones (IAH8D.planear → E8A_FORMAS.elegir, la misma función de e8aPlan)
   const on=pistas.filter(p=>p.sonando),kick=on.some(p=>p.clase==="bombo"),kind=IAH8D.seccionVivo({bombo:kick,n:on.length,fx:on.some(p=>p.clase==="efecto"),desde_inicio:b0-(ST.b00||0),antes:ST.kind});
@@ -14487,25 +14521,31 @@ function tick(){const now=performance.now(),dt=Math.min(.25,(now-(ST.t||now))/10
     if(u>=1){for(const r of ST.ret.m)if(r.s.live===r.L&&S.sources.includes(r.s))devolver(r.s);ST.snap.clear();ST.ret=null;if(!ST.on){clearInterval(ST.timer);ST.timer=null}}return}
   if(!ST.on)return;if(typeof PLAY_DESK!=="undefined"&&!PLAY_DESK.active){stop(true);return}
   vigilar(now);if(!S.playing)return;ST.clk+=dt;const b=nowBar();
-  for(const g of ST.g){if(g.done)continue;if(b>=g.b1-.01){terminar(g);continue}if(b>=g.b0-.01)mover(g,b)}
+  for(const g of ST.g){if(g.done)continue;if(b>=g.b1){mover(g,g.b1);terminar(g);continue}if(b>=g.b0-.01)mover(g,b)}
   ST.g=ST.g.filter(g=>!g.done);
   const ph=Math.floor((b+.05)/2);if(ph!==ST.ph||ST.force){ST.ph=ph;decidir(b,now)}}
 /* ---------- encender / apagar ---------- */
 function start(){if(ST.on)return true;if(typeof PLAY_DESK!=="undefined"&&!PLAY_DESK.active){toast("IAH mueve los pads de la Mesa en vivo: ábrela y carga sonidos");return false}
   if(ST.ret){for(const r of ST.ret.m)if(r.s.live===r.L)devolver(r.s);ST.ret=null}
-  Object.assign(ST,{on:true,clk:0,t:performance.now(),ph:-1,force:true,g:[],hist:[],log:[],kind:null});try{ST.b00=Math.ceil(nowBar());ST.secB=ST.b00}catch(e){ST.b00=0;ST.secB=0}ST.snap.clear();ST.sig.clear();ST.touch.clear();
+  if(document.body.dataset.orbitalProduct==="healing")SH_SONGS.setMotion("auto");
+  Object.assign(ST,{restUntil:0,on:true,clk:0,t:performance.now(),ph:-1,force:true,g:[],hist:[],log:[],kind:null});try{ST.b00=Math.ceil(nowBar());ST.secB=ST.b00}catch(e){ST.b00=0;ST.secB=0}ST.snap.clear();ST.sig.clear();ST.touch.clear();
   for(const s of pads())ST.sig.set(s.id,sigOf(s));
   if(!S.playing&&S.sources.length){try{if(PLAY.on)PLAY.startTracks();else APP.play()}catch(e){}}
   clearInterval(ST.timer);ST.timer=setInterval(tick,40);
+  if(["frequency","healing"].includes(document.body.dataset.orbitalProduct)){pintar(document.body.dataset.orbitalProduct==="frequency"?"IAH · Baño suave":"IAH · Sound Healing");return true}
   const n=pads(),bl=n.filter(enBloque).length,vu=n.filter(vuela).length;
   toast(n.length?"IAH toma el espacio con el criterio de las canciones: el bloque ("+bl+": bombo, bajo, ritmo y armonía) se mueve junto"+(vu?", la melodía vuela con sus gestos":" (carga algo melódico para que vuele)")+"; giros y explosión en los drops. Toca un pad para tomarlo.":"IAH está listo: carga sonidos en los pads y empezará a moverlos");
   pintar("IAH escucha…");return true}
 // stop(inmediato): sin deslizar (al salir de la Mesa). Normal: cada pad vuelve en ~1,2 s a su posición o recorrido
-function stop(inmediato=false){if(!ST.on&&!ST.ret)return;ST.on=false;const m=[];
-  for(const g of ST.g)for(const x of g.m)if(S.sources.includes(x.s)&&x.s.live===x.L)m.push({s:x.s,L:x.L,a:[x.L.az,x.L.el,x.L.r],H:x.H.slice()});ST.g=[];
-  if(inmediato||!m.length){for(const r of m)devolver(r.s);ST.snap.clear();ST.ret=null;clearInterval(ST.timer);ST.timer=null}
-  else{ST.ret={t0:performance.now(),d:1200,m};for(const r of m){let d=r.H[0]-r.a[0];d=((d+540)%360)-180;r.H[0]=r.a[0]+d}}
-  if(!inmediato)toast("IAH suelta el espacio: cada sonido vuelve a su lugar");pintar("")}
+function stop(inmediato=false){
+  if(document.body.dataset.orbitalProduct==="healing")SH_SONGS.setMotion("manual");
+  if(!ST.on&&!ST.ret)return;
+  ST.on=false;clearInterval(ST.timer);ST.timer=null;
+  if(inmediato){for(const s of pads())if(ST.snap.has(s.id))devolver(s)}
+  ST.g=[];ST.snap.clear();ST.ret=null;
+  if(!inmediato)toast("Manual · cada sonido queda donde lo dejó IAH");
+  pintar("");
+}
 function toggle(){return ST.on?(stop(),false):start()}
 // para guardar la Mesa: lo que IAH está moviendo se guarda con su posición/recorrido de antes
 function homeView(s){const sn=ST.snap.get(s.id);if(!sn)return s;const o=Object.assign({},s);o.live=sn.live?Object.assign({},sn.live):undefined;return o}
@@ -25508,6 +25548,7 @@ const LAB_DJ_SONGS=(()=>{
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const fmt=s=>Math.floor(s/60)+":"+String(Math.floor(s%60)).padStart(2,"0");
 const colors=["#ff6a55","#a874ff","#ffbf3c","#45b8ff","#3fe0a0","#ff6fd0","#c6e05a","#57d9ed"];
+const assetUrl=path=>location.hostname==="jportugueiz.github.io"?"https://raw.githubusercontent.com/jportugueiz/orbital-8d/dj-audio-v1/"+path:path;
 const demoId="demo:orbital";
 const builtInSongs=[
  {id:demoId,name:"ORBITAL — Beyond Sound (demo)",manifest:"musica/canciones/orbital/manifest.json"},
@@ -25589,9 +25630,9 @@ function create(B){
  function load(id,options){const song=builtInSongs.find(item=>item.id===id);return song?loadBuiltIn(song,options):loadSaved(id,options)}
  function loadDemo(options){return load(demoId,options)}
  async function loadBuiltIn(song,{reveal=true}={}){if(loading)return;const token=++loadingToken;pause();loading=true;paint();message("Cargando "+song.name+" por pistas…");
-  try{const response=await fetch(song.manifest);if(!response.ok)throw new Error("El catálogo no está disponible");const manifest=await response.json(),data=[];
-   for(const entry of manifest.tracks){message("Cargando "+song.name+" · "+entry.name+"…");const r=await fetch(entry.file);if(!r.ok)throw new Error("Falta el audio de "+entry.name);const blob=await r.blob(),buffer=await decode(await blob.arrayBuffer());let automation=null;
-    if(entry.route){const r=await fetch(entry.route);if(!r.ok)throw new Error("Ruta de "+entry.name);automation=new Float32Array(await r.arrayBuffer())}
+  try{const response=await fetch(assetUrl(song.manifest));if(!response.ok)throw new Error("El catálogo no está disponible");const manifest=await response.json(),data=[];
+   for(const entry of manifest.tracks){message("Cargando "+song.name+" · "+entry.name+"…");const r=await fetch(assetUrl(entry.file));if(!r.ok)throw new Error("Falta el audio de "+entry.name);const blob=await r.blob(),buffer=await decode(await blob.arrayBuffer());let automation=null;
+    if(entry.route){const r=await fetch(assetUrl(entry.route));if(!r.ok)throw new Error("Ruta de "+entry.name);automation=new Float32Array(await r.arrayBuffer())}
     data.push({...entry,blob,buffer,fileName:entry.name+entry.file.slice(entry.file.lastIndexOf(".")),automation})}
    if(token!==loadingToken)return;install(data,manifest.title,null,{reveal,choice:song.id});const d=K.deck;if(d&&!d.playing&&Number.isFinite(manifest.bpm))d.setBpm(manifest.bpm);
   }catch(e){library.value=sourceChoice;message("No se pudo abrir "+song.name+": "+e.message)}finally{if(token===loadingToken){loading=false;paint()}}}
@@ -26875,7 +26916,7 @@ function setMovMode(m,selection){const targets=selection||allTracks().filter(t=>
 const IAH_PASS_KEY="orb_dj_iah_pasadas_espaciales";
 const IAHS={seed:Date.now()>>>0,home:new WeakMap(),frase:null,anterior:null,origin:0,b:0,kind:null,activeAt:0,
   measureAt:-Infinity,fast:0,slow:0,kickAt:-Infinity,kickFast:0,kickSlow:0,kickDip:-Infinity,
-  voiceAt:-Infinity,voiceBeat:-Infinity,voiceCount:0,voiceSolo:1,voiceLead:false,voicePrevious:1,voiceChange:0,voicePlan:[],lastSplit:null,
+  voiceAt:-Infinity,voiceBeat:-Infinity,voiceCount:0,voiceSolo:1,voiceLead:false,voicePrevious:1,voiceChange:0,voicePlan:[],lastSplit:null,splitBars:0,
   feedback:null,memory:{...LSG(IAH_PASS_KEY,{})}};
 try{window.ORB_DJ_IAH=IAHS}catch(e){}
 const iahRnd=()=>{IAHS.seed=(Math.imul(IAHS.seed,1664525)+1013904223)>>>0;return IAHS.seed/4294967296};
@@ -26885,7 +26926,7 @@ const iahVoice=t=>/^(voces?|voz|vocal|vocals|voice|coros?)$/i.test(t.rol||"")||
 function resetIahLive(){
   Object.assign(IAHS,{home:new WeakMap(),frase:null,anterior:null,kind:null,activeAt:0,measureAt:-Infinity,
     fast:0,slow:0,kickAt:-Infinity,kickFast:0,kickSlow:0,kickDip:-Infinity,
-    voiceAt:-Infinity,voiceBeat:-Infinity,voiceCount:0,voiceSolo:1,voiceLead:false,voicePrevious:1,voiceChange:0,voicePlan:[],lastSplit:null,feedback:null});
+    voiceAt:-Infinity,voiceBeat:-Infinity,voiceCount:0,voiceSolo:1,voiceLead:false,voicePrevious:1,voiceChange:0,voicePlan:[],lastSplit:null,splitBars:0,feedback:null});
 }
 function iahStop(){
   resetIahLive();
@@ -26905,9 +26946,10 @@ function iahLivePosition(t,bar){
   const clock=K.deck?.playing?bar:IAHS.b,b=Math.max(0,clock-IAHS.origin);
   const frase=b<IAHS.frase.start&&IAHS.anterior?IAHS.anterior:IAHS.frase;
   const base=IAH8D.orbitalPose(b,frase);
+  base[2]=clamp(base[2],1.5,1.8);
   const phase=(b-frase.start)/(frase.end-frase.start);
   const lead=IAHS.voiceLead?iahSmooth((b-IAHS.voiceChange)/.24)*(1-iahSmooth((b-IAHS.voiceBeat-.2)/.4)):0;
-  const voice=DJ_MOVEMENT_BANK.pose(frase.voice,phase,[frase.origin[0]+108,frase.origin[1],1.53]);
+  const voice=DJ_MOVEMENT_BANK.pose(frase.voice,phase,frase.voiceOrigin);
   let target=lead?iahBlend(base,voice,lead):base;
   if(iahVoice(t)){
     const solo=iahVoiceWeight(b);
@@ -26941,13 +26983,15 @@ function iahDropLayer(levels,b){
   const phrase=IAHS.frase,previous=IAHS.lastSplit;
   if(!phrase||phrase.split||phrase.index===previous?.index)return;
   if(!["build","drop","extasis"].includes(IAHS.kind)||levels.count<3||IAHS.voiceLead&&levels.voice>.008)return;
-  const end=phrase.end,seconds=(end-b)*240/K.deck.bpm;
+  const available=Math.max(0,phrase.end*.20-IAHS.splitBars);
+  const end=Math.min(phrase.end,b+available),seconds=(end-b)*240/K.deck.bpm;
   if(seconds<2.5)return;
   const candidates=levels.colors.sort((a,z)=>z.rms-a.rms);
   const chosen=candidates.find(c=>c.track!==previous?.track&&c.rms>=candidates[0].rms*.48)||candidates[0];
   if(!chosen)return;
   const {track}=chosen,preset=DJ_MOVEMENT_BANK.choose({kind:"drop",rnd:iahRnd,seconds,previous:phrase.forma});
   phrase.split={track,start:b,end,preset:preset.id,origin:IAH8D.orbitalPose(b,phrase)};
+  IAHS.splitBars+=end-b;
   IAHS.lastSplit={index:phrase.index,track};
   iahLiveLog({kind:"capa",b,fin:end,pista:track.name,figura:preset.id});
 }
@@ -27042,6 +27086,7 @@ function iahStep(){
     const pose=IAHS.anterior?IAH8D.orbitalPose(start,IAHS.anterior):[0,0,1.65];
     const origin=[wrap180(pose[0]),pose[1],pose[2]];
     const phrase=IAH8D.orbitalFrase(index,kind,240/d.bpm,iahRnd,IAHS.anterior?.forma,IAHS.memory,start,origin);
+    phrase.voiceOrigin=IAHS.anterior?DJ_MOVEMENT_BANK.pose(IAHS.anterior.voice,1,IAHS.anterior.voiceOrigin):[origin[0],origin[1],1.53];
     IAHS.frase=phrase;iahLiveLog({kind:"figura",index,forma:phrase.forma});
   }
 }
