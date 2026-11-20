@@ -1,0 +1,62 @@
+{
+  "title": "Layers of Motion",
+  "duration": 274.8,
+  "tracks": [
+    {
+      "name": "Batería",
+      "file": "musica/canciones/coleccion-8d/layers-of-motion/00-drums.flac",
+      "sampleRate": 48000,
+      "frames": 13190400,
+      "channels": 2
+    },
+    {
+      "name": "Bajo",
+      "file": "musica/canciones/coleccion-8d/layers-of-motion/01-bass.flac",
+      "sampleRate": 48000,
+      "frames": 13190400,
+      "channels": 2
+    },
+    {
+      "name": "Guitarra",
+      "file": "musica/canciones/coleccion-8d/layers-of-motion/02-guitar.flac",
+      "sampleRate": 48000,
+      "frames": 13190400,
+      "channels": 2
+    },
+    {
+      "name": "Teclado",
+      "file": "musica/canciones/coleccion-8d/layers-of-motion/03-keyboard.flac",
+      "sampleRate": 48000,
+      "frames": 13190400,
+      "channels": 2
+    },
+    {
+      "name": "Percusión",
+      "file": "musica/canciones/coleccion-8d/layers-of-motion/04-percussion.flac",
+      "sampleRate": 48000,
+      "frames": 13190400,
+      "channels": 2
+    },
+    {
+      "name": "Cuerdas",
+      "file": "musica/canciones/coleccion-8d/layers-of-motion/05-strings.flac",
+      "sampleRate": 48000,
+      "frames": 13190400,
+      "channels": 2
+    },
+    {
+      "name": "Sintetizador",
+      "file": "musica/canciones/coleccion-8d/layers-of-motion/06-synth.flac",
+      "sampleRate": 48000,
+      "frames": 13190400,
+      "channels": 2
+    },
+    {
+      "name": "Otros",
+      "file": "musica/canciones/coleccion-8d/layers-of-motion/07-other.flac",
+      "sampleRate": 48000,
+      "frames": 13190400,
+      "channels": 2
+    }
+  ]
+}
