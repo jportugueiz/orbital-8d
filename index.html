@@ -1063,6 +1063,7 @@ body.playing{overflow:hidden}
 .sh-song-row.selected{background:#182e39;border-top-color:#45848a;border-right-color:#45848a;border-bottom-color:#45848a}
 .sh-song-row .btn{padding:6px 4px;min-width:0}
 .sh-song-row .sh-song-name{color:var(--track-color);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sh-song-row button:last-child{grid-column:1/-1;grid-row:3;width:100%;box-sizing:border-box}
 .sh-song-row small{grid-column:1/3;grid-row:2;padding-left:2px}
 .sh-song-row input[type=range]{grid-column:3/-1;grid-row:2;width:100%;min-width:0;margin:2px 0}
 .sh-song-row .btn[aria-pressed=true]:not(.sh-song-name){background:#18515a;color:#d5feff}
@@ -9297,7 +9298,7 @@ const SH_SONGS=(()=>{
       library,h("div",{class:"row"},load,clear),name,
       h("div",{class:"row"},play,home,clock),progress,
       h("div",{class:"row sh-song-motion-mode","aria-label":"Control de movimiento"},manualButton,autoButton,motionStatus),
-      trackPicker,edit,h("div",{class:"row"},selectAll),list,save,note,files));
+      note,trackPicker,edit,h("div",{class:"row"},selectAll),list,save,files));
     before.before(panel);
     libraryOptions();
     panel.addEventListener("toggle",()=>{if(panel.open&&!collection.length)loadCollection().catch(()=>{})});
@@ -9604,7 +9605,7 @@ const SH_SONGS=(()=>{
   function applyMix(){
     if(when===null)return;
     const solo=tracks.some(t=>t.solo),active=t=>!t.mute&&(!solo||t.solo);
-    const songTrim=id==="coleccion:high-valley-stream"?ORB.dB(16):1;
+    const songTrim=ORB.dB(id==="coleccion:high-valley-stream"?16:id==="coleccion:stream-resonance"?14:0);
     const scale=ORB.hdOf(tracks.filter(active).length)*songTrim;
     const at=ctx.currentTime;
     for(const t of tracks){
@@ -9640,8 +9641,18 @@ const SH_SONGS=(()=>{
     const at=index*chunkSeconds;
     const file=String(index).padStart(3,"0")+".flac";
     chunk.ready=Promise.all(run.tracks.filter(t=>t.duration>at).map(async t=>{
-      const response=await fetch((location.hostname==="jportugueiz.github.io"?"https://raw.githubusercontent.com/jportugueiz/orbital-8d/sound-healing-audio-v1/":collectionPath)+t.stream.source+"/"+file,{signal:run.abort.signal});
-      if(!response.ok)throw new Error("Falta un fragmento de "+t.label);
+      const path=t.stream.source+"/"+file;
+      const base=location.hostname==="jportugueiz.github.io"?"https://raw.githubusercontent.com/jportugueiz/orbital-8d/sound-healing-audio-v1/":collectionPath;
+      let response;
+      for(let attempt=0;attempt<2;attempt++){
+        try{
+          response=await fetch(base+path,{signal:run.abort.signal,cache:attempt?"reload":"default"});
+          if(!response.ok)throw Error("HTTP "+response.status);
+          break;
+        }catch(error){
+          if(run.abort.signal.aborted||attempt)throw Error(t.label+" · "+error.message);
+        }
+      }
       const buffer=await ctx.decodeAudioData(await response.arrayBuffer());
       const expected=Math.min(chunkSeconds,t.duration-at);
       if(Math.abs(buffer.duration-expected)>2/ctx.sampleRate)throw new Error("Fragmento desalineado de "+t.label);
