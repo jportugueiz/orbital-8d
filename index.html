@@ -9656,20 +9656,24 @@ const SH_SONGS=(()=>{
     const file=String(index).padStart(3,"0")+".flac";
     chunk.ready=Promise.all(run.tracks.filter(t=>t.duration>at).map(async t=>{
       const path=t.stream.source+"/"+file;
-      const base=location.hostname==="jportugueiz.github.io"?"https://raw.githubusercontent.com/jportugueiz/orbital-8d/sound-healing-audio-v1/":collectionPath;
-      let response;
-      for(let attempt=0;attempt<2;attempt++){
+      const raw="https://raw.githubusercontent.com/jportugueiz/orbital-8d/sound-healing-audio-v1/";
+      const cdn="https://cdn.jsdelivr.net/gh/jportugueiz/orbital-8d@7e5d6d372594921f82fb111d81a26a62a08205e9/";
+      const origins=location.hostname==="jportugueiz.github.io"?[raw,cdn]:[collectionPath,raw,cdn];
+      let buffer;
+      for(const origin of origins){
         try{
-          response=await fetch(base+path,{signal:run.abort.signal,cache:attempt?"reload":"default"});
+          const response=await fetch(origin+path,{signal:run.abort.signal});
           if(!response.ok)throw Error("HTTP "+response.status);
+          const decoded=await ctx.decodeAudioData(await response.arrayBuffer());
+          const expected=Math.min(chunkSeconds,t.duration-at);
+          if(Math.abs(decoded.duration-expected)>2/ctx.sampleRate)throw Error("Duración incorrecta");
+          buffer=decoded;
           break;
         }catch(error){
-          if(run.abort.signal.aborted||attempt)throw Error(t.label+" · "+error.message);
+          if(run.abort.signal.aborted)throw error;
+          if(origin===origins.at(-1))throw Error(t.label+" · No se pudo descargar el audio de las fuentes disponibles ("+error.message+").");
         }
       }
-      const buffer=await ctx.decodeAudioData(await response.arrayBuffer());
-      const expected=Math.min(chunkSeconds,t.duration-at);
-      if(Math.abs(buffer.duration-expected)>2/ctx.sampleRate)throw new Error("Fragmento desalineado de "+t.label);
       readAhead(t,buffer,at);
       run.onDecoded?.();
       return [t,buffer];
@@ -25663,7 +25667,27 @@ const LAB_DJ_SONGS=(()=>{
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const fmt=s=>Math.floor(s/60)+":"+String(Math.floor(s%60)).padStart(2,"0");
 const colors=["#ff6a55","#a874ff","#ffbf3c","#45b8ff","#3fe0a0","#ff6fd0","#c6e05a","#57d9ed"];
-const assetUrl=path=>location.hostname==="jportugueiz.github.io"?"https://raw.githubusercontent.com/jportugueiz/orbital-8d/dj-audio-v1/"+path:path;
+const djRaw="https://raw.githubusercontent.com/jportugueiz/orbital-8d/dj-audio-v1/";
+const djMirror="https://cdn.jsdelivr.net/gh/jportugueiz/orbital-8d@7f1db49526891872a915dcb08432021baf77629c/";
+let djParts;
+async function readDjFile(url){
+ const response=await fetch(url);
+ if(!response.ok)throw Error("HTTP "+response.status);
+ const blob=await response.blob();
+ if(blob.type.includes("text/html"))throw Error("La dirección devolvió una página");
+ return blob;
+}
+async function djAsset(path){
+ const sources=location.hostname==="jportugueiz.github.io"?[djRaw]:["",djRaw];
+ for(const base of sources){try{return await readDjFile(base+path)}catch{}}
+ try{
+  if(!djParts)djParts=JSON.parse(await (await readDjFile(djMirror+"web-parts/index.json")).text());
+  if(!djParts[path])return await readDjFile(djMirror+path);
+  const chunks=[];
+  for(const part of djParts[path])chunks.push(await readDjFile(djMirror+part));
+  return new Blob(chunks);
+ }catch(error){throw Error("No se pudo descargar "+path.split("/").pop()+" · "+error.message)}
+}
 const demoId="demo:orbital";
 const builtInSongs=[
  {id:demoId,name:"ORBITAL — Beyond Sound (demo)",manifest:"musica/canciones/orbital/manifest.json"},
@@ -25778,9 +25802,9 @@ function create(B){
  }
  function loadDemo(options){return load(demoId,options)}
  async function loadBuiltIn(song,{reveal=true}={}){if(loading)return;const token=++loadingToken;pause();loading=true;paint();message("Cargando "+song.name+" por pistas…");
-  try{const response=await fetch(assetUrl(song.manifest));if(!response.ok)throw new Error("El catálogo no está disponible");const manifest=await response.json(),data=[];
-   for(const entry of manifest.tracks){message("Cargando "+song.name+" · "+entry.name+"…");const r=await fetch(assetUrl(entry.file));if(!r.ok)throw new Error("Falta el audio de "+entry.name);const blob=await r.blob(),buffer=await decode(await blob.arrayBuffer());let automation=null;
-    if(entry.route){const r=await fetch(assetUrl(entry.route));if(!r.ok)throw new Error("Ruta de "+entry.name);automation=new Float32Array(await r.arrayBuffer())}
+  try{const manifest=JSON.parse(await (await djAsset(song.manifest)).text()),data=[];
+   for(const entry of manifest.tracks){message("Cargando "+song.name+" · "+entry.name+"…");const blob=await djAsset(entry.file),buffer=await decode(await blob.arrayBuffer());let automation=null;
+    if(entry.route){automation=new Float32Array(await (await djAsset(entry.route)).arrayBuffer())}
     data.push({...entry,blob,buffer,fileName:entry.name+entry.file.slice(entry.file.lastIndexOf(".")),automation})}
    if(token!==loadingToken)return;install(data,manifest.title,null,{reveal,choice:song.id});if(song.id===demoId){prepareOrbitalScore(tracks,manifest.bpm||128);for(const t of tracks){t.trim+=7.5;t.low+=0.9;B.apply(t)}}const d=K.deck;if(d&&!d.playing&&Number.isFinite(manifest.bpm))d.setBpm(manifest.bpm);
   }catch(e){library.value=sourceChoice;message("No se pudo abrir "+song.name+": "+e.message)}finally{if(token===loadingToken){loading=false;paint()}}}
