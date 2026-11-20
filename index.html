@@ -2720,7 +2720,7 @@ body.ldjx-open #play :is(.play-stroke-options svg,#pHeightGraph){height:clamp(22
 .ldx-workspace .ldx-w-orbit-head [data-motion-source]{text-align:center;font-size:10px;line-height:1.1;letter-spacing:.02em;color:#c0e2e6;text-shadow:0 1px 2px #000}
 .ldx-workspace .ldx-w-motion-tools .ldx-w-create-iah{min-height:32px;padding:4px 12px;white-space:nowrap;border-color:#4e858f;color:#b8f2ef}
 @media(min-width:761px){
-  .ldx-workspace .ldx-w-motion-tools{position:absolute;top:7px;left:50%;transform:translateX(-50%)}
+  .ldx-workspace .ldx-w-motion-tools{position:relative;margin:0 auto;align-items:center;padding:2px 0 4px}
 }
 body.ldjx-open #ldj .ldj-dlg.ldj-iah{
   width:min(1240px,94vw);max-height:92dvh;padding:clamp(12px,2vw,24px);overflow:auto;
@@ -29126,7 +29126,10 @@ function layoutOrbitCommands(bay,cx,cy,radius){
  }
  orbitLabels.forEach((labels,side)=>labels.forEach((label,i)=>{
   label.style.top=(i?yAt(527):first-17)+"px";
-  label.style.left=(side?right-Math.max(121,railWidth):left)+"px";
+  const labelWidth=Math.max(100,railWidth);
+  label.style.width=labelWidth+"px";
+  label.style.textAlign="center";
+  label.style.left=(side?right-labelWidth:left)+"px";
  }));
 }
 function fitSpace(){if(!ready||soloDJ||root.hidden||!orbit)return;
