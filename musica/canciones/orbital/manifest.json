@@ -1,0 +1,50 @@
+{
+  "title": "ORBITAL — Beyond Sound",
+  "bpm": 133.333,
+  "duration": 327.9100208333,
+  "tracks": [
+    {
+      "name": "Bombo",
+      "role": "bombo",
+      "rol": "bombo",
+      "file": "musica/canciones/orbital/bombo.mp3",
+      "route": "musica/canciones/orbital/bombo_ruta.f32"
+    },
+    {
+      "name": "Bajo",
+      "role": "bajo",
+      "rol": "bajo",
+      "file": "musica/canciones/orbital/bajo.mp3",
+      "route": "musica/canciones/orbital/bajo_ruta.f32"
+    },
+    {
+      "name": "Percusión",
+      "role": "perc",
+      "rol": "percusion",
+      "file": "musica/canciones/orbital/perc.mp3",
+      "route": "musica/canciones/orbital/perc_ruta.f32"
+    },
+    {
+      "name": "Atmósfera",
+      "role": "pads",
+      "rol": "pads",
+      "file": "musica/canciones/orbital/pads.mp3",
+      "route": "musica/canciones/orbital/pads_ruta.f32"
+    },
+    {
+      "name": "Melodía",
+      "role": "lead",
+      "rol": "melodia",
+      "file": "musica/canciones/orbital/lead.mp3",
+      "route": "musica/canciones/orbital/lead_ruta.f32"
+    },
+    {
+      "name": "Voz",
+      "role": "lead",
+      "rol": "voces",
+      "file": "musica/canciones/orbital/voz.mp3",
+      "route": "musica/canciones/orbital/voz_ruta.f32"
+    }
+  ],
+  "note": "Pistas originales para tocar en DJ; la mezcla final aprobada permanece intacta en entregas."
+}
