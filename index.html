@@ -1442,7 +1442,7 @@ body.vp #ship>header.topbar{display:none}
 /* Aros físicos: exactamente el lenguaje radial de DJ 8D, sin reducir el círculo. */
 #play .grp-orbit-controls{position:absolute;inset:0;z-index:7;pointer-events:none}
 #play .grp-orbit-bank{position:absolute;inset:0;pointer-events:none}
-#play .grp-orbit-key{--orbit-led:#70e9ee;--orbit-light:color-mix(in srgb,var(--orbit-led) 46%,#243747);--orbit-face-color:color-mix(in srgb,var(--orbit-led) 14%,#13232e);position:absolute!important;left:var(--orbit-x);top:var(--orbit-y);width:var(--orbit-w);height:var(--orbit-h);display:flex;align-items:center;justify-content:center;box-sizing:border-box;min-width:0!important;min-height:0!important;margin:0;padding:7px 0 0!important;pointer-events:auto;border:1px solid color-mix(in srgb,var(--orbit-led) 48%,#1c2936)!important;border-radius:9px!important;color:#e9f6fb!important;background:linear-gradient(#131c27 0%,var(--orbit-light) 5%,color-mix(in srgb,var(--orbit-light) 70%,#ebfaff) 8%,var(--orbit-face-color) 16%,#0a141e 85%,#101e2b 87%,#050a10 94%)!important;box-shadow:inset 0 -3px #04080d,inset 0 2px #fff2,0 4px 5px #0008!important;text-shadow:0 1px 2px #000;font:650 14px/1.07 UI;white-space:normal}
+#play .grp-orbit-key{--orbit-led:#70e9ee;--orbit-light:color-mix(in srgb,var(--orbit-led) 46%,#243747);--orbit-face-color:color-mix(in srgb,var(--orbit-led) 14%,#13232e);position:absolute!important;left:var(--orbit-x);top:var(--orbit-y);width:var(--orbit-w);height:var(--orbit-h);display:flex;align-items:center;justify-content:flex-start;box-sizing:border-box;min-width:0!important;min-height:0!important;margin:0;padding:7px 0 0!important;pointer-events:auto;border:1px solid color-mix(in srgb,var(--orbit-led) 48%,#1c2936)!important;border-radius:9px!important;clip-path:var(--orbit-clip);color:#e9f6fb!important;background:linear-gradient(#131c27 0%,var(--orbit-light) 5%,color-mix(in srgb,var(--orbit-light) 70%,#ebfaff) 8%,var(--orbit-face-color) 16%,#0a141e 85%,#101e2b 87%,#050a10 94%)!important;box-shadow:inset 0 -3px #04080d,inset 0 2px #fff2,0 4px 5px #0008!important;text-shadow:0 1px 2px #000;font:650 var(--orbit-font,14px)/1.07 UI;white-space:normal}
 #play .grp-orbit-right .grp-orbit-key{justify-content:flex-end}
 #play .grp-orbit-key>span{display:block;width:var(--orbit-face);max-width:100%;box-sizing:border-box;padding:4px 3px 0;text-align:center;text-wrap:balance}
 #play .grp-orbit-key[data-orbit-theme=extra]{--orbit-led:#b29aff}#play .grp-orbit-key[data-orbit-theme=spatial]{--orbit-led:#f49aca}
@@ -1450,10 +1450,12 @@ body.vp #ship>header.topbar{display:none}
 #play .grp-orbit-right .grp-orbit-key:after{left:auto;right:calc(var(--orbit-face)/2 - 10px)}
 #play .grp-orbit-key[aria-pressed=true]:after,#play .grp-orbit-key.grp-queued:after{background:var(--orbit-led);box-shadow:0 0 9px var(--orbit-led);animation:grpOrbitLed .66s steps(1,end) infinite}
 @keyframes grpOrbitLed{50%{opacity:.26}}
+#play .grp-orbit-label{position:absolute;color:#a2b6c5;font:600 10px/1.1 UI;letter-spacing:.055em;text-transform:uppercase;white-space:nowrap}
 #play .grp-orbit-settings{position:absolute;inset:0;pointer-events:none}
 #play .grp-orbit-settings .pbtn{min-height:38px;padding:6px 16px;border-radius:8px;box-shadow:inset 0 1px #fff2,0 4px 5px #0008}
-#play .grp-orbit-settings .pbtn{position:absolute;top:82px;width:var(--orbit-left-width);pointer-events:auto}
-#play .grp-orbit-settings .pbtn:first-child{left:9px}#play .grp-orbit-settings .pbtn:last-child{left:var(--orbit-right-x)}
+#play .grp-orbit-settings .pbtn{position:absolute;pointer-events:auto}
+#play .grp-orbit-settings .pbtn:first-child{left:50%;top:8px;translate:-50% 0;min-width:92px}
+#play .grp-orbit-settings .pbtn:last-child{right:14px;top:88px;min-width:142px;color:#ffe8ba;border-color:#9b7338;background:linear-gradient(#2f2a20,#4a351b 10%,#211810 88%,#080604)}
 #play .grp-orbit-controls>.grp-iah-log{position:absolute;left:25%;right:25%;bottom:10px;text-align:center;pointer-events:none}
 @media(max-width:700px){#play .grp-orbit-controls{display:none}}
 #play .grp-pads{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:5px}/* columnas según el ancho real del panel: las palabras nunca se montan (15 nov 2026) */
@@ -14036,13 +14038,12 @@ function nudge(o){const tid=GRP.L.active&&GRP.byId(GRP.L.active)?GRP.L.active:"s
 let saveT=null;const saveSoon=()=>{clearTimeout(saveT);saveT=setTimeout(()=>{if(PLAY_DESK.active)PLAY_DESK.save();else APP.autosave()},300)};
 /* ---------- panel ---------- */
 const btn=(label,attrs,on)=>h("button",Object.assign({class:"pbtn sm",type:"button"},attrs||{},on?{onclick:on}:{}),label);
-// los 12 pads visibles de la Mesa (pedido de Jorge); el resto de los cues queda en la API PLAY.escena.* para IAH
-// Mismo banco radial de DJ 8D: ocho comandos por lado. No se comprime el círculo.
+// Clon 1:1 del banco visible de DJ 8D: mismos nombres, orden y grupos.
 const PADS=[
-  {id:"girar_der"},{id:"girar_izq"},{id:"frenar",shift:"parar",title:"Frenar · Shift: parar en seco"},{id:"volver",title:"Volver · también nivela"},
-  {id:"media"},{id:"torn"},{id:"espejo"},{id:"elevar",n:"Subir sala"},
-  {id:"contra"},{id:"pp8",n:"Ping-pong sala"},{id:"acel",title:"Acelerador · mantén pulsado; al soltar, explota"},{id:"impl"},
-  {id:"expl"},{id:"cong",toggle:"solt",n:"Congelar / Soltar"},{id:"bajar",n:"Bajar sala"},{id:"paso",n:"Paso a paso"}
+  {key:"girar_der",id:"girar_der",n:"Girar ⟳"},{key:"girar_izq",id:"girar_izq",n:"Girar ⟲"},{key:"frenar",id:"frenar",shift:"parar",title:"Frenar · Shift: parar en seco"},{key:"volver",id:"volver",title:"Volver · también nivela"},
+  {key:"media",id:"media",n:"Media vuelta"},{key:"tornado",id:"torn",n:"Tornado"},{key:"espejo",id:"espejo",n:"Espejo"},{key:"acercar",n:"Acercar todo",action:()=>nudge({s:.78})},
+  {key:"contragiro",id:"contra",n:"Contragiro"},{key:"pingpong",id:"pp8",n:"Ping-pong sala"},{key:"acelerar",id:"acel",n:"Acelerador",title:"Acelerador · mantén pulsado; al soltar, explota"},{key:"implosion",id:"impl",n:"Implosión"},
+  {key:"explosion",id:"expl",n:"Explosión"},{key:"congelar",id:"cong",toggle:"solt",n:"Congelar / Soltar"},{key:"congelar_h",id:"cong",toggle:"solt",n:"Congelar sala"},{key:"subir",id:"elevar",n:"Subir sala"}
 ];
 const frozen=()=>{const T=GRP.byId(GRP.L.active)||GRP.sala;return GRP.stateAt(T,ORB.pos()).frz.w.b===1};
 function cueButton(c,user,pad){const label=user?user.name:pad?.n||c.n,b=h("button",{class:"pbtn sm grp-cue",type:"button","data-cue":c.id,"data-kind":c.kind,title:pad?.title||c.n+(c.kind==="hold"?" · mantén pulsado":"")},h("span",{},label));
@@ -14057,21 +14058,25 @@ function cueButton(c,user,pad){const label=user?user.name:pad?.n||c.n,b=h("butto
 function mark(b,ev){if(!ev)return;if(ev.t>ORB.pos()+.03){queued.set(b,ev);b.classList.add("grp-queued")}}
 function tickQueued(){const now=ORB.pos();for(const [b,ev] of queued)if(ev.t<=now+.01||!S.playing&&!PLAY.on){b.classList.remove("grp-queued");queued.delete(b)}}
 function build(){
-  root=h("nav",{id:"pGrupos",class:"grp-orbit-controls","aria-label":"Comandos de escena alrededor del círculo"});
-  const left=h("div",{class:"grp-orbit-bank grp-orbit-left"}),right=h("div",{class:"grp-orbit-bank grp-orbit-right"});
-  PADS.forEach((pad,index)=>{const b=cueButton(cueOf(pad.id),null,pad);b.classList.add("grp-orbit-key");b.dataset.orbitTheme=index<6?"scene":index<8?"spatial":index<14?"extra":"spatial";(index<8?left:right).append(b)});
+  root=h("nav",{id:"pGrupos",class:"grp-orbit-controls ldx-w-orbit-rail","aria-label":"Comandos de escena alrededor del círculo"});
+  const left=h("div",{class:"grp-orbit-bank grp-orbit-left ldx-w-orbit-column left"}),right=h("div",{class:"grp-orbit-bank grp-orbit-right ldx-w-orbit-column right"});
+  const labels=[["Escenas","Efectos espaciales"],["Más escenas","Efectos espaciales"]];
+  [left,right].forEach((column,side)=>column.append(...labels[side].map(label=>h("span",{class:"grp-orbit-label ldx-w-orbit-label","aria-hidden":"true"},label))));
+  PADS.forEach((pad,index)=>{let b;if(pad.action)b=h("button",{class:"pbtn sm grp-cue",type:"button",title:pad.n,onclick:pad.action},h("span",{},pad.n));else b=cueButton(cueOf(pad.id),null,pad);b.classList.add("grp-orbit-key","ldx-w-orbit-key","ldx-epad");b.dataset.orbitKey=pad.key;b.dataset.orbitTheme=index%8>=6?"spatial":index>=8?"extra":"scene";(index<8?left:right).append(b)});
   const iah=btn("IAH",{"data-g":"iah",class:"pbtn grp-orbit-special grp-iah","aria-pressed":"false",title:"IAH dirige los movimientos de la escena"},()=>PLAY_IAH.toggle());
   const ancla=btn("Ancla graves",{"data-g":"ancla",class:"pbtn grp-orbit-special","aria-pressed":String(GRP.O.ancla)},e=>{GRP.setAncla(!GRP.O.ancla);e.currentTarget.setAttribute("aria-pressed",String(GRP.O.ancla));saveSoon()});
   const settings=h("div",{class:"grp-orbit-settings"},iah,ancla);
   root.append(left,right,settings,h("span",{"data-g":"iahlog",class:"grp-iah-log mono",role:"status","aria-live":"polite"}));
   const bay=el("pc")?.parentElement;bay?.append(root);if(bay){new ResizeObserver(()=>layoutOrbit(bay)).observe(bay);requestAnimationFrame(()=>layoutOrbit(bay))}
 }
-function layoutOrbit(bay){if(!root||root.hidden)return;const r=bay.getBoundingClientRect(),w=r.width,h=r.height;if(w<700||h<480){root.classList.add("grp-orbit-compact");return}root.classList.remove("grp-orbit-compact");
-  // Zona de exclusión: el banco jamás puede entrar en la caja exterior del círculo.
-  const cx=w/2,cy=h/2+8,radius=Math.min(w*.305,h*.455),gap=18,margin=9,leftLimit=cx-radius-gap,rightLimit=cx+radius+gap;
-  const leftW=Math.max(118,leftLimit-margin),rightW=Math.max(118,w-margin-rightLimit),bw=Math.min(226,leftW,rightW),top=142,bottom=h-18,step=(bottom-top)/7,bh=Math.max(48,Math.min(66,step-8));
-  [root.querySelector(".grp-orbit-left"),root.querySelector(".grp-orbit-right")].forEach((col,side)=>[...col.children].forEach((b,i)=>{const y=top+i*step-bh/2,x=side?rightLimit:margin;b.style.setProperty("--orbit-x",x+"px");b.style.setProperty("--orbit-y",y+"px");b.style.setProperty("--orbit-w",bw+"px");b.style.setProperty("--orbit-h",bh+"px");b.style.setProperty("--orbit-face",bw+"px");b.style.removeProperty("--orbit-clip")}));
-  root.style.setProperty("--orbit-left-width",bw+"px");root.style.setProperty("--orbit-right-x",rightLimit+"px")}
+function layoutOrbit(bay){if(!root||root.hidden)return;const br=bay.getBoundingClientRect(),width=br.width,height=br.height,scale=height/732,centerX=width/2,centerY=height*.5,radius=Math.min(width,height)*.31;
+  const left=9,right=width-9,clearance=radius+9,railWidth=Math.min(centerX-clearance-left,right-centerX-clearance);
+  if(innerWidth<=760||railWidth<82||scale<.64){root.classList.add("grp-orbit-compact");return}root.classList.remove("grp-orbit-compact");
+  const first=Math.max(151*scale,136),bottom=height-22*scale,factor=(bottom-first)/(689-151);if(factor<.59){root.classList.add("grp-orbit-compact");return}
+  root.style.setProperty("--orbit-font",Math.max(12,Math.min(17,railWidth*.165,scale*17))+"px");
+  const polygon=(x,y,w,h,side)=>{const points=Array.from({length:17},(_,n)=>{const t=n/16,dy=y+t*h-centerY,reach=Math.sqrt(Math.max(0,clearance*clearance-dy*dy)),boundary=centerX+(side?reach:-reach),px=Math.max(0,Math.min(w,boundary-x));return px.toFixed(1)+"px "+(t*100)+"%"}),outer=side?"100%":"0%";return "polygon("+[outer+" 0%",...points,outer+" 100%"].join(",")+")"};
+  const yAt=t=>first+(t-151)*factor,buttons=[...root.querySelectorAll(".grp-orbit-key")];buttons.forEach((pad,index)=>{const side=index>=8,row=index%8,y=yAt(row<6?151+row*61:row===6?548:624),bh=(row<6?53:row===6?62:65)*factor,bw=Math.max(railWidth,Math.min(right-left,(row===7?332:row===6?256:215)*Math.min(width/980,1.3))),x=side?right-bw:left,mid=y+bh/2-centerY,reach=Math.sqrt(Math.max(0,clearance*clearance-mid*mid)),visible=Math.min(bw,side?right-centerX-reach:centerX-reach-left),face=Math.max(70,Math.min(visible-8,railWidth+(row===7?68:row===6?34:6)));pad.style.setProperty("--orbit-x",x+"px");pad.style.setProperty("--orbit-y",y+"px");pad.style.setProperty("--orbit-w",bw+"px");pad.style.setProperty("--orbit-h",bh+"px");pad.style.setProperty("--orbit-face",face+"px");pad.style.setProperty("--orbit-clip",polygon(x,y,bw,bh,side))});
+  [left,right].forEach((edge,side)=>[...root.querySelectorAll(side?".grp-orbit-right .grp-orbit-label":".grp-orbit-left .grp-orbit-label")].forEach((label,i)=>{label.style.top=(i?yAt(527):first-17)+"px";label.style.left=(side?edge-Math.max(121,railWidth):edge)+"px"}))}
 function applyMovement(v,dir){const tid=target();ensurePlaying();
   if(v.startsWith("ruta:"))GRP.fire(tid,"ruta",{dir,path:{type:v.slice(5),dir}});
   else if(v.startsWith("banco:")){const m=PLAY_DESK.motions[+v.slice(6)];if(!m)return;const [, ,speed,closed,sample]=m;
