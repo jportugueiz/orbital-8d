@@ -14070,7 +14070,10 @@ function build(){
   const ancla=btn("Ancla graves",{"data-g":"ancla",class:"pbtn grp-orbit-special","aria-pressed":String(GRP.O.ancla)},e=>{GRP.setAncla(!GRP.O.ancla);e.currentTarget.setAttribute("aria-pressed",String(GRP.O.ancla));saveSoon()});
   const settings=h("div",{class:"grp-orbit-settings"},iah,ancla);
   root.append(left,right,settings,h("span",{"data-g":"iahlog",class:"grp-iah-log mono",role:"status","aria-live":"polite"}));
-  const bay=el("pc")?.parentElement;bay?.append(root);if(bay){new ResizeObserver(()=>layoutOrbit(bay)).observe(bay);requestAnimationFrame(()=>layoutOrbit(bay))}
+  // Esta botonera pertenece a Baños/Mesa, no al nodo reutilizable del círculo.
+  // DJ 8D traslada el contenedor de #pc a su workspace; por eso el panel debe
+  // permanecer anclado a #play y nunca viajar con el círculo hacia DJ.
+  const bay=el("play");bay?.append(root);if(bay){new ResizeObserver(()=>layoutOrbit(bay)).observe(bay);requestAnimationFrame(()=>layoutOrbit(bay))}
 }
 function layoutOrbit(bay){if(!root||root.hidden)return;const br=bay.getBoundingClientRect(),width=br.width,height=br.height,scale=height/732,centerX=width/2,centerY=height*.5,radius=Math.min(width,height)*.31;
   const left=9,right=width-9,clearance=radius+9,railWidth=Math.min(centerX-clearance-left,right-centerX-clearance);
