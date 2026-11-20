@@ -1,0 +1,55 @@
+{
+  "title": "Warehouse Acid",
+  "duration": 360.0,
+  "tracks": [
+    {
+      "name": "Batería",
+      "file": "musica/canciones/coleccion-8d/warehouse-acid/00-drums.flac",
+      "sampleRate": 48000,
+      "frames": 17280000,
+      "channels": 2
+    },
+    {
+      "name": "Bajo",
+      "file": "musica/canciones/coleccion-8d/warehouse-acid/01-bass.flac",
+      "sampleRate": 48000,
+      "frames": 17280000,
+      "channels": 2
+    },
+    {
+      "name": "Teclado",
+      "file": "musica/canciones/coleccion-8d/warehouse-acid/02-keyboard.flac",
+      "sampleRate": 48000,
+      "frames": 17280000,
+      "channels": 2
+    },
+    {
+      "name": "Percusión",
+      "file": "musica/canciones/coleccion-8d/warehouse-acid/03-percussion.flac",
+      "sampleRate": 48000,
+      "frames": 17280000,
+      "channels": 2
+    },
+    {
+      "name": "Sintetizador",
+      "file": "musica/canciones/coleccion-8d/warehouse-acid/04-synth.flac",
+      "sampleRate": 48000,
+      "frames": 17280000,
+      "channels": 2
+    },
+    {
+      "name": "Otros",
+      "file": "musica/canciones/coleccion-8d/warehouse-acid/05-other.flac",
+      "sampleRate": 48000,
+      "frames": 17280000,
+      "channels": 2
+    },
+    {
+      "name": "Metales",
+      "file": "musica/canciones/coleccion-8d/warehouse-acid/06-brass.flac",
+      "sampleRate": 48000,
+      "frames": 17280000,
+      "channels": 2
+    }
+  ]
+}
