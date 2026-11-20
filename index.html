@@ -1438,6 +1438,18 @@ body.vp #ship>header.topbar{display:none}
 .oicon{box-shadow:0 0 0 2px var(--grp,transparent);border-radius:50%}
 .oicon.grp-sel{outline:2px dashed #7df4ff;outline-offset:3px}
 @media (max-width:760px){#play .grp-bank{grid-template-columns:1fr}#play .grp-cue{min-height:40px;flex:1 1 30%}#play .grp-vel input{width:120px}}
+
+/* Bancos físicos laterales, iguales al lenguaje de controles de DJ 8D. */
+#play .grp-orbit-controls{position:absolute;inset:0;z-index:7;pointer-events:none}
+#play .grp-orbit-bank{position:absolute;top:50%;translate:0 -50%;display:grid;grid-template-columns:repeat(2,minmax(72px,104px));gap:9px;width:min(23%,220px);pointer-events:none}
+#play .grp-orbit-left{left:12px}#play .grp-orbit-right{right:12px}
+#play .grp-orbit-bank .pbtn{position:relative;pointer-events:auto;min-height:50px;min-width:0;padding:8px 9px 7px;border:1px solid #02070a;border-top-color:#536b75;border-radius:8px;color:#cbe1e6;background:radial-gradient(ellipse at 50% 12%,#ffffff0d,#0000 65%),linear-gradient(165deg,#2b3b44,#15232b 66%,#1b3037);box-shadow:0 5px 0 #020609,0 6px 0 #596a7155,0 9px 9px #000b,inset 0 1px 0 #d7f4ed31,inset 0 -2px 0 #0009;text-shadow:0 1px 1px #000;font:750 12px/1.15 UI;white-space:normal}
+#play .grp-orbit-bank .pbtn:before{content:"";position:absolute;top:7px;right:7px;width:7px;height:7px;border:1px solid #020608;border-radius:50%;background:radial-gradient(circle at 35% 25%,#fff8 0 10%,#63818b 26%,#071018 76%);box-shadow:inset 0 1px 2px #000,0 1px 0 #bdcbd32e;opacity:.42}
+#play .grp-orbit-bank .pbtn[aria-pressed=true],#play .grp-orbit-bank .pbtn.grp-queued{color:#e6ffff;border-top-color:#84f7f3;background:radial-gradient(ellipse at 50% 12%,#ffffff2b,#0000 65%),linear-gradient(165deg,#2c686d,#14363d 66%,#17444a);box-shadow:0 5px 0 #020609,0 6px 0 #6ad9d955,0 0 16px #52dce866,inset 0 1px 0 #eaffff70,inset 0 -2px 0 #0009}
+#play .grp-orbit-bank .pbtn[aria-pressed=true]:before,#play .grp-orbit-bank .pbtn.grp-queued:before{opacity:1;background:radial-gradient(circle at 35% 25%,#fff 0 10%,#64ffff 30%,#1e5556 82%);box-shadow:0 0 8px #5ff7f5,inset 0 1px 2px #fff6}
+#play .grp-orbit-bank .grp-orbit-special{grid-column:1/-1;color:#cbbcff;border-top-color:#8068ad;background:linear-gradient(165deg,#3d3154,#211c32 68%,#302443)}
+#play .grp-orbit-controls>.grp-iah-log{position:absolute;left:25%;right:25%;bottom:10px;text-align:center;pointer-events:none}
+@media(max-width:900px){#play .grp-orbit-bank{grid-template-columns:1fr;width:100px;gap:6px}#play .grp-orbit-left{left:6px}#play .grp-orbit-right{right:6px}#play .grp-orbit-bank .pbtn{min-height:40px;padding:5px;font-size:10px}}
 #play .grp-pads{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:5px}/* columnas según el ancho real del panel: las palabras nunca se montan (15 nov 2026) */
 #play .grp-pads .grp-cue{min-height:42px;min-width:0;padding:4px 6px;font-size:12px;white-space:normal;line-height:1.15;overflow-wrap:break-word;hyphens:auto;text-align:center;overflow:hidden}
 /* IAH en la Mesa (15 nov 2026): botón toggle y bitácora corta */
@@ -13363,7 +13375,7 @@ const PLAY_DESK=(()=>{
 
   function open(nextProduct="live"){
     product=nextProduct;
-    el("pOpenDJ").hidden=product==="frequency";
+    el("pOpenDJ").hidden=true;
     syncSessionWords();
     workspace=Object.fromEntries(fields.map(k=>[k,S[k]]));
     workspace.off=Math.max(0,ORB.pos());
@@ -13382,7 +13394,7 @@ const PLAY_DESK=(()=>{
     masterFader.set(masterDb);syncMaster();
     restoreTracks(saved);
     const songSelect=el("pDeskSong"),songValue=songSelect.value;
-    const availableSongs=SOUND_LIBRARY.musicTracks().filter(track=>product!=="frequency"||track.cat!=="dj");
+    const availableSongs=SOUND_LIBRARY.musicTracks().filter(track=>track.cat!=="dj");
     songSelect.replaceChildren(h("option",{value:""},"Elige una canción"),...availableSongs.map(track=>h("option",{value:track.id},track.t)));
     songSelect.value=availableSongs.some(track=>track.id===songValue)?songValue:"";
     if(typeof PLAY_GRUPOS!=="undefined")PLAY_GRUPOS.deskOpen(saved.grupos);// GRUPOS (gancho): grupos y cues de escena de la Mesa
@@ -13593,7 +13605,7 @@ const PLAY_DESK=(()=>{
     }});
     el("pOpenMusic").onclick=picker(musicDialog,()=>{
       const tracks=SOUND_LIBRARY.musicTracks();
-      return {title:"Elige música",cards:Object.keys(musicGroups).filter(category=>product!=="frequency"||category!=="dj").flatMap(category=>{
+      return {title:"Elige música",cards:Object.keys(musicGroups).filter(category=>category!=="dj").flatMap(category=>{
         const photo=category==="orbital"?photos+"pad.webp":cover(category==="celta"?"estandartes_norte":"templo_silencioso");
         const cards=tracks.filter(track=>musicCategory(track)===category).map(track=>trackCard({id:track.id,title:track.t},el("pDeskSong"),musicDialog,musicPhoto(track)));
         return cards.length?[{title:musicGroups[category],photo:cards[0].photo||photo,cards}]:[];
@@ -14008,7 +14020,7 @@ function syncRec(){const b=root?.querySelector("[data-g=rec]");if(b){b.setAttrib
 function selectAll(){for(const s of sources())sel().add(s.id);sync();return [...sel()]}
 function clearSel(){sel().clear();GRP.L.active=null;sync()}
 function paste(name){const ids=[...sel()];if(ids.length<1){toast("Selecciona sonidos (Ctrl/Shift + clic, rectángulo o mantener pulsado)");return null}
-  const g=GRP.create(ids,{name,pivot:root?.querySelector("[data-g=pivot]")?.dataset.v});sel().clear();toast("«"+g.name+"» pegado · "+g.ids.length+" sonidos");saveSoon();sync();return g}
+  const g=GRP.create(ids,{name,pivot:root?.querySelector("[data-g=pivot]")?.dataset.v||"head"});sel().clear();toast("«"+g.name+"» pegado · "+g.ids.length+" sonidos");saveSoon();sync();return g}
 function unpaste(){const g=GRP.L.active&&GRP.byId(GRP.L.active);const list=g&&!g.sala?[g]:GRP.groups.filter(x=>x.ids.some(id=>sel().has(id)));
   if(!list.length){toast("Elige un grupo para despegar");return}for(const x of list)GRP.dissolve(x.id);toast("Despegado");saveSoon();sync()}
 function nudge(o){const tid=GRP.L.active&&GRP.byId(GRP.L.active)?GRP.L.active:"sala";const c=GRP.offsets(tid);
@@ -14032,65 +14044,13 @@ function cueButton(c,user,pad){const b=h("button",{class:"pbtn sm grp-cue",type:
 function mark(b,ev){if(!ev)return;if(ev.t>ORB.pos()+.03){queued.set(b,ev);b.classList.add("grp-queued")}}
 function tickQueued(){const now=ORB.pos();for(const [b,ev] of queued)if(ev.t<=now+.01||!S.playing&&!PLAY.on){b.classList.remove("grp-queued");queued.delete(b)}}
 function build(){
-  root=h("section",{id:"pGrupos",class:"play-grupos","aria-label":"Grupos y cues de escena"});
-  const head=h("div",{class:"grp-head"},h("strong",{},"Grupos y escena"),h("span",{class:"grp-status",role:"status"}));
-  const selRow=h("div",{class:"grp-row"},
-    btn("Seleccionar todo",{"data-g":"all"},()=>{selectAll();toast(sel().size+" sonidos seleccionados")}),
-    btn("Pegar",{"data-g":"paste",title:"Ctrl+G"},()=>paste()),
-    btn("Despegar",{"data-g":"unpaste",title:"Ctrl+Shift+G"},unpaste),
-    btn("Ninguno",{"data-g":"none"},clearSel),
-    btn("Pivote: cabeza",{"data-g":"pivot","data-v":"head",title:"Cabeza: el grupo gira alrededor de tu cabeza · Centro: alrededor de su propio centro"},e=>{const b=e.currentTarget,v=b.dataset.v==="head"?"center":"head";b.dataset.v=v;b.textContent="Pivote: "+(v==="head"?"cabeza":"centro");
-      const g=GRP.L.active&&GRP.byId(GRP.L.active);if(g&&!g.sala){GRP.setPivot(g.id,v);saveSoon()}}));
-  const chips=h("div",{class:"grp-chips",role:"group","aria-label":"Grupos"});
-  const moveRow=h("div",{class:"grp-row grp-move"},
-    btn("⟲ 15°",{"aria-label":"Girar 15° a la izquierda"},()=>nudge({y:-15})),btn("⟳ 15°",{"aria-label":"Girar 15° a la derecha"},()=>nudge({y:15})),
-    btn("Acercar",{},()=>nudge({s:1/1.2})),btn("Alejar",{},()=>nudge({s:1.2})),btn("▲ Subir",{},()=>nudge({l:10})),btn("▼ Bajar",{},()=>nudge({l:-10})));
-  // movimiento del grupo: cues y trayectorias de Movimientos
-  const mv=h("select",{"aria-label":"Movimiento del grupo"});
-  const opt=(v,t)=>h("option",{value:v},t);
-  mv.append(h("optgroup",{label:"Escena"},...["girar_der","girar_izq","contra","remo","pen","pp8","resp","ola","torn","paso"].map(id=>opt(id,cueOf(id).n))),
-    h("optgroup",{label:"Movimientos"},...ORB.PATH_IDS.filter(id=>!["drawn","tempo"].includes(id)).map(id=>opt("ruta:"+id,ORB.PATHS[id].n))),
-    h("optgroup",{label:"Banco"},...(PLAY_DESK.motions||[]).map((m,i)=>opt("banco:"+i,m[0]+" · "+m[1]))));
-  const dirB=btn("Sentido ⟳",{"data-g":"dir","data-v":"1"},e=>{const b=e.currentTarget;b.dataset.v=b.dataset.v==="1"?"-1":"1";b.textContent="Sentido "+(b.dataset.v==="1"?"⟳":"⟲")});
-  const mvRow=h("div",{class:"grp-row"},h("label",{},"Movimiento ",mv),dirB,btn("Aplicar al grupo",{"data-g":"apply"},()=>applyMovement(mv.value,+dirB.dataset.v)));
-  // atajos
-  const big=h("div",{class:"grp-row grp-big"},
-    btn("Girar escena 360°",{"data-g":"g360",class:"pbtn grp-cta"},()=>escena.girar360()),
-    btn("Contragiro",{"data-g":"contra",class:"pbtn grp-cta"},()=>escena.contragiro()),
-    btn("Volver",{"data-g":"volver",class:"pbtn grp-cta"},()=>escena.volver()),
-    btn("IAH",{"data-g":"iah",class:"pbtn grp-cta grp-iah","aria-pressed":"false",title:"IAH mueve los pads en vivo: el bloque (graves y armonía) junto y 1–2 sonidos volando a compás · otro toque: cada uno vuelve a su lugar"},()=>PLAY_IAH.toggle()),
-    h("span",{"data-g":"iahlog",class:"grp-iah-log mono",role:"status","aria-live":"polite"}));
-  // opciones
-  const quant=h("select",{"aria-label":"Cuantizar","data-g":"quant"},...[["0","OFF"],["0.25","1/4"],["0.5","1/2"],["1","1 compás"],["2","2 compases"],["4","4 compases"]].map(([v,t])=>opt(v,t)));
-  quant.value=String(GRP.O.quant);quant.onchange=()=>{GRP.O.quant=+quant.value;saveSoon()};
-  const bpm=h("input",{type:"number",min:40,max:220,step:1,placeholder:"—","aria-label":"BPM de la sesión","data-g":"bpm",value:GRP.O.bpm||""});
-  const bars=h("select",{"aria-label":"Compases por vuelta","data-g":"bars"},...[1,2,4,8,16].map(v=>opt(v,v+" comp./vuelta")));bars.value=String(GRP.O.bars);
-  const secs=h("input",{type:"number",min:2,max:120,step:1,value:GRP.O.secs,"aria-label":"Segundos por vuelta","data-g":"secs"});
-  const syncTempo=()=>{const has=+bpm.value>0;bars.hidden=!has;secs.parentElement.hidden=has;quant.disabled=!has;quant.title=has?"":"Sin BPM los cues son inmediatos"};
-  bpm.oninput=()=>{GRP.O.bpm=+bpm.value||null;syncTempo();saveSoon()};bars.onchange=()=>{GRP.O.bars=+bars.value;saveSoon()};secs.oninput=()=>{GRP.O.secs=Math.max(2,+secs.value||12);saveSoon()};
-  const ancla=btn("Ancla: bombo, bajo y sub fijos",{"data-g":"ancla","aria-pressed":String(GRP.O.ancla)},e=>{GRP.setAncla(!GRP.O.ancla);e.currentTarget.setAttribute("aria-pressed",String(GRP.O.ancla));saveSoon()});
-  const latch=btn("Modo: Latch",{"data-g":"latch",title:"Latch: queda corriendo hasta que lo paras · Momentáneo: corre mientras mantienes pulsado (Shift alterna)"},e=>{GRP.O.latch=!GRP.O.latch;e.currentTarget.textContent="Modo: "+(GRP.O.latch?"Latch":"Momentáneo")});
-  const vel=h("input",{type:"range",min:-100,max:100,step:1,value:0,"aria-label":"Velocidad de sala","data-g":"vel"});
-  const velOut=h("output",{},"0");
-  vel.oninput=()=>{let v=+vel.value;if(Math.abs(v)<4)v=0;velOut.textContent=(v>0?"⟳ ":v<0?"⟲ ":"")+Math.abs(v)+" %";const n=performance.now();if(n-velT<60)return;velT=n;escena.velocidad(v/100)};
-  vel.onchange=()=>{let v=+vel.value;if(Math.abs(v)<4){v=0;vel.value=0}escena.velocidad(v/100)};
-  const optRow=h("div",{class:"grp-row grp-opts"},ancla,latch,h("label",{},"Cuantizar ",quant),h("label",{},"BPM ",bpm),bars,h("label",{},"s/vuelta ",secs),
-    h("label",{class:"grp-vel"},"Velocidad de sala ",vel,velOut),btn("● Grabar en Guion",{"data-g":"rec","aria-pressed":"false"},()=>{rec=rec?null:{t0:performance.now(),n:0};if(rec)toast("Los cues de escena se escriben en el Guion con su segundo");syncRec()}));
-  // banco de cues de fábrica + del usuario
-  const bank=h("div",{class:"grp-bank"});
-  bank.append(h("fieldset",{class:"grp-cat grp-pads"},h("legend",{},"Cues de escena"),...PADS.map(p=>cueButton(cueOf(p.id),null,p))));
-  const userBox=h("fieldset",{class:"grp-cat grp-user"},h("legend",{},"Mis cues"));
-  const name=h("input",{maxlength:30,placeholder:"Nombre","aria-label":"Nombre del cue de escena"});
-  const base=h("select",{"aria-label":"Cue base"},...PADS.map(p=>opt(p.id,p.n||cueOf(p.id).n)));
-  const saveUser=btn("Guardar cue",{},()=>{const n=name.value.trim();if(!n)return;const list=EXP.LS.get(USER_KEY,[])||[];
-    list.push({name:n,cue:base.value,o:{dir:+dirB.dataset.v,compases:+bpm.value>0?+bars.value:undefined,segundos:+bpm.value>0?undefined:+secs.value}});EXP.LS.set(USER_KEY,list);name.value="";drawUser()});
-  function drawUser(){const list=EXP.LS.get(USER_KEY,[])||[];userBox.replaceChildren(h("legend",{},"Mis cues"),
-    ...list.map((u,i)=>{const c=cueOf(u.cue);if(!c)return null;return h("span",{class:"grp-ucue"},cueButton(c,u),btn("✕",{"aria-label":"Borrar "+u.name},()=>{list.splice(i,1);EXP.LS.set(USER_KEY,list);drawUser()}))}),
-    h("div",{class:"grp-row"},name,base,saveUser))}
-  drawUser();bank.append(userBox);
-  root.append(head,selRow,chips,moveRow,mvRow,big,optRow,bank);
-  syncTempo();
-  const desk=el("pDesk");if(desk)desk.append(root);
+  root=h("nav",{id:"pGrupos",class:"grp-orbit-controls","aria-label":"Comandos de escena alrededor del círculo"});
+  const left=h("div",{class:"grp-orbit-bank grp-orbit-left"}),right=h("div",{class:"grp-orbit-bank grp-orbit-right"});
+  PADS.forEach((pad,index)=>(index<6?left:right).append(cueButton(cueOf(pad.id),null,pad)));
+  const iah=btn("IAH",{"data-g":"iah",class:"pbtn grp-orbit-special grp-iah","aria-pressed":"false",title:"IAH dirige los movimientos de la escena"},()=>PLAY_IAH.toggle());
+  const ancla=btn("Ancla graves",{"data-g":"ancla",class:"pbtn grp-orbit-special","aria-pressed":String(GRP.O.ancla)},e=>{GRP.setAncla(!GRP.O.ancla);e.currentTarget.setAttribute("aria-pressed",String(GRP.O.ancla));saveSoon()});
+  left.append(iah);right.append(ancla);root.append(left,right,h("span",{"data-g":"iahlog",class:"grp-iah-log mono",role:"status","aria-live":"polite"}));
+  el("pc")?.parentElement?.append(root);
 }
 function applyMovement(v,dir){const tid=target();ensurePlaying();
   if(v.startsWith("ruta:"))GRP.fire(tid,"ruta",{dir,path:{type:v.slice(5),dir}});
@@ -14108,9 +14068,9 @@ function chipList(){const box=root?.querySelector(".grp-chips");if(!box)return;
         h("i",{}),(i+1)+" · "+g.name+" ("+n+")");return b}))}
 function sync(){if(!root)return;chipList();
   const g=GRP.L.active&&GRP.byId(GRP.L.active);const n=sel().size;
-  root.querySelector(".grp-status").textContent=(n?n+" seleccionados · ":"")+"destino: "+(g&&!g.sala?g.name:n>=2?"la selección":"toda la sala")+(GRP.O.ancla?" · ancla puesta":"");
-  root.querySelector("[data-g=paste]").disabled=n<1;root.querySelector("[data-g=unpaste]").disabled=!(g&&!g.sala)&&!GRP.groups.some(x=>x.ids.some(id=>sel().has(id)));
-  const piv=root.querySelector("[data-g=pivot]");if(g&&!g.sala){piv.dataset.v=g.pivot;piv.textContent="Pivote: "+(g.pivot==="center"?"centro":"cabeza")}
+  const status=root.querySelector(".grp-status");if(status)status.textContent=(n?n+" seleccionados · ":"")+"destino: "+(g&&!g.sala?g.name:n>=2?"la selección":"toda la sala")+(GRP.O.ancla?" · ancla puesta":"");
+  const pasteB=root.querySelector("[data-g=paste]"),unpasteB=root.querySelector("[data-g=unpaste]");if(pasteB)pasteB.disabled=n<1;if(unpasteB)unpasteB.disabled=!(g&&!g.sala)&&!GRP.groups.some(x=>x.ids.some(id=>sel().has(id)));
+  const piv=root.querySelector("[data-g=pivot]");if(piv&&g&&!g.sala){piv.dataset.v=g.pivot;piv.textContent="Pivote: "+(g.pivot==="center"?"centro":"cabeza")}
   const cur=latched.get(g&&!g.sala?g.id:"sala");for(const b of root.querySelectorAll(".grp-cue"))b.setAttribute("aria-pressed",String(b.dataset.cue===cur||b.dataset.cue==="cong"&&frozen()));
   if(manBar)manBar.querySelector("[data-g=status]").textContent=n?n+" sel.":g&&!g.sala?g.name:"";
   try{MAN.icons()}catch(e){}}
@@ -14136,8 +14096,7 @@ function buildManual(){const vp=el("vp");if(!vp)return;
 function deskOpen(saved){stash=GRP.save();GRP.load(saved||null);syncOpts();sync()}
 function deskClose(){GRP.load(stash);stash=null;sync()}
 function load(o){GRP.load(o||null);syncOpts();sync()}
-function syncOpts(){if(!root)return;const q=s=>root.querySelector(s);q("[data-g=quant]").value=String(GRP.O.quant);q("[data-g=bpm]").value=GRP.O.bpm||"";q("[data-g=bars]").value=String(GRP.O.bars);q("[data-g=secs]").value=GRP.O.secs;
-  q("[data-g=ancla]").setAttribute("aria-pressed",String(GRP.O.ancla));q("[data-g=bpm]").dispatchEvent(new Event("input"))}
+function syncOpts(){if(!root)return;const q=s=>root.querySelector(s),quant=q("[data-g=quant]"),bpm=q("[data-g=bpm]"),bars=q("[data-g=bars]"),secs=q("[data-g=secs]"),ancla=q("[data-g=ancla]");if(quant)quant.value=String(GRP.O.quant);if(bpm)bpm.value=GRP.O.bpm||"";if(bars)bars.value=String(GRP.O.bars);if(secs)secs.value=GRP.O.secs;if(ancla)ancla.setAttribute("aria-pressed",String(GRP.O.ancla));if(bpm)bpm.dispatchEvent(new Event("input"))}
 /* ---------- API para IAH, Genius e IAH DJ ---------- */
 const sinBpm=()=>!(+GRP.O.bpm>0);
 const tempo=(o,compases)=>{if(compases!=null){if(sinBpm())o.segundos=compases*2;else o.compases=compases}return o};
@@ -15400,6 +15359,9 @@ const SOUND_LIBRARY=(()=>{
     "mystic": false
   }
 };
+  // Las superficies wellness usan una biblioteca orgánica: nada del grupo Efectos ni fondos urbanos/espaciales/ASMR.
+  // DJ y DJ 8D conservan sus catálogos propios en lab_dj/catalogo.json.
+  const wellnessBackgroundFamilies=new Set(["bosque","mar","campo","selva","agua","lluvia","tormenta","noche","viento","fuego"]);
   // Confirmed by Jorge in the dedicated mystical-instrument review.
   const confirmedMystics=new Set(["21","33","48"]);
   function isMystic(item){
@@ -15679,19 +15641,21 @@ const SOUND_LIBRARY=(()=>{
     isInstrument:id=>items.some(item=>item.type==="sample"&&item.id===id&&item.group==="instrumentos"),
     // {library:true}: solo lo que lista la Biblioteca (Mesa, Estudio manual); sin opciones, el banco completo (Sound Healing).
     sourceGroups:(options={})=>Object.entries(groups).flatMap(([key,group])=>{
+      if(key==="efectos")return [];
       const families=key==="instrumentos"?{mistico:"Instrumentos místicos",...group.families}:group.families;
       return Object.entries(families).flatMap(([family,name])=>{
+      if(key==="fondos"&&!wellnessBackgroundFamilies.has(family))return [];
       const sources=items.filter(item=>item.type==="sample"&&(!options.library||item.lib)&&item.group===key&&availableTake(item)&&(family==="mistico"?isMystic(item):item.family===family&&(key!=="instrumentos"||!isMystic(item))));
       return (sources.length||family==="mistico")?[{id:key+"/"+family,name:group.name+" · "+name,category:key,categoryName:group.name,familyName:name,sources:sources.map(({id,title})=>({id,title}))}]:[];
       });
     }),
-    backgroundGroups:()=>Object.entries(groups.fondos.families).flatMap(([family,name])=>{
+    backgroundGroups:()=>Object.entries(groups.fondos.families).filter(([family])=>wellnessBackgroundFamilies.has(family)).flatMap(([family,name])=>{
       const tracks=items.filter(item=>item.type==="bed"&&item.family===family&&bedPublished(item.data));
       return tracks.length?[{name,tracks:tracks.map(({id,title,data})=>({id,title,photo:data.photo}))}]:[];
     }),
     // IAH DJ creations (musica/dj, cat «dj»): todas las canciones del manifiesto, después de las 10 de MUSIC
     musicTracks:()=>MUSIC.concat((ORB.BEDS||[]).filter(bed=>bed.cat==="dj").map(bed=>bed.id)).map(id=>ORB.BEDS.find(bed=>bed.id===id)).filter(bed=>bed&&bedPublished(bed)),
-    backgroundTracks:()=>ORB.BEDS.filter(bed=>bed.cat==="naturaleza"&&!bed.bathOnly&&bedPublished(bed))
+    backgroundTracks:()=>ORB.BEDS.filter(bed=>bed.cat==="naturaleza"&&!bed.bathOnly&&wellnessBackgroundFamilies.has(bedFamily(bed))&&bedPublished(bed))
   };
 })();
 
