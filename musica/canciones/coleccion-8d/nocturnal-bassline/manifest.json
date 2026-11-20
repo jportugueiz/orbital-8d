@@ -1,0 +1,69 @@
+{
+  "title": "Nocturnal Bassline",
+  "duration": 274.76002083333333,
+  "tracks": [
+    {
+      "name": "Voz principal",
+      "file": "musica/canciones/coleccion-8d/nocturnal-bassline/00-lead-vocals.flac",
+      "sampleRate": 48000,
+      "frames": 13188481,
+      "channels": 2
+    },
+    {
+      "name": "Coros",
+      "file": "musica/canciones/coleccion-8d/nocturnal-bassline/01-backing-vocals.flac",
+      "sampleRate": 48000,
+      "frames": 13188481,
+      "channels": 2
+    },
+    {
+      "name": "Batería",
+      "file": "musica/canciones/coleccion-8d/nocturnal-bassline/02-drums.flac",
+      "sampleRate": 48000,
+      "frames": 13188481,
+      "channels": 2
+    },
+    {
+      "name": "Bajo",
+      "file": "musica/canciones/coleccion-8d/nocturnal-bassline/03-bass.flac",
+      "sampleRate": 48000,
+      "frames": 13188481,
+      "channels": 2
+    },
+    {
+      "name": "Guitarra",
+      "file": "musica/canciones/coleccion-8d/nocturnal-bassline/04-guitar.flac",
+      "sampleRate": 48000,
+      "frames": 13188481,
+      "channels": 2
+    },
+    {
+      "name": "Teclado",
+      "file": "musica/canciones/coleccion-8d/nocturnal-bassline/05-keyboard.flac",
+      "sampleRate": 48000,
+      "frames": 13188481,
+      "channels": 2
+    },
+    {
+      "name": "Percusión",
+      "file": "musica/canciones/coleccion-8d/nocturnal-bassline/06-percussion.flac",
+      "sampleRate": 48000,
+      "frames": 13188481,
+      "channels": 2
+    },
+    {
+      "name": "Sintetizador",
+      "file": "musica/canciones/coleccion-8d/nocturnal-bassline/07-synth.flac",
+      "sampleRate": 48000,
+      "frames": 13188481,
+      "channels": 2
+    },
+    {
+      "name": "Otros",
+      "file": "musica/canciones/coleccion-8d/nocturnal-bassline/08-other.flac",
+      "sampleRate": 48000,
+      "frames": 13188481,
+      "channels": 2
+    }
+  ]
+}
