@@ -3534,7 +3534,7 @@ body[data-mode="ses"] #ship .left{grid-area:library}
       <button role="tab" data-m="ai" class="on" aria-selected="true">AI Creator 8D</button>
       <button role="tab" data-m="sh" aria-selected="false">Sound Healing</button>
       <button id="bPlayScr" class="playtab" aria-label="Abrir Orbital Live 8D">ORBITAL LIVE 8D</button>
-      <button id="bOrbitalDJ" class="djtab" aria-label="Abrir Orbital DJ" onclick="try{if(typeof LAB_DJ_UI!=='undefined'&&LAB_DJ_UI&&LAB_DJ_UI.on){LAB_DJ_UI.open();return}}catch(e){}var s=window.location.search;window.location.search=(s&&s.length>1?s+'&':'?')+'dj=1'">ORBITAL DJ</button>
+      <button id="bOrbitalDJ" class="djtab" aria-label="Abrir Orbital DJ" onclick="(function abrirDJ(n){try{if(typeof LAB_DJ_UI!=='undefined'&&LAB_DJ_UI&&LAB_DJ_UI.on){LAB_DJ_UI.open();if(typeof ORBITAL_DJ_WORKSPACE!=='undefined'&&ORBITAL_DJ_WORKSPACE.ready){ORBITAL_DJ_WORKSPACE.setViewMode('8d');ORBITAL_DJ_WORKSPACE.open('pads')}return}}catch(e){console.warn('Abrir DJ 8D',e)}if(n&lt;80)setTimeout(function(){abrirDJ(n+1)},50)})(0)">ORBITAL DJ</button>
       <button id="bFrequencyBath">Baño de frecuencias</button>
     </nav>
     <div class="leds" id="leds">
@@ -24050,7 +24050,9 @@ function open(){if(!panel)return;panel.hidden=false;document.body.classList.add(
   // precarga de los loops de la biblioteca DJ (≈3 MB)
   for(const id of KITS[KIT]?.ids||[])bufFor(id,D_().bpm).catch(e=>console.warn(e))}
 function close(){if(deck){if(deck.rec)recToggle();deck.stop()}panel.hidden=true;document.body.classList.remove("ldj-open");setTimeout(freeVoices,400)}
-function init(){try{build();loadKits().then(()=>{kitOptions();const S=LS.get("orb_dj_actual",null);if(S?.kit&&KITS[S.kit]&&S.kit!==KIT)setKit(S.kit,{keepBpm:true,quiet:true})});const S=LS.get("orb_dj_actual",null);if(S)loadState(S).catch(()=>{});open()}catch(e){console.warn("DJ 8D",e)}}
+function init(){try{build();loadKits().then(()=>{kitOptions();const S=LS.get("orb_dj_actual",null);if(S?.kit&&KITS[S.kit]&&S.kit!==KIT)setKit(S.kit,{keepBpm:true,quiet:true})});const S=LS.get("orb_dj_actual",null);if(S)loadState(S).catch(()=>{});
+  // Esta capa de seis filas queda como motor heredado, nunca como interfaz visible.
+  if(typeof LAB_DJ_UI==="undefined"||!LAB_DJ_UI.on)open()}catch(e){console.warn("DJ 8D",e)}}
 if(document.readyState==="complete")setTimeout(init,0);else addEventListener("load",()=>setTimeout(init,0));
 
 /* ---------- pruebas internas (no visibles): deriva, clics, ILD, demo ---------- */
