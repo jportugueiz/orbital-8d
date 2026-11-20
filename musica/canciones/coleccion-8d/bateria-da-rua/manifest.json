@@ -1,0 +1,83 @@
+{
+  "title": "Bateria da Rua",
+  "duration": 274.36,
+  "tracks": [
+    {
+      "name": "Voz principal",
+      "file": "musica/canciones/coleccion-8d/bateria-da-rua/00-lead-vocals.flac",
+      "sampleRate": 48000,
+      "frames": 13169280,
+      "channels": 2
+    },
+    {
+      "name": "Coros",
+      "file": "musica/canciones/coleccion-8d/bateria-da-rua/01-backing-vocals.flac",
+      "sampleRate": 48000,
+      "frames": 13169280,
+      "channels": 2
+    },
+    {
+      "name": "Batería",
+      "file": "musica/canciones/coleccion-8d/bateria-da-rua/02-drums.flac",
+      "sampleRate": 48000,
+      "frames": 13169280,
+      "channels": 2
+    },
+    {
+      "name": "Bajo",
+      "file": "musica/canciones/coleccion-8d/bateria-da-rua/03-bass.flac",
+      "sampleRate": 48000,
+      "frames": 13169280,
+      "channels": 2
+    },
+    {
+      "name": "Guitarra",
+      "file": "musica/canciones/coleccion-8d/bateria-da-rua/04-guitar.flac",
+      "sampleRate": 48000,
+      "frames": 13169280,
+      "channels": 2
+    },
+    {
+      "name": "Teclado",
+      "file": "musica/canciones/coleccion-8d/bateria-da-rua/05-keyboard.flac",
+      "sampleRate": 48000,
+      "frames": 13169280,
+      "channels": 2
+    },
+    {
+      "name": "Percusión",
+      "file": "musica/canciones/coleccion-8d/bateria-da-rua/06-percussion.flac",
+      "sampleRate": 48000,
+      "frames": 13169280,
+      "channels": 2
+    },
+    {
+      "name": "Cuerdas",
+      "file": "musica/canciones/coleccion-8d/bateria-da-rua/07-strings.flac",
+      "sampleRate": 48000,
+      "frames": 13169280,
+      "channels": 2
+    },
+    {
+      "name": "Sintetizador",
+      "file": "musica/canciones/coleccion-8d/bateria-da-rua/08-synth.flac",
+      "sampleRate": 48000,
+      "frames": 13169280,
+      "channels": 2
+    },
+    {
+      "name": "Otros",
+      "file": "musica/canciones/coleccion-8d/bateria-da-rua/09-other.flac",
+      "sampleRate": 48000,
+      "frames": 13169280,
+      "channels": 2
+    },
+    {
+      "name": "Metales",
+      "file": "musica/canciones/coleccion-8d/bateria-da-rua/10-brass.flac",
+      "sampleRate": 48000,
+      "frames": 13169280,
+      "channels": 2
+    }
+  ]
+}
