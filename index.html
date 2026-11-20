@@ -2987,6 +2987,10 @@ body.ldjx-open #ldj .ldj-iah :is(.ldj-iah-story,.ldj-iah-seg,.ldj-iah-tl,.ldj-ia
   .ldx-workspace .ldx-deck-bank { grid-template-columns:minmax(0,1fr); }
   .ldx-workspace .ldx-w-hardware > .ldx-w-pad-load { font-size:8px; min-height:25px; }
 }
+.ldx-workspace.ldx-w-solo-dj [data-module-panel=decks]:not([hidden]){
+  min-height:0;overflow-y:auto;
+}
+.ldx-workspace.ldx-w-solo-dj .ldx-deck-library{flex-shrink:0}
 /* Materiales comunes para el estudio, los modos inmersivos y el mezclador integrado. */
 :root {
   --rack-edge:#535c65;
@@ -23020,6 +23024,93 @@ const LAB_DJ_NATIVE=(()=>{
  return {on,ready,open,prepare,assetPayload,setMode,get mode(){return mode},get changingMode(){return changingMode},click,fx,makeContext,channel,position,syncMix,remove,voice,meters,playhead,deckStart,deckStop,deckMix,masterTempo,pflOutputs,pflStart,pflStop,selectMaster,get deviceFault(){return lastDeviceFault},get status(){return last},get error(){return failed},clock};
 })();
 
+// Motor estéreo de Orbital para los dos decks de la edición web.
+const ORBITAL_WEB_STEREO=(()=>{
+  let mode="8d", serial=0, changingMode=false, preview=null;
+  const slots=new Map(), rows={};
+  const status={rows,deviceOpen:true,outputDevice:"",pfl:null};
+  const context=()=>ORB.ac();
+  const clock=()=>context().currentTime;
+  async function setMode(next){
+    if(next===mode)return;
+    if(changingMode||LAB_DJ_MULTITRACK.busy||LAB_DJ_MULTITRACK.recording)throw Error("Termina la operación actual antes de cambiar de modo.");
+    changingMode=true;
+    try{
+      if(mode==="classic")await LAB_DJ_DECKS.stopAll();
+      LAB_DJ_UI.songs?.pause();
+      const d=LAB_DJ.deck;
+      if(d){d.stop();for(const row of Object.values(d.R))if(row.ch){LAB_DJ._k.freeWebRow(row.id,row.ch);row.ch=null}}
+      mode=next;
+      dispatchEvent(new CustomEvent("orbital:dj-mode",{detail:{mode,resumed:false}}));
+    }finally{changingMode=false}
+  }
+  function filter(c,type,hz){const f=c.createBiquadFilter();f.type=type;f.frequency.value=hz;return f}
+  function deckMix(items){
+    const t=clock();
+    for(const m of items){
+      const ch=slots.get(m.row);if(!ch)continue;
+      const values=[[ch.vol.gain,m.mute?0:10**(m.db/20)],[ch.low.gain,m.low],[ch.mid.gain,m.mid],
+        [ch.high.gain,m.high],[ch.hp.frequency,m.hp],[ch.lp.frequency,m.lp]];
+      for(const [param,value] of values)param.setTargetAtTime(value,t,.008);
+    }
+  }
+  async function deckStart(row,buffer,offset,mix,loop,grid){
+    const c=context();await c.resume();
+    const source=c.createBufferSource(),fade=c.createGain(),vol=c.createGain(),meter=c.createAnalyser();
+    const ch={source,fade,vol,meter,low:filter(c,"lowshelf",250),mid:filter(c,"peaking",1000),
+      high:filter(c,"highshelf",4000),hp:filter(c,"highpass",20),lp:filter(c,"lowpass",20000),token:++serial};
+    const chain=[source,ch.low,ch.mid,ch.high,ch.hp,ch.lp,vol,fade,meter];
+    chain.reduce((a,b)=>(a.connect(b),b));meter.connect(ORB.M.vol);
+    source.buffer=buffer;
+    if(loop){source.loop=true;source.loopStart=loop.from;source.loopEnd=loop.to}
+    const lead=c.currentTime+.035,at=grid?grid.origin+Math.ceil((lead-grid.origin)/grid.period)*grid.period:lead;
+    fade.gain.value=0;fade.gain.setValueAtTime(0,at);fade.gain.linearRampToValueAtTime(1,at+.008);
+    slots.set(row,ch);deckMix([mix]);
+    const data=new Float32Array(256);meter.fftSize=data.length;
+    rows[row]={active:true,generation:ch.token,get peak(){meter.getFloatTimeDomainData(data);let v=0;for(const x of data)v=Math.max(v,Math.abs(x));return v}};
+    source.onended=()=>{for(const n of chain)n.disconnect();if(slots.get(row)===ch){slots.delete(row);rows[row]={generation:ch.token,active:false,peak:0}}};
+    source.start(at,offset);return {token:ch.token,at,generation:ch.token};
+  }
+  function deckStop(row,token){
+    const ch=slots.get(row);if(ch?.token!==token)return;
+    const t=clock();ch.fade.gain.cancelAndHoldAtTime(t);ch.fade.gain.linearRampToValueAtTime(0,t+.012);ch.source.stop(t+.015);
+  }
+  async function pflStop(){const c=preview;preview=null;status.pfl=null;if(c)await c.close()}
+  async function pflStart(buffer,device,offset){
+    await pflStop();const c=new AudioContext();preview=c;
+    try{await c.setSinkId(device);await c.resume();const n=c.createBufferSource();n.buffer=buffer;n.connect(c.destination);
+      n.onended=()=>{if(preview===c)void pflStop()};n.start(0,offset);return status.pfl={deviceOpen:true,activeVoices:1,outputDevice:device};
+    }catch(e){await pflStop();throw e}
+  }
+  async function pflOutputs(){const c=context();const list=await navigator.mediaDevices.enumerateDevices();
+    return {master:c.sinkId||"predeterminado",outputs:typeof c.setSinkId==="function"?list.filter(d=>d.kind==="audiooutput"&&d.deviceId&&d.deviceId!=="default").map((d,i)=>({id:d.deviceId,label:d.label||"Salida "+(i+1)})):[]}}
+  // Solapamiento sincronizado por correlación. Un único desplazamiento por grano conserva la imagen estéreo.
+  async function masterTempo(input,rate){
+    const len=Math.max(1,Math.round(input.length/rate)),out=context().createBuffer(input.numberOfChannels,len,input.sampleRate);
+    const src=Array.from({length:input.numberOfChannels},(_,i)=>input.getChannelData(i)),dst=src.map((_,i)=>out.getChannelData(i));
+    const hop=Math.max(64,Math.round(input.sampleRate*.024)),radius=Math.floor(hop/2);
+    let previous=0;
+    for(let pos=0;pos<len;pos+=hop){
+      const expected=Math.round(pos*rate);let start=expected;
+      if(pos){
+        let best=-Infinity;
+        for(let j=Math.max(0,expected-radius);j<=Math.min(input.length-hop,expected+radius);j+=4){
+          let sum=0,power=1e-10;for(let k=0;k<hop;k+=16){const a=src[0][previous+hop+k]||0,b=src[0][j+k];sum+=a*b;power+=b*b}
+          const score=sum/Math.sqrt(power);if(score>best){best=score;start=j}
+        }
+      }
+      for(let ch=0;ch<src.length;ch++)for(let k=0;k<hop&&pos+k<len;k++){
+        const next=src[ch][start+k]||0,blend=pos?k/hop:1;
+        dst[ch][pos+k]=(1-blend)*(src[ch][previous+hop+k]||0)+blend*next;
+      }
+      previous=start;if(pos%(hop*96)===0)await new Promise(done=>setTimeout(done,0));
+    }
+    return out;
+  }
+  return {get mode(){return mode},get changingMode(){return changingMode},setMode,clock,deckMix,deckStart,deckStop,status,
+    prepare:async()=>{},masterTempo,pflStart,pflStop,pflOutputs,async selectMaster(id){const c=context();await c.setSinkId(id==="predeterminado"?"":id);status.outputDevice=id}};
+})();
+
 /* ==== LAB_DJ_INICIO · ORBITAL DJ (módulo opcional) ==========================================
    Solo existe con ?dj=1 (o ?orbitaldj). Sin ese parámetro este bloque devuelve {on:false}
    antes de tocar nada: no crea nodos de audio, ni DOM, ni escuchas. La consola queda igual.
@@ -23992,7 +24083,7 @@ const ICO={
 let deck=null,ctx=null,panel=null,rowsEl=null,statusEl=null,beatEl=null,timer=null,raf=0,lastSay="",drawing=false;
 const RV={};// voces del motor por fila
 function ensureLive(){if(deck&&ctx)return deck;ctx=NATIVE?NATIVE.makeContext(ORB.ac()):ORB.ac();
-  deck=Deck(ctx,id=>rowVoice(id).src,{bpm:deck0.bpm,hidden:()=>document.hidden,free:freeRow,
+  deck=Deck(ctx,id=>(!NATIVE&&ORBITAL_WEB_STEREO.mode==="classic")?ORB.M.vol:rowVoice(id).src,{bpm:deck0.bpm,hidden:()=>document.hidden,free:freeRow,
     click:(t,acc)=>{if(NATIVE){NATIVE.click(t,acc).catch(console.error);return}const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=acc?1500:1000;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(acc?.16:.09,t+.002);g.gain.exponentialRampToValueAtTime(1e-4,t+.05);o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+.06)},
     // consumo: si la posición no cambió (pista fija o ancla), no se programa nada → los filtros de la voz dejan de recalcularse por muestra.
     // Al volver a moverse, primero se fija el valor que tenía (sin salto) y luego la rampa.
@@ -24311,7 +24402,7 @@ const _t={
   demoArr,renderArr,timeline,movPos,stretch,kitDemoArr,setKit,loadKits,get kits(){return KITS},get kit(){return KIT}};
 return {on:true,open,close,get deck(){return deck},demoArr,renderArr,PAD,ROWS,_t,sessionState,loadState,
   // piezas internas para módulos de Orbital DJ (IAH DJ, selector de kits): lectura y llamadas, sin copiar código
-  _k:{native:NATIVE,spatialProfile,audioStats:()=>NATIVE?({backend:"Benzai C++ / WASAPI",voices:NATIVE.status?.activeVoices||0,spatial:NATIVE.status?.spatialVoices||0,bufferBytes:NATIVE.status?.pcmBytes||0,audioErrors:NATIVE.error?1:0,renderOverruns:NATIVE.status?.renderOverruns||0,wasapi:NATIVE.status?.wasapi||null}):({voices:Object.keys(RV).length,benzai:Object.values(RV).filter(x=>x.v.benzai).length,processorErrors:Object.values(RV).filter(x=>x.v.benzaiError).length,audioErrors:deck?.audioErrors||0,lastAudioError:deck?.lastAudioError||null,bufferBytes:Object.values(STEMBUF).reduce((n,b)=>n+b.length*b.numberOfChannels*4,0)}),stems,e8aForma,E8A_FIT,E8A_TGT,E8A_NOM,E8A_N,e8Bus,e8Espacio,e8Post,tmap,e8sSesion,e8sCargar,e8sMezcla,TRAMOS,tramoPos,HOOKS,SYN,KH,BAKE,SC_DEF,kicksOf,clubMaster,clubBake,bandsOf,lufsOf,meterOf,PAD,PADS_OF,ROWS,ROW,CAT,CYC,MOVS,SPEED,ICO,BASE_BPM,movPos,movCopy,speedTip,bufFor,bufNow,libPad,renderArr,timeline,tmap,demoArr,ensureLive,padNum,E,say,toast,paint,exportFile,sessionState,loadState,
+  _k:{native:NATIVE,freeWebRow:freeRow,spatialProfile,audioStats:()=>NATIVE?({backend:"Benzai C++ / WASAPI",voices:NATIVE.status?.activeVoices||0,spatial:NATIVE.status?.spatialVoices||0,bufferBytes:NATIVE.status?.pcmBytes||0,audioErrors:NATIVE.error?1:0,renderOverruns:NATIVE.status?.renderOverruns||0,wasapi:NATIVE.status?.wasapi||null}):({voices:Object.keys(RV).length,benzai:Object.values(RV).filter(x=>x.v.benzai).length,processorErrors:Object.values(RV).filter(x=>x.v.benzaiError).length,audioErrors:deck?.audioErrors||0,lastAudioError:deck?.lastAudioError||null,bufferBytes:Object.values(STEMBUF).reduce((n,b)=>n+b.length*b.numberOfChannels*4,0)}),stems,e8aForma,E8A_FIT,E8A_TGT,E8A_NOM,E8A_N,e8Bus,e8Espacio,e8Post,tmap,e8sSesion,e8sCargar,e8sMezcla,TRAMOS,tramoPos,HOOKS,SYN,KH,BAKE,SC_DEF,kicksOf,clubMaster,clubBake,bandsOf,lufsOf,meterOf,PAD,PADS_OF,ROWS,ROW,CAT,CYC,MOVS,SPEED,ICO,BASE_BPM,movPos,movCopy,speedTip,bufFor,bufNow,libPad,renderArr,timeline,tmap,demoArr,ensureLive,padNum,E,say,toast,paint,exportFile,sessionState,loadState,
     restoreArrangement(a){CLUB=a?.arr?.club===true;if(deck)deck.A=a},
     get deck(){return deck},get lastArr(){return lastArr},set lastArr(a){lastArr=a},get panel(){return panel}}}})();
 /* ==== LAB_DJ_FIN ==== */
@@ -27521,7 +27612,7 @@ const section=E("details",{class:"ldx-songs ldx-multitrack","aria-label":"Grabac
  E("div",{class:"ldx-song-actions"},recButton,library,load,transfer,download,spatial,open,cancel),status,input);
 section.addEventListener("toggle",()=>{if(recording&&!section.open)section.open=true});
 function message(s){status.textContent=s;summaryStatus.textContent=recording?"● "+fmt(Math.max(0,clock()-recording.start))+" · "+Object.keys(recording.rows).length+" pistas":busy?"Preparando toma…":currentTake?currentTake.tracks.length+" pistas · "+fmt(currentTake.duration):"Sin toma"}
-const classicMode=()=>K.native?.mode==="classic";
+const classicMode=()=>(K.native?.mode??globalThis.ORBITAL_DJ_WORKSPACE?.viewMode)==="classic"||globalThis.ORBITAL_DJ_WORKSPACE?.viewMode==="dj";
 function paint(){
  const classic=classicMode(), stereoTake=currentTake?.recordingMode==="classic";
  transfer.hidden=classic||!stereoTake;transfer.disabled=busy||!!recording;
@@ -27557,7 +27648,7 @@ function sample(){if(!recording)return;const d=K.deck;if(!d)return;const sec=clo
  const fx=ui()?.S.fx;if(fx){const val={...clone(fx),bpm:d.bpm},last=recording.fx.at(-1);if(!last||JSON.stringify(last[1])!==JSON.stringify(val))recording.fx.push([Math.max(0,sec),val])}
  if(recording.error){message(recording.error);return}if(sec>=0)message("● Grabando "+Object.keys(recording.rows).length+" pistas · "+fmt(sec)+" · posiciones, niveles y EQ");
 }
-async function start(){if(recording||busy)return;busy=true;cancelled=false;section.open=true;paint();try{const d=K.ensureLive();await d.c.resume();if(cancelled)throw Error("Grabación cancelada");recording={recordingMode:K.native?.mode==="classic"?"classic":"8d",start:clock(),name:title.value.trim()||"Mi set",rows:{},nodes:new Map(),fx:[],createdAt:new Date().toISOString(),environment:typeof ORB!=="undefined"?{ren:"v10-a",space:ORB.M?.space||"sala",hyper:ORB.M?.hyper||1,room:(ORB.M?.wet?.gain?.value??.88)/4,iso:ORB.M?.iso||null}:{ren:"v10-a",space:"sala",hyper:1,room:.22,iso:null}};
+async function start(){if(recording||busy)return;busy=true;cancelled=false;section.open=true;paint();try{const d=K.ensureLive();await d.c.resume();if(cancelled)throw Error("Grabación cancelada");recording={recordingMode:classicMode()?"classic":"8d",start:clock(),name:title.value.trim()||"Mi set",rows:{},nodes:new Map(),fx:[],createdAt:new Date().toISOString(),environment:typeof ORB!=="undefined"?{ren:"v10-a",space:ORB.M?.space||"sala",hyper:ORB.M?.hyper||1,room:(ORB.M?.wet?.gain?.value??.88)/4,iso:ORB.M?.iso||null}:{ren:"v10-a",space:"sala",hyper:1,room:.22,iso:null}};
  for(const [id,r] of Object.entries(d.R)){if(!r.cur?.node?.n?.buffer)continue;const n=r.cur.node,src=n.n;source({type:"start",row:id,node:n,buffer:src.buffer,at:src.at??n.at,offset:n.offset||src.offset||0,loop:src.loop,loopStart:src.loopStart,loopEnd:src.loopEnd,fade:0})}
  if(recording.recordingMode==="classic"&&typeof LAB_DJ_DECKS!=="undefined")for(const item of LAB_DJ_DECKS.snapshotSources())source(item);
  sample();timer=setInterval(sample,1000/HZ);paint();message("● Grabando. Toca tu set o pulsa Play en Canciones.")
@@ -27585,7 +27676,7 @@ async function loadTake(){if(!currentTake||busy||recording)return;busy=true;canc
 // Sólo el manifiesto de reproducción: poses/mix de captura ya están impresos en WAV/ruta.
 function packageMetadata(take,blobs){return {format:"orbital-multitrack",version:VERSION,id:take.id,name:take.name,createdAt:take.createdAt,duration:take.duration,sampleRate:SR,recordingMode:take.recordingMode||"8d",fx:take.fx||[],environment:take.environment||null,mode:take.mode,tracks:take.tracks.map((t,i)=>({id:t.id,name:t.name,role:t.role,rol:t.rol,color:t.color,fileName:t.fileName,automationFinal:t.automationFinal!==false,audioChannels:t.audioChannels||(take.recordingMode==="classic"?2:1),audioBytes:blobs[i].size,routeBytes:t.automation?.byteLength||0}))}}
 function validateMetadata(t){if(!t||t.format!=="orbital-multitrack"||t.version!==VERSION||!Array.isArray(t.tracks)||!t.tracks.length||t.tracks.length>36)throw Error("Toma incompatible");if(!Number.isFinite(t.duration)||t.duration<=0||t.duration>21600||t.sampleRate!==SR)throw Error("Duración o frecuencia inválida");if(t.recordingMode==null)t.recordingMode="8d";if(!["classic","8d"].includes(t.recordingMode))throw Error("Modo de toma inválido");if(typeof t.name!=="string"||t.name.length>160||typeof t.createdAt!=="string"||!Number.isFinite(Date.parse(t.createdAt)))throw Error("Identificación de toma inválida");if(!Array.isArray(t.fx)||t.fx.length>Math.ceil(t.duration*40)+2||t.fx.some(q=>!Array.isArray(q)||q.length!==2||!Number.isFinite(q[0])||q[0]<0||q[0]>t.duration+1||!q[1]||!Number.isFinite(q[1].bpm)||q[1].bpm<=0||!Number.isFinite(q[1].div)||q[1].div<=0||!Number.isFinite(q[1].depth)||q[1].depth<0||q[1].depth>1))throw Error("Automatización de efectos inválida");for(const p of t.tracks){if(!p||typeof p.name!=="string"||p.name.length>160||!Number.isSafeInteger(p.audioBytes)||p.audioBytes<44||!Number.isSafeInteger(p.routeBytes)||p.routeBytes<0||p.routeBytes%16||p.routeBytes>(Math.ceil(t.duration*100)+1)*16)throw Error("Pista incompleta");if(p.automationFinal!=null&&typeof p.automationFinal!=="boolean")throw Error("Tipo de recorrido inválido");if(p.audioChannels==null)p.audioChannels=t.recordingMode==="classic"?2:1;if(![1,2].includes(p.audioChannels)||!p.routeBytes&&t.recordingMode!=="classic")throw Error("Canales o recorrido inválidos");p.automationFinal=t.recordingMode==="classic"?false:p.automationFinal!==false;delete p.poses;delete p.mix;}return t}
-async function transferTo8D(){if(!currentTake||busy||recording)return;try{ui()?.songs?.pause();if(K.deck?.playing)K.deck.stop();if(K.native?.on)await K.native.setMode("8d");await loadTake();message("Pistas listas en 8D. Define sus movimientos y graba una nueva toma.")}catch(e){message("No se pudo pasar a 8D: "+e.message)}}
+async function transferTo8D(){if(!currentTake||busy||recording)return;try{ui()?.songs?.pause();if(K.deck?.playing)K.deck.stop();if(K.native?.on)await K.native.setMode("8d");else if(globalThis.ORBITAL_DJ_WORKSPACE)await ORBITAL_DJ_WORKSPACE.requestMode("8d");await loadTake();message("Pistas listas en 8D. Define sus movimientos y graba una nueva toma.")}catch(e){message("No se pudo pasar a 8D: "+e.message)}}
 async function downloadTake(){if(!currentTake||busy||recording)return;busy=true;cancelled=false;paint();try{const blobs=[];for(const t of currentTake.tracks){if(cancelled)throw Error("Descarga cancelada");blobs.push(await audioOf(t))}const meta=packageMetadata(currentTake,blobs),json=new TextEncoder().encode(JSON.stringify(meta)),head=new Uint8Array(MAGIC.length+4),v=new DataView(head.buffer);head.set(new TextEncoder().encode(MAGIC));if(json.byteLength>16*1024*1024)throw Error("El manifiesto supera el límite de importación");v.setUint32(MAGIC.length,json.byteLength,true);const parts=[head,json];currentTake.tracks.forEach((t,i)=>{parts.push(blobs[i]);if(t.automation)parts.push(t.automation)});await EXP.guardar(new Blob(parts,{type:"application/octet-stream"}),safe(currentTake.name)+".orbitalset")}catch(e){message("No se pudo descargar: "+e.message)}finally{busy=false;paint();message(status.textContent)}}
 async function importTake(file){if(busy||recording)return;busy=true;cancelled=false;paint();let pending=null;try{const n=MAGIC.length+4,h=await file.slice(0,n).arrayBuffer(),v=new DataView(h);if(new TextDecoder().decode(new Uint8Array(h,0,MAGIC.length))!==MAGIC)throw Error("Formato de toma no reconocido");const size=v.getUint32(MAGIC.length,true);if(size>16*1024*1024||n+size>file.size)throw Error("Cabecera inválida");const t=validateMetadata(JSON.parse(await file.slice(n,n+size).text()));t.id="take_"+Date.now();pending={tracks:[]};let at=n+size;for(const p of t.tracks){if(cancelled)throw Error("Importación cancelada");if(!Number.isSafeInteger(p.audioBytes)||p.audioBytes<44||!Number.isSafeInteger(p.routeBytes)||p.routeBytes%16||p.routeBytes<0||at+p.audioBytes+p.routeBytes>file.size)throw Error("Pista incompleta");p.audioKey=t.id+"/"+t.tracks.indexOf(p);await db.run("readwrite",s=>s.put(file.slice(at,at+p.audioBytes,"audio/wav"),p.audioKey),"audio");pending.tracks.push({audioKey:p.audioKey});at+=p.audioBytes;p.automation=p.routeBytes?new Float32Array(await file.slice(at,at+p.routeBytes).arrayBuffer()):null;at+=p.routeBytes;if(p.automation&&!p.automation.every(Number.isFinite))throw Error("Recorrido inválido");delete p.audioBytes;delete p.routeBytes}if(at!==file.size)throw Error("Tamaño de toma incorrecto");await saveTake(t);pending=null;currentTake=t;await refresh();message("Toma importada. Carga sus pistas para continuar.")}catch(e){if(pending)await discardAudio(pending);throw e}finally{busy=false;paint();message(status.textContent)}}
 async function exportSpatial(){if(!currentTake||busy||recording)return;busy=true;cancelled=false;paint();try{ui()?.songs?.pause();if(K.deck?.playing)K.deck.stop();const N=Math.ceil((currentTake.duration+(currentTake.recordingMode==="classic"?0:1.5))*SR),L=new Float32Array(N),R=new Float32Array(N);for(const t of currentTake.tracks){if(cancelled)throw Error("Exportación cancelada");message("Renderizando 8D · "+t.name);const mono=await K.ensureLive().c.decodeAudioData(await (await audioOf(t)).arrayBuffer());if(currentTake.recordingMode==="classic"){const l=mono.getChannelData(0),r=mono.getChannelData(Math.min(1,mono.numberOfChannels-1));for(let i=0;i<Math.min(N,mono.length);i++){L[i]+=l[i];R[i]+=r[i]}continue;}const n=Math.ceil((currentTake.duration+1.5)*50)+1,frames=new Float32Array(n*3);for(let i=0;i<n;i++){const k=Math.min(t.automation.length/4-1,i*2),a=t.automation;frames[i*3]=a[k*4]*180/Math.PI;frames[i*3+1]=a[k*4+1]*90;frames[i*3+2]=.25*Math.pow(20,a[k*4+2])}const b=await ORB.render({dur:currentTake.duration+1.5,seed:1,inten:.7,room:currentTake.environment?.room??.22,space:currentTake.environment?.space||"sala",hyper:currentTake.environment?.hyper||1,_iso:currentTake.environment?.iso,vol_db:0,ren:currentTake.environment?.ren||"v10-a",limiter:false,fileBuf:mono,sources:[{kind:"file",label:t.name,dj:true,vol_db:0,depth:.7,speed:.45,distance:.35,seed:1,ren:"v10-a",path:{type:"take",frames,fr:50,loop:false}}]});for(let i=0;i<Math.min(N,b.length);i++){L[i]+=b.getChannelData(0)[i];R[i]+=b.getChannelData(1)[i]}}
@@ -27839,7 +27930,7 @@ const LAB_DJ_SHOW = (() => {
 
 /* A/B stereo performance. Only Program uses Benzai; cue preview has its own device. */
 const LAB_DJ_DECKS = (() => {
-  const native = LAB_DJ_NATIVE;
+  const native = LAB_DJ_NATIVE.on ? LAB_DJ_NATIVE : ORBITAL_WEB_STEREO;
   const K = () => LAB_DJ._k;
   const deck = name => ({ name, row: "deck_" + name, track: null, buffer: null, audio: null,
     offset: 0, cue: 0, hot: [null, null, null, null], bpm: null, speed: 1, gain: 1, eq: [0, 0, 0], filter: 0, busy: false });
@@ -28880,7 +28971,7 @@ function setViewMode(mode,persist=true){
  U.songs?.render();
  scheduleResize();
 }
-async function requestMode(mode){if(modeBusy||!["classic","8d"].includes(mode))return false;const native=typeof LAB_DJ_NATIVE!=="undefined"?LAB_DJ_NATIVE:null;if(!native?.on||typeof native.setMode!=="function"){modeStatus.textContent="El cambio de motor todavía no está disponible.";return false}modeBusy=true;root.classList.add("ldx-w-mode-busy");viewDJButton.disabled=view8DButton.disabled=true;modeStatus.textContent="Cambiando modo…";try{await native.setMode(mode);setViewMode(mode==="classic"?"dj":"8d");try{localStorage.setItem(MODE_KEY,mode)}catch(_){}modeStatus.textContent=mode==="classic"?"DJ":"DJ 8D";return true}catch(e){modeStatus.textContent="No se cambió el modo: "+e.message;return false}finally{modeBusy=false;root.classList.remove("ldx-w-mode-busy");viewDJButton.disabled=view8DButton.disabled=false}}
+async function requestMode(mode){if(modeBusy||!["classic","8d"].includes(mode))return false;const native=LAB_DJ_NATIVE.on?LAB_DJ_NATIVE:ORBITAL_WEB_STEREO;if(typeof native.setMode!=="function"){modeStatus.textContent="El cambio de motor todavía no está disponible.";return false}modeBusy=true;root.classList.add("ldx-w-mode-busy");viewDJButton.disabled=view8DButton.disabled=true;modeStatus.textContent="Cambiando modo…";try{await native.setMode(mode);setViewMode(mode==="classic"?"dj":"8d");try{localStorage.setItem(MODE_KEY,mode)}catch(_){}modeStatus.textContent=mode==="classic"?"DJ":"DJ 8D";return true}catch(e){modeStatus.textContent="No se cambió el modo: "+e.message;return false}finally{modeBusy=false;root.classList.remove("ldx-w-mode-busy");viewDJButton.disabled=view8DButton.disabled=false}}
 function currentAuto(){const d=LAB_DJ._k.deck;return d?.playing&&d.A?.arr?d:null}
 function stopAuto(){const d=currentAuto();if(d){d.stop();LAB_DJ._k.paint?.();updateSelection()}return !!d}
 function handleTransportKey(){if(modeBusy)return true;if(soloDJ&&active==="decks"){LAB_DJ_DECKS.toggleFocused();return true}return stopAuto()}
