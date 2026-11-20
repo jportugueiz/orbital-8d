@@ -21,7 +21,16 @@ const state = {
   intensity:.76,transport:null,cueBeat:null,notice:'',native:false
 };
 const session = new URLSearchParams(location.search).get('session');
-const channel = /^[a-f\d-]{36}$/i.test(session || '') ? new BroadcastChannel('orbital-show:'+session) : null;
+const validSession=/^[a-f\d-]{36}$/i.test(session||'');
+const receiveLocal=event=>{
+  if(event.source===window.opener&&event.origin==="null"&&event.data?.orbitalSession===session)
+    channel.onmessage?.({data:event.data.payload});
+};
+const channel=!validSession?null:location.protocol==="file:"?(window.opener?{
+  postMessage(payload){window.opener.postMessage({orbitalSession:session,payload},"*")},
+  close(){removeEventListener("message",receiveLocal)}
+}:null):new BroadcastChannel('orbital-show:'+session);
+if(channel&&location.protocol==="file:")addEventListener("message",receiveLocal);
 const send = data => channel?.postMessage(data);
 const now = () => performance.timeOrigin + performance.now();
 const safe = value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

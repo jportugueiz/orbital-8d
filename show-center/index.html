@@ -25,6 +25,11 @@
     </div>
   </header>
   <main id="stage"></main>
-  <script type="module" src="center.mjs"></script>
+  <script>
+    const entry=document.createElement("script");
+    if(location.protocol==="file:")entry.src="center-local.js";
+    else{entry.type="module";entry.src="center.mjs"}
+    document.body.append(entry);
+  </script>
 </body>
 </html>

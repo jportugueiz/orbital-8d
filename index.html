@@ -5610,7 +5610,7 @@ function cInit(){if(cctx)return;const AC=window.AudioContext||window.webkitAudio
   try{if(navigator.audioSession)navigator.audioSession.type="playback"}catch(e){}
   // Prioriza una salida estable cuando coinciden audio espacial y render 3D.
   let dj=false;try{const q=new URLSearchParams(location.search);dj=["dj","orbitaldj"].some(k=>q.has(k)&&!["0","no","false","off"].includes(String(q.get(k)).toLowerCase()))}catch(_){}
-  try{cctx=new AC({sampleRate:48000,latencyHint:.1,renderSizeHint:dj?1024:"default"})}catch(e){cctx=new AC({sampleRate:48000,latencyHint:.1})}
+  try{cctx=new AC({sampleRate:48000,latencyHint:dj?.25:.1,renderSizeHint:dj?2048:"default"})}catch(e){cctx=new AC({sampleRate:48000,latencyHint:.1})}
   ORB._master(cctx)}
 
 /* ===== EFECTOS POR FUENTE y LABORATORIO =====
@@ -24087,7 +24087,14 @@ function ensureLive(){if(deck&&ctx)return deck;ctx=NATIVE?NATIVE.makeContext(ORB
     click:(t,acc)=>{if(NATIVE){NATIVE.click(t,acc).catch(console.error);return}const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=acc?1500:1000;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(acc?.16:.09,t+.002);g.gain.exponentialRampToValueAtTime(1e-4,t+.05);o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+.06)},
     // consumo: si la posición no cambió (pista fija o ancla), no se programa nada → los filtros de la voz dejan de recalcularse por muestra.
     // Al volver a moverse, primero se fija el valor que tenía (sin salto) y luego la rampa.
-    move:(id,t,P,dk)=>{if(NATIVE){for(const h of HOOKS.pos)P=h(id,P,t)||P;for(const h of HOOKS.capturePos)try{h(id,P,t)}catch(e){console.warn(e)}NATIVE.position(id,P,t,dk);return}const x=RV[id];if(!x||!x.v)return;for(const h of HOOKS.pos)try{P=h(id,P,t)||P}catch(e){}for(const h of HOOKS.capturePos)try{h(id,P,t)}catch(e){console.warn(e)}const L=x.v.last,d0=x.v.duck||[0,0];if(dk)x.v.duck=dk;
+    move:(id,t,P,dk)=>{if(NATIVE){for(const h of HOOKS.pos)P=h(id,P,t)||P;for(const h of HOOKS.capturePos)try{h(id,P,t)}catch(e){console.warn(e)}NATIVE.position(id,P,t,dk);return}const web=webVoices.get(id);
+      if(web){for(const h of HOOKS.pos)P=h(id,P,t)||P;
+        for(const h of HOOKS.capturePos)h(id,P,t);
+        const previous=web.lastPose;
+        if(!previous||P.some((v,i)=>Math.abs(v-previous[i])>.0001)||web.duckL!==(dk?.[0]||0)||web.duckR!==(dk?.[1]||0)){
+          web.port.postMessage({pose:spatialProfile(P,dk),at:t});web.lastPose=P.slice();web.duckL=dk?.[0]||0;web.duckR=dk?.[1]||0;
+        }return}
+      const x=RV[id];if(!x||!x.v)return;for(const h of HOOKS.pos)try{P=h(id,P,t)||P}catch(e){}for(const h of HOOKS.capturePos)try{h(id,P,t)}catch(e){console.warn(e)}const L=x.v.last,d0=x.v.duck||[0,0];if(dk)x.v.duck=dk;
       if(L&&Math.abs(L[0]-P[0])<.02&&Math.abs(L[1]-P[1])<.02&&Math.abs(L[2]-P[2])<.002&&!(dk&&(Math.abs(dk[0]-d0[0])>.1||Math.abs(dk[1]-d0[1])>.1))){x.held=true;return}
       try{if(x.held&&L)vPos(x.v,Math.max(ctx.currentTime,x.lt||0),L,x.v.k||.7,false);x.held=false;vPos(x.v,t,P,x.v.k||.7,L!=null);x.lt=t}catch(e){deck.audioErrors=(deck.audioErrors||0)+1;deck.lastAudioError=String(e)}}});
   Object.assign(deck,{quant:deck0.quant,metro:deck0.metro});
@@ -24099,14 +24106,36 @@ function ensureLive(){if(deck&&ctx)return deck;ctx=NATIVE?NATIVE.makeContext(ORB
 // estado antes de tocar el audio (el AudioContext solo nace con un gesto)
 const deck0={bpm:BASE_BPM,quant:1,metro:false,sweep:0,master:0,R:Object.fromEntries(ROWS.map(r=>[r.id,{mov:movCopy(r.def),vol:r.vol,filt:0,sel:PADS_OF[r.id][0]}]))};
 const D_=()=>deck||deck0;
-function rowVoice(id){if(NATIVE)return NATIVE.voice(id);let x=RV[id];if(x&&x.v&&x.s._v===x.v)return x.v;
+let spatialModule=null,spatialLoad=null;
+const webVoices=new Map();
+async function prepareSpatial(context){
+  if(NATIVE||!context.audioWorklet||context.sampleRate!==48000)return;
+  if(!spatialLoad)spatialLoad=Promise.all([
+    context.audioWorklet.addModule("orbital-spatial-worklet.js"),
+    fetch("orbital-spatial.wasm").then(async response=>{
+      if(!response.ok)throw Error("Motor 8D web: "+response.status);
+      return WebAssembly.compile(await response.arrayBuffer());
+    })
+  ]).then(([,module])=>{spatialModule=module}).catch(e=>{spatialLoad=null;console.warn(e)});
+  await spatialLoad;
+}
+function rowVoice(id){if(spatialModule){
+  let node=webVoices.get(id);
+  if(!node){
+    node=new AudioWorkletNode(ctx,"orbital-web-spatial",{numberOfInputs:1,numberOfOutputs:2,
+      channelCount:1,channelCountMode:"explicit",outputChannelCount:[2,1],
+      processorOptions:{module:spatialModule,pose:spatialProfile([0,0,1.7])}});
+    node.connect(ORB.M.dry,0);node.connect(ORB.M.rev,1);webVoices.set(id,node);
+  }
+  return {src:node}
+}if(NATIVE)return NATIVE.voice(id);let x=RV[id];if(x&&x.v&&x.s._v===x.v)return x.v;
   const s=ORB.newSource({kind:"file",label:"DJ · "+ROW[id].n,dj:true,vol_db:0,depth:.7,speed:.45,distance:.35,ren:"v10-a",path:{type:"still",az0:0,el:0}});
   const v=ORB.rtVoice(s);const t=ctx.currentTime;try{v.lvl.gain.cancelScheduledValues(t);v.lvl.gain.setTargetAtTime(1,t,.05)}catch(e){}
   RV[id]={s,v};return v}
 // libera la voz 8D y la cadena de una pista callada (se vuelven a crear al lanzarla)
-function freeRow(id,ch){const dis=n=>{try{n&&n.disconnect&&n.disconnect()}catch(e){}};if(ch){for(const k of ["in","hp","lp","vol","drop","duck","head"])dis(ch[k]);if(ch.eq)for(const n of Object.values(ch.eq))dis(n)}
+function freeRow(id,ch){const web=webVoices.get(id);if(web){web.port.postMessage({stop:true});web.disconnect();web.port.close();webVoices.delete(id)}const dis=n=>{try{n&&n.disconnect&&n.disconnect()}catch(e){}};if(ch){for(const k of ["in","hp","lp","vol","drop","duck","head"])dis(ch[k]);if(ch.eq)for(const n of Object.values(ch.eq))dis(n)}
   const x=RV[id];if(x){try{ORB.killVoice(x.s,.05)}catch(e){}delete RV[id]}}
-function freeVoices(){if(panel&&!panel.hidden)return;for(const id of Object.keys(RV)){try{ORB.killVoice(RV[id].s,.1)}catch(e){}delete RV[id]}if(deck)for(const r of Object.values(deck.R))r.ch=null}
+function freeVoices(){if(panel&&!panel.hidden)return;for(const id of webVoices.keys())freeRow(id,deck?.R[id]?.ch);for(const id of Object.keys(RV)){try{ORB.killVoice(RV[id].s,.1)}catch(e){}delete RV[id]}if(deck)for(const r of Object.values(deck.R))r.ch=null}
 
 // Canciones: una toma completa por pista, sin estirar, cuantizar ni repetir.
 const stems={
@@ -24402,7 +24431,7 @@ const _t={
   demoArr,renderArr,timeline,movPos,stretch,kitDemoArr,setKit,loadKits,get kits(){return KITS},get kit(){return KIT}};
 return {on:true,open,close,get deck(){return deck},demoArr,renderArr,PAD,ROWS,_t,sessionState,loadState,
   // piezas internas para módulos de Orbital DJ (IAH DJ, selector de kits): lectura y llamadas, sin copiar código
-  _k:{native:NATIVE,freeWebRow:freeRow,spatialProfile,audioStats:()=>NATIVE?({backend:"Benzai C++ / WASAPI",voices:NATIVE.status?.activeVoices||0,spatial:NATIVE.status?.spatialVoices||0,bufferBytes:NATIVE.status?.pcmBytes||0,audioErrors:NATIVE.error?1:0,renderOverruns:NATIVE.status?.renderOverruns||0,wasapi:NATIVE.status?.wasapi||null}):({voices:Object.keys(RV).length,benzai:Object.values(RV).filter(x=>x.v.benzai).length,processorErrors:Object.values(RV).filter(x=>x.v.benzaiError).length,audioErrors:deck?.audioErrors||0,lastAudioError:deck?.lastAudioError||null,bufferBytes:Object.values(STEMBUF).reduce((n,b)=>n+b.length*b.numberOfChannels*4,0)}),stems,e8aForma,E8A_FIT,E8A_TGT,E8A_NOM,E8A_N,e8Bus,e8Espacio,e8Post,tmap,e8sSesion,e8sCargar,e8sMezcla,TRAMOS,tramoPos,HOOKS,SYN,KH,BAKE,SC_DEF,kicksOf,clubMaster,clubBake,bandsOf,lufsOf,meterOf,PAD,PADS_OF,ROWS,ROW,CAT,CYC,MOVS,SPEED,ICO,BASE_BPM,movPos,movCopy,speedTip,bufFor,bufNow,libPad,renderArr,timeline,tmap,demoArr,ensureLive,padNum,E,say,toast,paint,exportFile,sessionState,loadState,
+  _k:{native:NATIVE,freeWebRow:freeRow,prepareSpatial,get webSpatialVoices(){return webVoices.size},spatialProfile,audioStats:()=>NATIVE?({backend:"Benzai C++ / WASAPI",voices:NATIVE.status?.activeVoices||0,spatial:NATIVE.status?.spatialVoices||0,bufferBytes:NATIVE.status?.pcmBytes||0,audioErrors:NATIVE.error?1:0,renderOverruns:NATIVE.status?.renderOverruns||0,wasapi:NATIVE.status?.wasapi||null}):({voices:Object.keys(RV).length,benzai:Object.values(RV).filter(x=>x.v.benzai).length,processorErrors:Object.values(RV).filter(x=>x.v.benzaiError).length,audioErrors:deck?.audioErrors||0,lastAudioError:deck?.lastAudioError||null,bufferBytes:Object.values(STEMBUF).reduce((n,b)=>n+b.length*b.numberOfChannels*4,0)}),stems,e8aForma,E8A_FIT,E8A_TGT,E8A_NOM,E8A_N,e8Bus,e8Espacio,e8Post,tmap,e8sSesion,e8sCargar,e8sMezcla,TRAMOS,tramoPos,HOOKS,SYN,KH,BAKE,SC_DEF,kicksOf,clubMaster,clubBake,bandsOf,lufsOf,meterOf,PAD,PADS_OF,ROWS,ROW,CAT,CYC,MOVS,SPEED,ICO,BASE_BPM,movPos,movCopy,speedTip,bufFor,bufNow,libPad,renderArr,timeline,tmap,demoArr,ensureLive,padNum,E,say,toast,paint,exportFile,sessionState,loadState,
     restoreArrangement(a){CLUB=a?.arr?.club===true;if(deck)deck.A=a},
     get deck(){return deck},get lastArr(){return lastArr},set lastArr(a){lastArr=a},get panel(){return panel}}}})();
 /* ==== LAB_DJ_FIN ==== */
@@ -25564,10 +25593,10 @@ function create(B){
     data.push({...entry,blob,buffer,fileName:entry.name+entry.file.slice(entry.file.lastIndexOf(".")),automation})}
    if(token!==loadingToken)return;install(data,manifest.title,null,{reveal,choice:song.id});const d=K.deck;if(d&&!d.playing&&Number.isFinite(manifest.bpm))d.setBpm(manifest.bpm);
   }catch(e){library.value=sourceChoice;message("No se pudo abrir "+song.name+": "+e.message)}finally{if(token===loadingToken){loading=false;paint()}}}
- async function playSong(){if(loading||!tracks.length||state==="playing")return;const request=++playRequest,d=K.ensureLive();try{await d.c.resume()}catch(e){message("No se pudo abrir el audio: "+e.message);paint();return}
+ async function playSong(){if(loading||!tracks.length||state==="playing")return;const request=++playRequest,d=K.ensureLive();try{await d.c.resume();if(tracks.length>=16)await K.prepareSpatial(d.c)}catch(e){message("No se pudo abrir el audio: "+e.message);paint();return}
   if(request!==playRequest||loading||state==="playing")return;
   const extras=Object.values(d.R).filter(r=>!r.song&&(r.cur||r.pend?.pad)).length;
-  if(extras+tracks.length>36){message("Hay "+extras+" pads activos: detén algunos para no superar 36 sonidos simultáneos.");return}
+  if(K.native&&extras+tracks.length>36){message("Hay "+extras+" pads activos: detén algunos para no superar 36 sonidos simultáneos.");return}
   if(offset>=duration-.005){offset=0;barCursor=0;}const gen=++generation;
   try{for(const t of tracks){B.ensureRow(t);B.apply(t)}
    const count=extras+tracks.length;d.setAuto(extras===0&&tracks.every(t=>t.printedMix)?0:count<=2?0:-1.5-13*Math.log10(Math.max(1,count/3)));
@@ -26284,7 +26313,7 @@ function padPress(t,r,atBar){const id=t.clips[r];if(S.delMode){delSound(t,r);ret
   chainFor(t);applyVol(t);applyFilt(t);applyEq(t);syncPads();sync();if(fresh)renderStrips()}
 const isLive=o=>{const R=K.deck&&K.deck.R[o.eng];return !!(R&&(R.cur||(R.pend&&R.pend.pad)))||o.state.play>=0};
 // tope de voces del equipo (ORB.MAXV: 6 en el celular, 8 en la compu)
-function voiceRoom(){const d=K.deck;if(!d)return true;const max=36;const n=Object.values(d.R).filter(R=>R.cur||(R.pend&&R.pend.pad)).length;
+function voiceRoom(){const d=K.deck;if(!d)return true;const max=36;const n=Object.values(d.R).filter(R=>(K.native||!R.song)&&(R.cur||(R.pend&&R.pend.pad))).length;
   if(n>=max){K.toast("Ya suenan "+n+" sonidos: es el máximo en este equipo. Para uno para sumar otro.");return false}return true}
 function layer(t,r,id,curId){if(!voiceRoom())return;const sat=S.tracks.find(o=>!o.clips.some(Boolean)&&!isLive(o));
   if(!sat){K.toast("No hay pistas libres para sumar otro sonido: vacía una con «⋯ → Vaciar pista»");return}
@@ -27710,7 +27739,17 @@ const LAB_DJ_SHOW = (() => {
     };
     let socket, camWindow, ticket, lastCam = 0, cameras = [], media = [], live=null, cameraProgram = null;
     const session = globalThis.crypto?.randomUUID?.();
-    const dashboard = session && typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("orbital-show:" + session) : null;
+    let showWindow=null;
+    const fileLink=location.protocol==="file:"&&session;
+    const receiveLocal=event=>{
+      if(event.source===showWindow&&event.origin==="null"&&event.data?.orbitalSession===session)
+        dashboard.onmessage?.({data:event.data.payload});
+    };
+    const dashboard = fileLink ? {
+      postMessage(payload){if(showWindow&&!showWindow.closed)showWindow.postMessage({orbitalSession:session,payload},"*")},
+      close(){removeEventListener("message",receiveLocal)}
+    } : session && typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("orbital-show:" + session) : null;
+    if(fileLink)addEventListener("message",receiveLocal);
     let dashboardSeen = -Infinity;
     const camOrigin = "http://127.0.0.1:5313";
     const send = data => { if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(data)); };
@@ -27818,7 +27857,7 @@ const LAB_DJ_SHOW = (() => {
 
     const opening = button("Abrir Show Center", () => {
       if (!dashboard) { message.textContent = "Abre Orbital desde su servidor local."; return; }
-      const opened = window.open("show-center/?session=" + session, "OrbitalShowCenter-" + session);
+      const opened = showWindow = window.open("show-center/index.html?session=" + session, "OrbitalShowCenter-" + session);
       if (!opened) { message.textContent = "Permite abrir la página de Show Center."; return; }
       if (!LAB_DJ.deck?.playing && globalThis.ORBITAL_DJ_WORKSPACE?.viewMode === "8d") {
         try { void LAB_DJ._k.ensureLive().c.resume().catch(() => {}); } catch (_) {}
