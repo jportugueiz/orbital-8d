@@ -28721,12 +28721,12 @@ function iahDropLayer(levels,b){
   const end=phrase.end,seconds=(end-b)*240/K.deck.bpm;
   if(seconds<2.5)return;
   const candidates=levels.colors.filter(c=>c.share>=.12&&c.share>=1.5*Math.max(.02,c.before)).sort((a,z)=>z.share-a.share);
-  const chosen=candidates.find(c=>c.track!==previous?.track)||candidates[0];
+  const chosen=candidates.find(c=>c.track!==previous?.ref?.deref())||candidates[0];
   if(!chosen)return;
   const {track}=chosen,preset=DJ_MOVEMENT_BANK.choose({kind:IAHS.kind==="extasis"?"drop":IAHS.kind||"break",rnd:iahRnd,seconds,previous:phrase.forma});
   phrase.split={track,start:b,end,preset:preset.id,origin:IAH8D.orbitalPose(b,phrase)};
   IAHS.splitBars+=end-b;
-  IAHS.lastSplit={index:phrase.index,track};
+  IAHS.lastSplit={index:phrase.index,ref:new WeakRef(track)}; // WeakRef (22 nov): no retiene la pista (y su audio) tras soltar la canción
   iahLiveLog({kind:"capa",b,fin:end,pista:track.name,figura:preset.id,motivo:(voiceGap?"hueco vocal: ":"")+track.name+" sube a "+Math.round(100*chosen.share)+" % de la mezcla"});
 }
 function iahSection(levels,now,b){
@@ -33506,7 +33506,9 @@ const DJ_RAPIDO=(()=>{
   }
   function stopP(fade=.06){const p=P;P=null;if(!p)return;p.dead=true;const c=ac(),t=c.currentTime;
     try{p.out.gain.cancelScheduledValues(t);p.out.gain.setValueAtTime(p.out.gain.value,t);p.out.gain.linearRampToValueAtTime(0,t+fade)}catch(_){}
-    for(const s of p.srcs)try{s.stop(t+fade+.02)}catch(_){}setTimeout(()=>{try{p.out.disconnect()}catch(_){}},(fade+.2)*1000)}
+    for(const s of p.srcs)try{s.stop(t+fade+.02)}catch(_){}clearTimeout(p.tk);clearInterval(p.mon);setTimeout(()=>{try{p.out.disconnect()}catch(_){}release(p)},(fade+.2)*1000)}
+  // memoria (22 nov): al parar o ceder, el preludio suelta sus pistas decodificadas (antes las retenía 90 s: ~700 MB tras «Detener»)
+  function release(p){for(const s of p.srcs||[])try{s.disconnect()}catch(_){}p.srcs=[];p.full2=null;p.g=null;p.upgrade=()=>{}}
   // posición del preludio (s de la canción) en el instante t del contexto
   const posAt=(p,t)=>p.run?Math.min(p.len,p.off+Math.max(0,t-p.t0)):p.off;
   function play(p,bufs,from,at,xf=.012){
@@ -33550,7 +33552,7 @@ const DJ_RAPIDO=(()=>{
       p.mon=setInterval(()=>{if(P!==p){clearInterval(p.mon);return}const m=ORB.meters?.();if(p.run&&!p.handing&&m&&Number.isFinite(m.lufs)&&m.lufs>-60)p.lufs.push(m.lufs);if(p.lufs.length>15)p.lufs.shift()},100);
     }).catch(()=>{});
     // seguridad: si nadie da Play en 90 s tras cargar, el preludio se apaga solo
-    p.upgrade=bufs=>{if(P!==p)return;p.full2=bufs;const t=c.currentTime+.06;play(p,bufs,posAt(p,t),t);setTimeout(()=>{if(P===p&&!p.handing)stopP(1)},90000)};
+    p.upgrade=bufs=>{if(P!==p)return;p.full2=bufs;const t=c.currentTime+.06;play(p,bufs,posAt(p,t),t);p.tk=setTimeout(()=>{if(P===p&&!p.handing)stopP(1)},90000)};
     p.stop=()=>{if(P===p)stopP()};
     return p;
   }
@@ -33567,7 +33569,7 @@ const DJ_RAPIDO=(()=>{
     try{const g=p.out.gain,v=g.value;g.cancelScheduledValues(when);g.setValueCurveAtTime(down.map(x=>x*v),when,XF)}catch(_){}
     for(const s of p.srcs)try{s.stop(when+XF+.05)}catch(_){}
     const before=p.lufs.length?p.lufs.reduce((a,b)=>a+b,0)/p.lufs.length:null,id=p.id;
-    P=null;p.dead=true;clearInterval(p.mon);setTimeout(()=>{try{p.out.disconnect()}catch(_){}},(XF+.5)*1000);
+    P=null;p.dead=true;clearInterval(p.mon);clearTimeout(p.tk);setTimeout(()=>{try{p.out.disconnect()}catch(_){}release(p)},(XF+.5)*1000);
     // calibración: el próximo preludio de esta canción suena al mismo nivel que su 8D
     if(before!=null)setTimeout(()=>{const v=[];const t0=performance.now();const k=setInterval(()=>{const m=ORB.meters?.();if(m&&Number.isFinite(m.lufs)&&m.lufs>-60)v.push(m.lufs);
       if(performance.now()-t0>2000){clearInterval(k);if(v.length>5){const after=v.reduce((a,b)=>a+b,0)/v.length;setCal(id,clamp(cal(id)+clamp(.8*(after-before),-4,4),-12,12))}}},100)},(XF+.6)*1000);
