@@ -9934,6 +9934,7 @@ const IAH_HEALING_CRITERIO=(()=>{
     cruce_min_s:2.5,lat_max_gs:55,        // ronda 4b: el ángulo lateral (lo que el oído lee por ITD) no cambia a más de 70°/s                     // ronda 4: de un oído al otro nunca en menos de 2,5 s
     solo_sube_db:6,                      // ronda 4: un instrumento que sube ≥6 dB sobre su nivel de los 20 s previos se vuelve solista
     solo_min_s:6,solo_ventaja_db:3,cola_db:30,
+    figura_sube_db:12,figura_rel_db:-16,figura_bonus:20,   // 21 nov (aprobado): en «todos», la pista que entra con una figura (violín de Canopy) viaja
     giro_max_por_cuadro:32,           // figuras con esquinas o reversas bruscas quedan fuera (cuadrado, triángulos…)
     resorte_w:5,                      // rad/s: el sonido sigue a la figura con ~0,2 s de suavidad
     dist:{casa:1.65,viajero:1.25,solo:1.1,cama:1.8},vmax_gs:95,vcasa_gs:45,dist_min:.6,
@@ -10130,9 +10131,14 @@ const IAH_HEALING_CRITERIO=(()=>{
       }else if(g.s==="bloques"){
         // contraste (como DJ): uno o dos viajeros con timbre localizable sobre una cama quieta
         const loc=i=>{let a=0,z=0,c=0;for(let k=g.a;k<g.b;k++){a+=db(lvl[i][k])-db(mix[k]);z+=tracks[i].feat.zcr[k]||0;c++}
-          return a/c+40*Math.min(.2,z/c)+(roles[i]==="perc"?3:roles[i]==="voz"?2:roles[i]==="armonia"?-6:0)};
+          return a/c+40*Math.min(.2,z/c)+(roles[i]==="perc"?3:roles[i]==="voz"?2:roles[i]==="armonia"?-6:0)+figura(i)};
+        // 21 nov (Canopy, violín; aprobado): una pista que ENTRA con una figura dentro del tramo (sube ≥ figura_sube_db sobre la mediana
+        // de sus 20 s previos y se oye a ≥ figura_rel_db de la mezcla) es la que mejor se distingue de la cama: gana el viaje aunque sea «armonía».
+        const figura=i=>{let mx=0;for(let k=g.a;k<g.b;k++){const a0=Math.max(0,k-40),a1=Math.max(0,k-6);if(a1-a0<8)continue;const v=[];for(let j=a0;j<a1;j++)v.push(db(lvl[i][j]));v.sort((x,y)=>x-y);
+            const su=db(lvl[i][k])-v[v.length>>1];if(su>mx&&db(lvl[i][k])-db(mix[k])>=R.figura_rel_db)mx=su}
+          return mx>=R.figura_sube_db?R.figura_bonus:0};
         const cand=[];tracks.forEach((t,i)=>{if(["grave","ritmo"].includes(roles[i]))return;let on=0;for(let k=g.a;k<g.b;k++)if(audible(i,k))on++;if(on>(g.b-g.a)*.5)cand.push(i)});
-        cand.sort((a,b)=>loc(b)-loc(a));const via=cand.slice(0,cand.length>1&&loc(cand[0])-loc(cand[1])<3?2:1);
+        cand.sort((a,b)=>loc(b)-loc(a));const via=cand.slice(0,cand.length>1&&(loc(cand[0])-loc(cand[1])<3||figura(cand[0])>0&&figura(cand[1])===0&&loc(cand[1])>=loc(cand[0])-R.figura_bonus-3)?2:1);
         via.forEach((i,j)=>routes.push({key:"via:"+i,members:[i],t0,t1,kind:j?"B":"A"}));
         log.push({t0:+t0.toFixed(1),t1:+t1.toFixed(1),tipo:"todos",viajeros:via.map(i=>tracks[i].name),cama:"quieta"});
       }else log.push({t0:+t0.toFixed(1),t1:+t1.toFixed(1),tipo:"reposo"});
@@ -10338,7 +10344,15 @@ const IAH_HEALING_CRITERIO=(()=>{
   function comprimir(feat){const n=feat.rms.length,u=new Uint8Array(3*n);
     for(let k=0;k<n;k++){const v=feat.rms[k];u[k]=v>0?clamp(Math.round(db(v)+100),1,100):0;u[n+k]=clamp(Math.round(feat.att[k]*255),0,255);u[2*n+k]=clamp(Math.round(feat.zcr[k]*1000),0,255)}
     return typeof Buffer!=="undefined"?Buffer.from(u).toString("base64"):btoa(String.fromCharCode(...u))}
-  return {REGLAS,rol,analizar,planear,pose,medir,analisis,comprimir,balance3};
+  // ---------- Balance tonal de Healing (aprobado el 21 nov 2026: «están perfectas») ----------
+  // Curva objetivo a medio camino entre el balance propio de las canciones de Healing y la referencia DJ aprobada (LLAMADA_motor_arreglado),
+  // en 8 bandas (20–120, 120–250, 250–500, 500–1k, 1–2k, 2–4k, 4–8k, 8–16k Hz; dB respecto del total). Por canción, 8 campanas Q 1 en el
+  // centro de cada banda llevan la mezcla hacia esa curva (topes 2/3/4/4/4/5/5/4 dB, sin aspereza). Las ganancias salen de la mezcla original
+  // de las pistas (docs/qa_handoff/render_healing_2026-11-20/tono_tabla.py); las usan el render (tonal_objetivo.py) y el vivo (mode_session_songs).
+  const TONO={objetivo:[-4.0,-9.1,-6.5,-8.7,-16.0,-21.0,-28.1,-29.1],centros:[49,173,354,707,1414,2828,5657,11314],Q:1,
+    canciones:{"canopy-silence":[-0.1,1.4,-4.0,0.8,-0.4,5.0,5.0,4.0],"forest-rain":[-0.4,-1.9,-3.3,1.9,1.5,-1.1,5.0,4.0],"garden-pond-nocturne":[-0.1,-3.0,2.1,-4.0,-0.2,-1.3,-0.7,-4.0],"high-valley-stream-version-2":[-0.9,-1.0,-0.8,-1.4,-4.0,3.8,4.9,1.1],"high-valley-stream":[-0.1,0.3,-0.2,-4.0,-4.0,0.7,0.6,3.6],"limestone-stream":[-1.1,-1.3,-2.4,-0.6,4.0,5.0,5.0,4.0],"nighttime-waves":[-2.0,-1.0,0.8,0.1,4.0,5.0,5.0,2.8],"stream-resonance":[-1.9,0.6,-0.6,-2.2,4.0,5.0,5.0,4.0],"wind-through-dry-grass":[-0.1,-3.0,-4.0,4.0,4.0,5.0,5.0,4.0],"winter-pines-and-ice-creek":[1.5,-3.0,1.3,-1.5,4.0,5.0,5.0,4.0]}};
+  const tono=id=>{const g=TONO.canciones[String(id||"").replace(/^coleccion:/,"")];return g?{centros:TONO.centros,Q:TONO.Q,ganancias:g.slice()}:null};
+  return {REGLAS,rol,analizar,planear,pose,medir,analisis,comprimir,balance3,TONO,tono};
 })();
 if(typeof module!=="undefined")module.exports=IAH_HEALING_CRITERIO;
 
@@ -10464,8 +10478,10 @@ const SH_SONGS=(()=>{
   // reflexiones tempranas sobre toda la mezcla seca de la canción (como en las tomas: er.py), solo mientras suena
   function aplicarSala(){
     const quiere=when!==null&&salaModo==="natural"&&typeof HEALING_KU100!=="undefined"&&HEALING_KU100.disponible&&ORB.M?.dry&&ORB.M?.vol;
-    if(quiere&&!erBus){const c=ctx,m=c.createGain();m.channelCount=1;m.channelCountMode="explicit";const cv=c.createConvolver();cv.normalize=false;cv.buffer=HEALING_KU100.erIR(c);
-      const g=c.createGain();g.gain.value=0;ORB.M.dry.connect(m);m.connect(cv);cv.connect(g);g.connect(ORB.M.vol);g.gain.setTargetAtTime(1,c.currentTime,.05);erBus={m,cv,g}}
+    // 21 nov 2026 (aprobado): cada oído recibe sus reflexiones desde el canal CONTRARIO (mismos retardos y niveles), sin bajar a mono:
+    // con la suma mono el peine distinto de cada oído cargaba el balance según la canción (Canopy +1,3 dB a la izquierda)
+    if(quiere&&!erBus){const c=ctx,m=c.createChannelSplitter(2),x=c.createChannelMerger(2);m.connect(x,0,1);m.connect(x,1,0);const cv=c.createConvolver();cv.normalize=false;cv.channelCount=2;cv.channelCountMode="explicit";cv.buffer=HEALING_KU100.erIR(c);
+      const g=c.createGain();g.gain.value=0;ORB.M.dry.connect(m);x.connect(cv);cv.connect(g);g.connect(ORB.M.vol);g.gain.setTargetAtTime(1,c.currentTime,.05);erBus={m,cv,g}}
     else if(!quiere&&erBus){const b=erBus;erBus=null;b.g.gain.setTargetAtTime(0,ctx.currentTime,.03);setTimeout(()=>{try{ORB.M.dry.disconnect(b.m)}catch(e){}try{b.g.disconnect()}catch(e){}},200)}
   }
   const button=(label,onclick)=>h("button",{type:"button",class:"btn",onclick},label);
@@ -11001,8 +11017,8 @@ const SH_SONGS=(()=>{
             t.ku.air.frequency.setTargetAtTime(solo?8000:4000,at,.1);t.ku.air.gain.setTargetAtTime(solo?R.solo_aire_db:R.viajero_aire_db,at,.1);t.ku.pres.gain.setTargetAtTime(solo?R.solo_presencia_db:0,at,.1)}
           if(w>0)t.ku.update(at,t._P);
           // CPU en teléfonos: fuera de su viaje el camino KU100 se desconecta (el convolver deja de procesar)
-          if(w>0){t.ku.off0=null;if(!t.ku.on){t.fade.connect(t.ku.kg);t.ku.on=true}}
-          else if(w===0&&t.ku.on){t.ku.off0??=next;if(next-t.ku.off0>1){try{t.fade.disconnect(t.ku.kg)}catch(e){}t.ku.on=false}}
+          if(w>0){t.ku.off0=null;if(!t.ku.on){(t.eqOut||t.fade).connect(t.ku.kg);t.ku.on=true}}
+          else if(w===0&&t.ku.on){t.ku.off0??=next;if(next-t.ku.off0>1){try{(t.eqOut||t.fade).disconnect(t.ku.kg)}catch(e){}t.ku.on=false}}
         }
         ORB.voicePos(t._v,at,t._P,t._v.k,true);
       }
@@ -11047,7 +11063,11 @@ const SH_SONGS=(()=>{
         fade.gain.setValueAtTime(0,when);
         fade.gain.linearRampToValueAtTime(1,when+.012);
         // variante C en vivo: lo que viaja pasa por el HRTF KU100 (HEALING_KU100); la parte de cama sigue por la voz ORB
-        const feed=t.feed=ctx.createGain();fade.connect(feed);
+        const feed=t.feed=ctx.createGain();
+        // balance tonal de Healing (21 nov 2026, aprobado): la misma curva por canción que el render, en cada pista (suma = máster)
+        let eqOut=fade;{const T=typeof IAH_HEALING_CRITERIO!=="undefined"&&IAH_HEALING_CRITERIO.tono?IAH_HEALING_CRITERIO.tono(id):null;
+          if(T)T.ganancias.forEach((gdb,k)=>{if(Math.abs(gdb)<.05)return;const b=ctx.createBiquadFilter();b.type="peaking";b.frequency.value=T.centros[k];b.Q.value=T.Q;b.gain.value=gdb;eqOut.connect(b);eqOut=b});t.eqOut=eqOut}
+        eqOut.connect(feed);
         const idx=tracks.indexOf(t);t.ku=null;
         if(healingPlan&&(healingPlan.viajes?.[idx]||[]).length&&typeof HEALING_KU100!=="undefined"&&HEALING_KU100.disponible){
           const ku=HEALING_KU100.voice(ctx,ORB.M.dry);
@@ -11057,7 +11077,7 @@ const SH_SONGS=(()=>{
         }
         if(healingPlan&&healingPlan.roles[tracks.indexOf(t)]==="ritmo"){
           const mk=type=>{const a=ctx.createBiquadFilter(),b=ctx.createBiquadFilter();for(const f of [a,b]){f.type=type;f.frequency.value=120;f.Q.value=.7071}a.connect(b);return [a,b]};
-          const [h1,h2]=mk("highpass"),[l1,l2]=mk("lowpass");feed.connect(h1);h2.connect(voice.src);fade.connect(l1);
+          const [h1,h2]=mk("highpass"),[l1,l2]=mk("lowpass");feed.connect(h1);h2.connect(voice.src);eqOut.connect(l1);
           const low=t._vLow=ORB.mkVoice(ctx,ORB.M,{gain:0});low.reverb=0;ORB.voiceMix(low,ctx.currentTime,t.depth,ORB.S.inten,false);
           ORB.voicePos(low,ctx.currentTime,IAH_HEALING_CRITERIO.REGLAS.grave_pose,low.k,false);l2.connect(low.src);
         }else feed.connect(voice.src);
