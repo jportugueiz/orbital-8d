@@ -6466,6 +6466,7 @@ const FXON=(v,k)=>{const s=v.labSrc;if(!s)return 0;if(s.fx&&s.fx[k])return 1;con
    · arriba: campana +6 dB en 8 kHz (7–9 kHz) y reflejo de techo (3,5 ms, pasa-altos 1,5 kHz, −7 dB);
    · abajo: estante −8 dB sobre 3 kHz, muesca −4 dB en 5,8 kHz y reflejo de piso (2,5 ms, pasa-bajos 2,5 kHz, −6 dB).
    Al encenderlo o apagarlo, las pistas entran o salen en 0,3 s. La muesca de pabellón de hyper.py no se duplica: v10 ya la mueve. */
+const FRENTE5={n:0,s:0};/* B: cuánto «adelante» hubo en el último render offline (para que e8Post no se coma el acento) */
 {const TAU=.15,RV=.15;
   LABV.fxHip=v=>{if(v.labH||!v.fxSlot)return;const c=v.c,m=v.m,B=(type,f,q)=>{const b=c.createBiquadFilter();b.type=type;b.frequency.value=f;if(q!=null)b.Q.value=q;b.gain.value=0;return b};
     const H={g:c.createGain(),pk:B("peaking",3300,.99),up:B("peaking",8000,1.58),sh:B("highshelf",4000),sh2:B("highshelf",8000),dn:B("peaking",5800,3.6),out:c.createGain(),
@@ -6479,8 +6480,8 @@ const FXON=(v,k)=>{const s=v.labSrc;if(!s)return 0;if(s.fx&&s.fx[k])return 1;con
     v.labPos=(t,P,ramp)=>{const q=xyz(P[0],P[1],1),u=[q[0],q[1],-q[2]];// x derecha, y arriba, z adelante
       const dt=st.t==null?0:t-st.t;
       if(!ramp||!st.u||!(dt>0)||dt>.5)st.u=u.slice();else{const a=1-Math.exp(-dt/TAU);for(let i=0;i<3;i++)st.u[i]+=(u[i]-st.u[i])*a}st.t=t;
-      const A=FXON(v,"hiper");st.a=st.a==null||!ramp?A:st.a+(A-st.a)*(1-Math.exp(-Math.max(0,dt)/.3));
-      const fr=clamp(st.u[2],0,1)*st.a,bk=clamp(-st.u[2],0,1)*st.a,up=clamp(st.u[1],0,1)*st.a,dn=clamp(-st.u[1],0,1)*st.a;
+      const A=v.labFront?1:FXON(v,"hiper");st.a=st.a==null||!ramp?A:st.a+(A-st.a)*(1-Math.exp(-Math.max(0,dt)/.3));
+      const fr=clamp(st.u[2],0,1)*st.a,bk=v.labFront?0:clamp(-st.u[2],0,1)*st.a,up=v.labFront?0:clamp(st.u[1],0,1)*st.a,dn=v.labFront?0:clamp(-st.u[1],0,1)*st.a;if(v.labFront&&!m.rt){FRENTE5.n++;FRENTE5.s+=fr}/* B: atrás, arriba y abajo no se tocan */
       const S_=(p,x)=>{try{ramp?p.linearRampToValueAtTime(x,t):p.setValueAtTime(x,t)}catch(e){}};
       S_(H.g.gain,dB(1.5*fr));S_(H.pk.gain,5.5*fr);S_(H.up.gain,6*up);
       S_(H.sh.frequency,(4000*bk+3000*dn+4)/(bk+dn+.001));S_(H.sh.gain,-10*bk-8*dn);S_(H.sh2.gain,-5*bk);S_(H.dn.gain,-4*dn);
@@ -6489,7 +6490,7 @@ const FXON=(v,k)=>{const s=v.labSrc;if(!s)return 0;if(s.fx&&s.fx[k])return 1;con
 /* ===== fin EFECTO HIPERREAL ===== */
 /* ===== EFECTOS: unión fuente ↔ voz (en vivo y offline) y botones =====
    Una voz solo recibe los nodos de un efecto si su fuente lo tiene encendido. Si nunca se enciende, la voz es la de siempre. */
-LABV.bind=(v,s)=>{v.labSrc=s;/* sin botones: Doppler, Hiperreal y Máximo 8D por fuente quedan apagados aunque una sesión vieja los traiga */if(LABV.split)LABV.split(v,s)/* LAB (gancho): divisor de graves */};
+LABV.bind=(v,s)=>{v.labSrc=s;/* ACENTO FRONTAL B (Jorge, 21 nov 2026, aprobado): solo DJ 8D (fuentes dj:true: pistas, puente de Super Genius y su exportación). Usa el nodo Hiperreal, solo su parte de adelante */if(s&&s.dj&&LABV.fxHip){try{LABV.fxHip(v);if(v.labH)v.labFront=1}catch(e){}}/* sin botones: Doppler, Hiperreal y Máximo 8D por fuente quedan apagados aunque una sesión vieja los traiga */if(LABV.split)LABV.split(v,s)/* LAB (gancho): divisor de graves */};
 LABV.fxSet=(s,k,on)=>{s.fx=Object.assign({},s.fx,{[k]:!!on});const v=s._v;if(v&&on){if(k==="doppler")LABV.fxDop(v);else LABV.fxHip(v)}return !!on};
 /* ===== fin EFECTOS ===== */
 
@@ -7043,7 +7044,7 @@ function meters0(){if(!M||!M.anL)return null;M.anL.getFloatTimeDomainData(MB.l);
   return {pl,pr,ild,cor,itd:bl/M.ctx.sampleRate*1e6,lufs,lev,gr:M.lim.reduction||0,l:MB.l,r:MB.r,fft:MB.f}}
 
 return {DUCK,duckHot,cruceR,nfDb,MOVE,cueEnded,setDist,setDistPath,getDist,setPos,setRoom,setHyperreal,ROOMS,distInfo,airAlpha,airFc,critDist,lvlOf,ildNF,itdNF,CRUCE,DIST:{MIN:D_MIN,MAX:D_MAX,REF:D_REF,C:C_SND,G_MAX_DB:12},get space(){return S.space},get hyper(){return S.hyper},
-  v9Node,v9Set,V9P,audioParamSet,onTransport(f){TRL.push(f);return()=>{const i=TRL.indexOf(f);if(i>=0)TRL.splice(i,1)}},gainOf,hdOf,MAXV,DECK_CHANNELS,BANCO,BANCO_IDS,REN,RENDS,HRK,addRenderer,renOf,LVREN,HR,LIC,atribucion,renderAll,renderRange,setPrefCC0(v){PREF_CC0=!!v},get prefCC0(){return PREF_CC0},genEvents,ac,_master,get M(){return M},S,LIB,LIB_IDS,PATHS,PATH_IDS,PRESET01,BEDS,BANDS,revS,radio,xyz,aer,wrap,rng,newSource,addSource,removeSource,setSources,applyMix,play,pause,stop,seek,pos,render,meters,setLim,setVol,setDeckMaster,setDjTone,setDjOutputActive,get djOutputGain(){return djOutputGain},
+  v9Node,v9Set,V9P,audioParamSet,onTransport(f){TRL.push(f);return()=>{const i=TRL.indexOf(f);if(i>=0)TRL.splice(i,1)}},gainOf,hdOf,MAXV,DECK_CHANNELS,BANCO,BANCO_IDS,REN,RENDS,HRK,addRenderer,renOf,LVREN,HR,LIC,atribucion,renderAll,renderRange,setPrefCC0(v){PREF_CC0=!!v},get prefCC0(){return PREF_CC0},genEvents,ac,_master,get M(){return M},S,LIB,LIB_IDS,PATHS,PATH_IDS,PRESET01,BEDS,BANDS,revS,radio,xyz,aer,wrap,rng,newSource,addSource,removeSource,setSources,applyMix,play,pause,stop,seek,pos,render,meters,setLim,setVol,setDeckMaster,setDjTone,setDjOutputActive,frente5(reset){const r=FRENTE5.n?FRENTE5.s/FRENTE5.n:0;if(reset){FRENTE5.n=0;FRENTE5.s=0}return r},get djOutputGain(){return djOutputGain},
   recStart,recStop,takeAt,breathK,advance,mkMotion,mkVoice,voiceMix,voicePos,libCargar,libSmp,bedLoad,stopBed,stopBin,binStart,bedStart,loadBenzai,clamp,lerp,dB,onEnd:null,ctl,loop,killVoice,rtVoice,
   startExtras(){const c=ac();startLiveBed(c);if(S.binCfg.on&&!S.bin)S.bin=binStart(c,M,S.binCfg,c.currentTime+.05);loop()}};
 })();
@@ -8428,6 +8429,14 @@ function envolvente(buffer,frames){const sr=buffer.sampleRate,hop=sr/FR,win=Math
   for(let k=0;k<frames;k++){const c0=Math.round(k*hop),a=Math.max(0,c0-(win>>1)),b=Math.min(buffer.length,c0+(win>>1));if(b<=a)continue;let best=0;
     for(const x of chs){let s=0,n=0;for(let i=a;i<b;i+=3){s+=x[i]*x[i];n++}if(n){const v=s/n;if(v>best)best=v}}env[k]=Math.sqrt(best)}
   return env}
+// ley 50/50 (21 nov): envolvente de lo que el oído ubica a los lados, la banda 1,5–6 kHz (paso alto + paso bajo de 2.º orden, mono)
+function envBanda(buffer,frames){const sr=buffer.sampleRate,st=sr>30000?2:1,fs=sr/st,hop=sr/FR,win=Math.round(sr*.04),env=new Float32Array(frames);
+  const a0=buffer.getChannelData(0),a1=buffer.numberOfChannels>1?buffer.getChannelData(1):a0,n=Math.floor(buffer.length/st),y=new Float32Array(n);
+  const bq=(f,hp)=>{const w=2*Math.PI*f/fs,al=Math.sin(w)/(2*.7071),c=Math.cos(w),A=1+al;return hp?[(1+c)/2/A,-(1+c)/A,(1+c)/2/A,-2*c/A,(1-al)/A]:[(1-c)/2/A,(1-c)/A,(1-c)/2/A,-2*c/A,(1-al)/A]};
+  const H=bq(1500,true),L=bq(Math.min(6000,fs*.45),false);let x1=0,x2=0,y1=0,y2=0,u1=0,u2=0,v1=0,v2=0;
+  for(let i=0;i<n;i++){const x=.5*(a0[i*st]+a1[i*st]),h=H[0]*x+H[1]*x1+H[2]*x2-H[3]*y1-H[4]*y2;x2=x1;x1=x;y2=y1;y1=h;const l=L[0]*h+L[1]*u1+L[2]*u2-L[3]*v1-L[4]*v2;u2=u1;u1=h;v2=v1;v1=l;y[i]=l}
+  for(let k=0;k<frames;k++){const c0=Math.round(k*hop/st),a=Math.max(0,c0-(win>>2)),b=Math.min(n,c0+(win>>2));if(b<=a)continue;let s=0;for(let i=a;i<b;i++)s+=y[i]*y[i];env[k]=Math.sqrt(s/(b-a))}
+  return env}
 // actividad audible dentro de la mezcla, con histéresis (respeta colas, §2.5) y huecos cortos unidos (rampa entre huecos, §2.3/§5)
 function actividad(env,mix,gapJoin){const n=env.length,on=new Uint8Array(n);let st=0;
   for(let k=0;k<n;k++){const m=mix[k],hi=Math.max(.003,m*.045),lo=Math.max(.0012,m*.02);if(!st&&env[k]>hi)st=1;else if(st&&env[k]<lo)st=0;on[k]=st}
@@ -8543,27 +8552,102 @@ function elegirFigura({seconds,kind,rnd,recientes=[],fx=false,familias=null,obje
 // (desplazarla en altura la aplastaría cerca del polo y el recorrido real quedaría más corto que la figura)
 const rotY=(v,a)=>{const c=Math.cos(a),s=Math.sin(a);return [c*v[0]+s*v[2],v[1],-s*v[0]+c*v[2]]};
 const rotP=(v,e)=>{const c=Math.cos(e),s=Math.sin(e);return [v[0],c*v[1]+s*v[2],-s*v[1]+c*v[2]]};// sube «e» rad hacia arriba el frente
-function poseFig(f,u,origin,u0=0){const fr=f.frames,uu=u0+(1-u0)*clamp(u,0,1),x=uu*(fr.length-1),k=Math.floor(x),j=Math.min(fr.length-1,k+1),w=x-k;
+// ley 50/50 (21 nov 2026): «op» = {mir, roll}: la MISMA figura completa en espejo (su imagen hacia el otro lado) y/o girada sobre
+// su punto de partida (roll, rad). La partida no cambia (posta); cambia hacia dónde se abre la figura.
+function poseFig(f,u,origin,u0=0,op=null){const fr=f.frames,uu=u0+(1-u0)*clamp(u,0,1),x=uu*(fr.length-1),k=Math.floor(x),j=Math.min(fr.length-1,k+1),w=x-k;
   const a=fr[k],b=fr[j],az=a[0]+wrap(b[0]-a[0])*w,el=a[1]+(b[1]-a[1])*w,r=a[2]+(b[2]-a[2])*w,i0=Math.round(u0*(fr.length-1)),f0=fr[i0];
-  let v=dirOf(az,el);v=rotY(v,-f0[0]*D2R);v=rotP(v,-f0[1]*D2R);v=rotP(v,origin[1]*D2R);v=rotY(v,origin[0]*D2R);
+  let v=dirOf(az,el);v=rotY(v,-f0[0]*D2R);v=rotP(v,-f0[1]*D2R);
+  if(op){if(op.mir)v=[-v[0],v[1],v[2]];if(op.roll){const c=Math.cos(op.roll),s=Math.sin(op.roll);v=[c*v[0]-s*v[1],s*v[0]+c*v[1],v[2]]}}
+  v=rotP(v,origin[1]*D2R);v=rotY(v,origin[0]*D2R);
   // el azimut se desenrolla respecto del recorrido para que una vuelta siga siendo una vuelta (sin saltos de ±360)
-  const azR=Math.atan2(v[0],v[2])*R2D,ref=origin[0]+(az-f0[0]);return [ref+wrap(azR-ref),Math.asin(clamp(v[1],-1,1))*R2D,origin[2]*r/f0[2]]}
+  const azR=Math.atan2(v[0],v[2])*R2D,ref=op&&(op.mir||op.roll)?origin[0]+(op.mir&&!op.roll?-1:1)*(az-f0[0]):origin[0]+(az-f0[0]);return [ref+wrap(azR-ref),Math.asin(clamp(v[1],-1,1))*R2D,origin[2]*r/f0[2]]}
+/* ---------- ley 50/50 en los tres ejes (Jorge, 21 nov 2026): «por ley, en el global debería ser 50 y 50» ·
+   «lo mismo adelante y atrás y arriba y abajo». Izq/der x = cos(el)·sin(az), arriba/abajo y = sin(el), adelante/atrás z = cos(el)·cos(az).
+   Cada figura (del banco, completa) se orienta mirando: el balance propio de ese sonido (memoria ~30 s audible), el del conjunto
+   (nivel × atención, ventana móvil) y el del bloque en ese mismo instante (espejo: si uno va a la izquierda, el otro a la derecha).
+   El bloque además puede cambiar de ancla con un cruce continuo de un compás o dos (posta), dentro de las velocidades del criterio.
+   Bombo y bajo <120 Hz siguen al centro en el render (aprobado). ---------- */
+const LEY={banda:false,tol:.05,tol_audible_x:.015,lado_max:.6,cruce_cada_s:20,cruce_aviso_s:12,memoria_s:30,ventana_s:40,previo_s:3,
+  k_propio:30,k_global:12,k_espejo:1.2,k_cruce:3,k_glide:.6,el_max:75,el_min:-50,
+  att:{voz:3,solista:3,bloque:1,eco:1},anclas_el:[-18,0,22],
+  OPS:[0,1].flatMap(mir=>[0,1,2,3].map(q=>({mir,roll:q*Math.PI/2})))};
+const vdir=p=>dirOf(p[0],p[1]);
+function balanza(){return {W:0,S:[0,0,0],lado:[0,0,0],gap:[0,0,0]}}
+// suma pesada de un recorrido (muestras {u, w}) a una balanza con memoria y cruces
+function acumula(E,muestras,mem){let dur=0;for(const m of muestras)dur+=m.dt;const keep=Math.exp(-dur/mem);E.W*=keep;for(let c=0;c<3;c++)E.S[c]*=keep;
+  for(const m of muestras){E.W+=m.w*m.dt;for(let c=0;c<3;c++){E.S[c]+=m.w*m.dt*m.u[c];const sd=m.u[c]>.15?1:m.u[c]<-.15?-1:0;if(m.w>0)E.gap[c]+=m.dt;if(sd&&E.lado[c]&&sd!==E.lado[c])E.gap[c]=0;if(sd)E.lado[c]=sd}}}
+// costo de una propuesta: desbalance propio y global después de sumarla, pareja (espejo) y cruces pendientes
+function costo5(E,G,muestras,pareja){let W=E.W+LEY.previo_s,S=E.S.slice(),GW=G.W,GS=G.S.slice(),dur=0,dotS=0,dotN=0;const cruza=[0,0,0];
+  for(const m of muestras){W+=m.w*m.dt;GW+=m.ga*m.dt;dur+=m.dt;for(let c=0;c<3;c++){S[c]+=m.w*m.dt*m.u[c];GS[c]+=m.ga*m.dt*m.u[c];if(E.lado[c]&&m.u[c]*E.lado[c]<-.15)cruza[c]=1}
+    if(pareja){const q=pareja(m.t);if(q){dotS+=q[0]*m.u[0]+q[1]*m.u[1]+q[2]*m.u[2];dotN++}}}
+  let J=0;for(let c=0;c<3;c++){J+=LEY.k_propio*(S[c]/W)**2+LEY.k_global*(GS[c]/Math.max(1e-9,GW))**2;if(!cruza[c]&&E.lado[c]&&E.gap[c]+dur>LEY.cruce_aviso_s)J+=LEY.k_cruce*(E.gap[c]+dur-LEY.cruce_aviso_s)/LEY.cruce_aviso_s}
+  if(dotN)J+=LEY.k_espejo*dotS/dotN;return J}
+// historia global en casilleros de 0,5 s (nivel × atención × dirección)
+function Historia(dur){const nb=Math.ceil(dur*2)+2,W=new Float64Array(nb),S=[0,1,2].map(()=>new Float64Array(nb));
+  return {add(t,w,u){const b=clamp(Math.floor(t*2),0,nb-1);W[b]+=w;for(let c=0;c<3;c++)S[c][b]+=w*u[c]},
+    win(a,z){const o={W:0,S:[0,0,0]};for(let b=clamp(Math.floor(a*2),0,nb-1);b<=clamp(Math.floor(z*2),0,nb-1);b++){o.W+=W[b];for(let c=0;c<3;c++)o.S[c]+=S[c][b]}return o}}}
+
+  /* ---------- ley 50/50 (Jorge, 21 nov 2026): «por ley, en el global debería ser 50 y 50» · «lo mismo adelante y atrás y arriba y abajo» ----------
+     balance3(): media de cada eje ponderada por el nivel audible de cada pista en cada cuadro y por su papel de atención
+     (protagonista/solista/voz cuenta más). x = cos(el)·sin(az) (der +), y = sin(el) (arriba +), z = cos(el)·cos(az) (frente +).
+     Devuelve el global, por sección y por pista: media, % de tiempo audible a cada lado (zona muerta ±0,1), % izq/centro/der con ±0,3
+     y cruces (histéresis ±0,15) con el mayor tramo audible sin cruzar. Bombo y bajo (<120 Hz al centro) no entran. */
+  function balance3({fr,pistas,secciones=[]}){
+    const D=Math.PI/180,AX=["x","y","z"],vec=(az,el)=>[Math.cos(el*D)*Math.sin(az*D),Math.sin(el*D),Math.cos(el*D)*Math.cos(az*D)];
+    const G={w:0,s:[0,0,0]},S=secciones.map(s=>({nombre:s.nombre,t0:s.t0,t1:s.t1,w:0,s:[0,0,0]})),out=[];
+    for(const p of pistas){const n=Math.min(p.on.length,Math.floor(p.pose.length/3));let w=0,sw=[0,0,0],t=0;const lado=[[0,0],[0,0],[0,0]],lcr=[[0,0,0],[0,0,0],[0,0,0]];
+      const st=[0,0,0],cr=[0,0,0],gap=[0,0,0],gmax=[0,0,0];
+      for(let k=0;k<n;k++){if(!p.on[k])continue;const a=typeof p.att==="number"?p.att:p.att[k],ww=(p.w?p.w[k]:1)*a;if(!(a>0))continue;
+        const v=vec(p.pose[k*3],p.pose[k*3+1]);t++;w+=ww;
+        for(let c=0;c<3;c++){sw[c]+=ww*v[c];if(v[c]>.1)lado[c][1]++;else if(v[c]<-.1)lado[c][0]++;lcr[c][v[c]<-.3?0:v[c]>.3?2:1]++;
+          const sd=v[c]>.15?1:v[c]<-.15?-1:0;gap[c]++;if(sd&&st[c]&&sd!==st[c]){cr[c]++;gmax[c]=Math.max(gmax[c],gap[c]);gap[c]=0}if(sd)st[c]=sd}
+        G.w+=ww;for(let c=0;c<3;c++)G.s[c]+=ww*v[c];
+        const tt=k/fr;for(const s of S)if(tt>=s.t0&&tt<s.t1){s.w+=ww;for(let c=0;c<3;c++)s.s[c]+=ww*v[c]}}
+      if(!t)continue;for(let c=0;c<3;c++)gmax[c]=Math.max(gmax[c],gap[c]);
+      const r={pista:p.nombre,papel:p.papel||"",audible_s:+(t/fr).toFixed(1)};
+      AX.forEach((a,c)=>{r[a]={media:+(sw[c]/Math.max(1e-9,w)).toFixed(3),lado_menos:Math.round(100*lado[c][0]/t),lado_mas:Math.round(100*lado[c][1]/t),
+        lcr:lcr[c].map(x=>Math.round(100*x/t)),cruces:cr[c],seg_por_cruce:cr[c]?+((t/fr)/cr[c]).toFixed(1):null,max_sin_cruzar_s:+(gmax[c]/fr).toFixed(1)}});
+      out.push(r)}
+    const m=o=>({x:+(o.s[0]/Math.max(1e-9,o.w)).toFixed(3),y:+(o.s[1]/Math.max(1e-9,o.w)).toFixed(3),z:+(o.s[2]/Math.max(1e-9,o.w)).toFixed(3)});
+    return {global:m(G),secciones:S.filter(s=>s.w>0).map(s=>Object.assign({nombre:s.nombre,t0:s.t0,t1:s.t1},m(s))),pistas:out}}
 
 /* ---------- la partitura ---------- */
 function partitura({tracks,bpm,seed=7,duracion}){
   const dur=duracion||Math.max(...tracks.map(t=>t.buffer.length/t.buffer.sampleRate)),n=Math.ceil(dur*FR)+1,rnd=rng(seed);
-  const P=tracks.map((t,i)=>({i,t,name:t.name,clase:clase(t),env:envolvente(t.buffer,n)}));
+  const P=tracks.map((t,i)=>({i,t,name:t.name,clase:clase(t),env:envolvente(t.buffer,n),envB:envBanda(t.buffer,n)}));
   const mix=new Float32Array(n);for(const p of P)for(let k=0;k<n;k++)mix[k]+=p.env[k]*p.env[k];for(let k=0;k<n;k++)mix[k]=Math.sqrt(mix[k]);
   const bpmUsado=bpm>0?bpm:estimarTempo(P),G=rejilla(P,bpmUsado,dur);bpm=bpmUsado;
   // los huecos más cortos que medio pulso no cortan la rampa de movimiento (§5 «Arranque después del silencio»)
   for(const p of P){p.on=actividad(p.env,mix,p.clase==="voz"||p.clase==="coros"?.12:Math.min(.6,G.beat));p.tramos=tramos(p.on)}
   const F=cromas(tracks,dur);
-  const S=secciones(P,G,dur,mix,F),log=[],plan={};
+  const S=secciones(P,G,dur,mix,F),plan={};
   for(const p of P)p.tim=timbre(p,p.t.buffer,n);
   const voz=P.find(p=>p.clase==="voz"),bloqueIds=P.filter(p=>!["voz","fx"].includes(p.clase)).map(p=>p.i);
   const vozOn=k=>voz?voz.on[clamp(k,0,n-1)]:0;
+  // ley 50/50: el plan se escribe con la balanza; si al medirlo completo no cumple, se reescribe con otra sensibilidad (máx. 3)
+  const runPlan=(rnd)=>{const log=[];
   /* --- 1) BLOQUE (§1 «Bloque musical»): viaja junto, con reposos (§1 «Reposo y contraste») y llegadas a compás (§1 «Pulso») --- */
   const bloque=[];let origin=[0,0,DIST.casa],b=0,seguidos=0,recientes=[];
+  // ley 50/50: peso audible del bloque en cada cuadro (sin bombo ni bajo) y su balanza
+  const H5=Historia(dur),EB=balanza(),blockW=new Float32Array(n);
+  for(const p of P){if(!bloqueIds.includes(p.i)||GRAVE.has(p.clase))continue;for(let k=0;k<n;k++)if(p.on[k])blockW[k]+=(LEY.banda?p.envB:p.env)[k]}
+  {let s0=0,c0=0;for(let k=0;k<n;k++)if(blockW[k]>0){s0+=blockW[k];c0++}const m0=c0?s0/c0:1;for(let k=0;k<n;k++)blockW[k]/=m0}
+  const ANC=[];for(const e of LEY.anclas_el)for(let a=0;a<360;a+=45)ANC.push([wrap(a),e,DIST.casa]);
+  const muestrasBloque=(f,o,op,t0,t1,gl)=>{const M=[];const ns=24,T=t1-t0;
+    if(gl){const a=vdir(gl.from),z=vdir(gl.to),th=Math.acos(clamp(a[0]*z[0]+a[1]*z[1]+a[2]*z[2],-1,1)),sn=Math.sin(th)||1;
+      for(let q=0;q<8;q++){const u=smooth((q+.5)/8),k0=Math.sin((1-u)*th)/sn,k1=Math.sin(u*th)/sn,tt=gl.t0+(q+.5)/8*(gl.t1-gl.t0),w=blockW[clamp(Math.round(tt*FR),0,n-1)];
+        M.push({t:tt,dt:(gl.t1-gl.t0)/8,u:[0,1,2].map(i=>k0*a[i]+k1*z[i]),w,ga:w*LEY.att.bloque})}}
+    for(let q=0;q<ns;q++){const u=(q+.5)/ns,tt=t0+u*T,pp=poseFig(f,u,o,0,op),w=blockW[clamp(Math.round(tt*FR),0,n-1)];if(pp[1]>LEY.el_max||pp[1]<LEY.el_min)return null;
+      M.push({t:tt,dt:T/ns,u:vdir(pp),w,ga:w*LEY.att.bloque})}return M};
+  // elige espejo/giro y, si conviene y hay compases, un cruce continuo a otra ancla antes de la figura
+  const orientaBloque=(f,o,t0,t1,bars,kind,permiteCruce)=>{let best=null;const Gw=H5.win(t0-LEY.ventana_s,t1);
+    const prueba=(op,gl,o2,fs,fe)=>{const M=muestrasBloque(f,o2,op,fs,fe,gl);if(!M)return;let J=costo5(EB,Gw,M,null);if(gl)J+=LEY.k_glide*gl.ang/180;if(!best||J<best.J)best={J,op,gl,o:o2,t0:fs,M}};
+    for(const op of LEY.OPS)prueba(op,null,o,t0,t1);
+    if(permiteCruce&&bars>=4){const gb=G.bar>=1.8?1:2,fs=G.at(b+gb),secs=t1-fs,avg=f.ang/secs;
+      if(bars-gb>=2&&avg>=VEL.piso&&avg<=VEL.mediaMax&&avg*f.peakRatio<=VEL.pico)for(const A of ANC){const ang=angle(o,A);if(ang<30)continue;const gs=ang/(fs-t0);if(gs>Math.min(70,VEL.mediaMax)||1.5*gs>VEL.pico)continue;
+        for(const op of LEY.OPS)prueba(op,{from:o.slice(),to:A.slice(),t0,t1:fs,ang},A.slice(),fs,t1)}}
+    return best};
+  const registraBloque=best=>{acumula(EB,best.M,LEY.memoria_s);for(const m of best.M)H5.add(m.t,m.ga*m.dt,m.u)};
   const firstSound=Math.min(...P.map(p=>p.tramos[0]?.[0]??dur)),bStart=Math.max(0,Math.floor(G.barOf(firstSound)));
   if(bStart>0)bloque.push({t0:0,t1:G.at(bStart),reposo:true,origin:origin.slice(),kind:"intro",motivo:"todavía no suena nada"});b=bStart;
   while(G.at(b)<dur){const sec=S.list.find(s=>b>=s.b0&&b<s.b1)||{kind:"outro",b0:b,b1:b+8},kind=sec.kind,R=Math.max(1,sec.b1-b);
@@ -8584,21 +8668,29 @@ function partitura({tracks,bpm,seed=7,duracion}){
     const solaBat=soloRit(b);
     if(solaBat){let L=0;while(L<8&&soloRit(b+L))L++;
       const c=L>=2?elegirFigura({seconds:G.bar*L,kind:"drop",rnd,recientes,el0:origin[1],objetivo:60,pesos:{"Ochos y hélices":.3,"Frases y acentos":.3}}):null;
-      if(c){bloque.push({t0:G.at(b),t1:G.at(b+L),fig:c.f,origin:origin.slice(),kind,exc:false,avg:c.avg,motivo:"la batería queda sola: es la protagonista y recorre la frase entera ("+L+" compases)"});
-        const end=poseFig(c.f,1,origin);origin=[wrap(end[0]),clamp(end[1],-60,60),DIST.casa];recientes=[c.f.id,...recientes].slice(0,5);b+=L;seguidos++;continue}}
+      if(c){const o5=orientaBloque(c.f,origin,G.at(b),G.at(b+L),L,kind,false);const op=o5?o5.op:null;if(o5)registraBloque(o5);
+        bloque.push({t0:G.at(b),t1:G.at(b+L),fig:c.f,op,origin:origin.slice(),kind,exc:false,avg:c.avg,motivo:"la batería queda sola: es la protagonista y recorre la frase entera ("+L+" compases)"});
+        const end=poseFig(c.f,1,origin,0,op);origin=[wrap(end[0]),clamp(end[1],-60,60),DIST.casa];recientes=[c.f.id,...recientes].slice(0,5);b+=L;seguidos++;continue}}
     // la figura del bloque tiene que oírse: si en ese tramo el bloque calla más de un 15 %, se busca un tramo que sí suene (§1 «Velocidad»)
     const cubre=bars=>{const ka=Math.round(G.at(b)*FR),kz=Math.min(n,Math.round(G.at(b+bars)*FR));let c=0;for(let k=ka;k<kz;k++)if(P.some(q=>bloqueIds.includes(q.i)&&q.on[k]))c++;return c/Math.max(1,kz-ka)};
     const baseOk=base.filter(x=>cubre(x)>=.85);
     for(const bars of (baseOk.length?baseOk:[])){const seconds=G.bar*bars,c=elegirFigura({seconds,kind,rnd,recientes,el0:origin[1],pesos});if(c&&(!pick||c.s>pick.c.s+.15)){pick={bars,c}}if(pick&&pick.c.s>-.35)break}
     if(!pick){const bars=Math.max(1,Math.min(base[0],2));bloque.push({t0:G.at(b),t1:G.at(b+bars),reposo:true,origin:origin.slice(),kind,motivo:"ninguna figura cabe a buena velocidad"});b+=bars;continue}
     const f=pick.c.f,exc=f.family==="Profundidad"&&["build","break"].includes(kind);// acercarse o abrir con intención y salida (§1 «Distancia»)
-    bloque.push({t0:bloque.some(x=>x.fig)?G.at(b):Math.max(G.at(b),firstSound),t1:G.at(b+pick.bars),fig:f,origin:origin.slice(),kind,exc,avg:pick.c.avg,motivo:(kind==="build"?"subida: anticipa y llega con la música":kind==="drop"?"drop: el bloque viaja con pegada":"calma: recorrido amplio y claro")+(exc?" · acercamiento con salida":"")});
-    const end=poseFig(f,1,origin);origin=[wrap(end[0]),clamp(end[1],-60,60),DIST.casa];recientes=[f.id,...recientes].slice(0,5);b+=pick.bars;seguidos++}
-  function bloquePose(t,grave){const g=bloque.find(s=>t>=s.t0&&t<s.t1)||bloque.at(-1);if(!g)return [0,0,DIST.casa];if(g.reposo||!g.fig)return g.origin.slice();
-    const u=clamp((t-g.t0)/(g.t1-g.t0),0,1),p=poseFig(g.fig,u,g.origin);
+    const tB0=bloque.some(x=>x.fig)?G.at(b):Math.max(G.at(b),firstSound),tB1=G.at(b+pick.bars),o5=orientaBloque(f,origin,tB0,tB1,pick.bars,kind,!f.corto);
+    let op=null;if(o5){op=o5.op;registraBloque(o5);
+      if(o5.gl){bloque.push({t0:tB0,t1:o5.gl.t1,glide:o5.gl,origin:origin.slice(),kind,motivo:"ley 50/50: cruce continuo del bloque a "+Math.round(wrap(o5.gl.to[0]))+"° / "+Math.round(o5.gl.to[1])+"° (posta), "+Math.round(o5.gl.ang)+"° en "+(o5.gl.t1-tB0).toFixed(1)+" s"});origin=o5.o.slice()}}
+    bloque.push({t0:o5&&o5.gl?o5.gl.t1:tB0,t1:tB1,fig:f,op,origin:origin.slice(),kind,exc,avg:o5&&o5.gl?f.ang/(tB1-o5.gl.t1):pick.c.avg,motivo:(kind==="build"?"subida: anticipa y llega con la música":kind==="drop"?"drop: el bloque viaja con pegada":"calma: recorrido amplio y claro")+(exc?" · acercamiento con salida":"")+(op&&(op.mir||op.roll)?" · orientada por la ley 50/50"+(op.mir?" (espejo)":"")+(op.roll?" (giro "+Math.round(op.roll*R2D)+"°)":""):"")});
+    const end=poseFig(f,1,origin,0,op);origin=[wrap(end[0]),clamp(end[1],-60,60),DIST.casa];recientes=[f.id,...recientes].slice(0,5);b+=pick.bars;seguidos++}
+  function bloquePose(t,grave){const g=bloque.find(s=>t>=s.t0&&t<s.t1)||bloque.at(-1);if(!g)return [0,0,DIST.casa];
+    if(g.glide){const u=smooth((t-g.t0)/(g.t1-g.t0)),a=vdir(g.glide.from),z=vdir(g.glide.to),th=Math.acos(clamp(a[0]*z[0]+a[1]*z[1]+a[2]*z[2],-1,1)),sn=Math.sin(th)||1,
+      v=[0,1,2].map(i=>Math.sin((1-u)*th)/sn*a[i]+Math.sin(u*th)/sn*z[i]);let az=Math.atan2(v[0],v[2])*R2D;az=g.glide.from[0]+wrap(az-g.glide.from[0]);return [az,Math.asin(clamp(v[1],-1,1))*R2D,DIST.casa]}
+    if(g.reposo||!g.fig)return g.origin.slice();
+    const u=clamp((t-g.t0)/(g.t1-g.t0),0,1),p=poseFig(g.fig,u,g.origin,0,g.op);
     const k=g.exc&&!grave?.8:.5,lo=g.exc&&!grave?DIST.excMin:DIST.min,hi=g.exc&&!grave?DIST.excMax:DIST.max;// bombo y bajo conservan cuerpo (§1 «Bombo y bajo»)
     p[2]=clamp(DIST.casa+(p[2]-DIST.casa)*k,lo,hi);return p}
-  for(const g of bloque)if(g.fig)log.push({tipo:"bloque",pista:"Bloque",ids:bloqueIds,figura:g.fig.id,inicio:g.t0,dur:g.t1-g.t0,grados_figura:Math.round(g.fig.ang),seccion:g.kind,separacion:false,motivo:g.motivo});
+  for(const g of bloque)if(g.glide)log.push({tipo:"bloque",pista:"Bloque",ids:bloqueIds,figura:"cruce-5050",inicio:g.t0,dur:g.t1-g.t0,grados_figura:Math.round(g.glide.ang),seccion:g.kind,separacion:false,motivo:g.motivo});
+    else if(g.fig)log.push({tipo:"bloque",pista:"Bloque",ids:bloqueIds,figura:g.fig.id,inicio:g.t0,dur:g.t1-g.t0,grados_figura:Math.round(g.fig.ang),seccion:g.kind,separacion:false,motivo:g.motivo});
     else if(g.t1>g.t0)log.push({tipo:"reposo",pista:"Bloque",ids:bloqueIds,figura:"reposo",inicio:g.t0,dur:g.t1-g.t0,grados_figura:0,seccion:g.kind,separacion:false,motivo:g.motivo});
   /* --- 2) VOZ (§3): frases, mitad acompañadas y mitad independientes según la música --- */
   const frases=[];
@@ -8627,7 +8719,7 @@ function partitura({tracks,bpm,seed=7,duracion}){
       f.intima=ind&&(f.densidad<=3||f.energia<.8);
       // §3 «Entra ya viajando»: si la frase iba acompañada pero el bloque está en reposo justo ahí, la voz no puede arrancar quieta:
       // guía ella con su propio recorrido
-      const bq=bloque.find(x=>f.a>=x.t0&&f.a<x.t1);if(!ind&&bq&&(bq.reposo||!bq.fig)){f.modo="independiente";f.guia=true}}}
+      const bq=bloque.find(x=>f.a>=x.t0&&f.a<x.t1);if(!ind&&bq&&(bq.reposo||!bq.fig&&!bq.glide)){f.modo="independiente";f.guia=true}}}
   /* --- 3) SEPARACIÓN DE UNA CAPA (§1 «Cuándo separar», §4 «Solo o hueco vocal»): en CUALQUIER sección --- */
   // la voz «suena» dentro de sus frases (con su propio nivel); su cola o un susurro bajo no tapan el hueco vocal
   const enFrase=new Uint8Array(n);for(const f of frases)for(let k=Math.max(0,Math.round(f.a*FR));k<Math.min(n,Math.round(f.z*FR));k++)enFrase[k]=1;
@@ -8698,7 +8790,15 @@ function partitura({tracks,bpm,seed=7,duracion}){
     const out=new Float32Array(n*4),pose=new Float32Array(n*3),cum=new Float32Array(n+1);for(let k=0;k<n;k++)cum[k+1]=cum[k]+p.on[k];
     // la fase de un gesto propio avanza solo mientras la pista se oye: la figura se completa dentro del tiempo audible y nunca viaja a escondidas (§1 «Geometría», §2.3)
     const audible=(a,z)=>(cum[Math.min(n,Math.round(z*FR))]-cum[Math.min(n,Math.round(a*FR))])/FR,fase=(gg,t)=>{const tot=audible(gg.a,gg.z);return tot>0?clamp(audible(gg.a,t)/tot,0,1):clamp((t-gg.a)/(gg.z-gg.a),0,1)};
-    let cur=null,vel=0,g=null,gi=0;const usadas=[];
+    let cur=null,vel=0,g=null,gi=0;const usadas=[];const EP=balanza(),attP=p===voz?LEY.att.voz:LEY.att.solista;
+    let envM=0,envC=0;for(let k=0;k<n;k++)if(p.on[k]){envM+=(LEY.banda?p.envB:p.env)[k];envC++}envM=envC?envM/envC||1:1;
+    // ley 50/50: la figura propia (voz, solista, efecto) se orienta con su balance, el del conjunto y en espejo con el bloque
+    const orientaGesto=(gg)=>{if(!gg.fig)return null;const T=gg.z-gg.a,Gw=H5.win(gg.a-LEY.ventana_s,gg.z);let best=null;
+      const pareja=tt=>vdir(bloquePose(tt,false));
+      for(const op of LEY.OPS){const M=[];let ok=true;for(let q=0;q<16;q++){const u=(q+.5)/16,tt=gg.a+u*T,uu=gg.tipo==="sep"?clamp(u/gg.fr,0,1):u;const pp=poseFig(gg.fig,uu,gg.origin,gg.u0||0,op);
+          if(pp[1]>LEY.el_max||pp[1]<LEY.el_min){ok=false;break}const kk=clamp(Math.round(tt*FR),0,n-1),w=p.on[kk]?(LEY.banda?p.envB:p.env)[kk]/envM:0;M.push({t:tt,dt:T/16,u:vdir(pp),w,ga:w*attP})}
+        if(!ok)continue;const J=costo5(EP,Gw,M,pareja);if(!best||J<best.J)best={J,op}}
+      return best?best.op:null};
     // posta entre instrumentos (§2.2): antes de su primera entrada, la pista espera donde está el viaje en ese instante
     const first=p.on.indexOf(1);
     const objetivo=(t,k)=>{// objetivo de esta pista en el instante t
@@ -8718,7 +8818,7 @@ function partitura({tracks,bpm,seed=7,duracion}){
           const pref=kind==="build"?["ascenso","arco-alto"]:kind==="drop"?["media-vuelta","arco-alto"]:["frente-cara","arco-alto","media-vuelta"];
           const rec=globalThis.__cortosUsados||(globalThis.__cortosUsados=[]);const cand=opc.sort((x,y)=>(pref.indexOf(x.id)<0?9:pref.indexOf(x.id))+(rec.slice(-2).includes(x.id)?3:0)-((pref.indexOf(y.id)<0?9:pref.indexOf(y.id))+(rec.slice(-2).includes(y.id)?3:0)))[0];
           if(cand&&(c.f.id==="aproximacion"||c.f.corto)){c.f=cand;c.avg=cand.ang/(seconds*g.fr)}if(c.f.corto)rec.push(c.f.id)}
-        g.fig=c?c.f:null;g.avg=c?c.avg:0;if(g.fig)usadas.unshift(g.fig.id);g.u0=g.tipo==="voz"&&g.fig?g.fig.u0:0;g.nuevo=true;
+        g.fig=c?c.f:null;g.avg=c?c.avg:0;if(g.fig)usadas.unshift(g.fig.id);g.u0=g.tipo==="voz"&&g.fig?g.fig.u0:0;g.nuevo=true;g.op=orientaGesto(g);
         if(g.tipo==="fx"&&seconds<1.6){g.fig=null;g.cruce=true}// efecto corto e identificable: un cruce rápido de un oído al otro
         if(g.tipo==="golpes"){g.fig=null;const a0=wrap(g.origin[0]),fin=a0<=0?90:-90,tot=wrap(fin-a0)||180;// el primer golpe suena donde está la pista (posta); el último, en el oído contrario
           g.pasos=g.hits.map((h,i)=>[a0+tot*i/(g.hits.length-1),g.origin[1]*(1-i/(g.hits.length-1)),DIST.casa]);g.grados_fijos=Math.round(angle(g.pasos[0],g.pasos.at(-1)))}
@@ -8737,7 +8837,7 @@ function partitura({tracks,bpm,seed=7,duracion}){
       const u=fase(g,t);let q;
       if(g.tipo==="golpes"){let i=0;while(i+1<g.hits.length&&t>=g.hits[i+1]-.03)i++;return {p:g.pasos[i].slice(),fx:false,golpe:true,v0:0}}
       if(g.cruce){const s=smooth(u),side=g.origin[0]>=0?-1:1;q=[g.origin[0]+side*180*s,g.origin[1]*(1-s),g.origin[2]]}
-      else if(g.fig){q=poseFig(g.fig,g.tipo==="sep"?clamp(u/g.fr,0,1):u,g.origin,g.u0||0);
+      else if(g.fig){q=poseFig(g.fig,g.tipo==="sep"?clamp(u/g.fr,0,1):u,g.origin,g.u0||0,g.op);
         if(g.tipo==="voz"){const r0=g.origin[2],base=clamp(r0+(q[2]-r0)*.6,1.3,1.9);q[2]=g.intima?base-(base-DIST.vozIntima)*Math.sin(Math.PI*u):base}// intimidad con intención y salida (§3)
         else q[2]=clamp(DIST.casa+(q[2]-DIST.casa)*.6,DIST.excMin,DIST.excMax)}
       else q=g.origin.slice();
@@ -8758,6 +8858,7 @@ function partitura({tracks,bpm,seed=7,duracion}){
           cur=[az,Math.asin(clamp(v[1],-1,1))*R2D,cur[2]+clamp(tg[2]-cur[2],-1.2/FR,1.2/FR)]}}
       // en silencio la pista conserva su posición (§2.3); la rampa de velocidad se conserva en huecos cortos (ya unidos en «actividad»)
       pose[k*3]=cur[0];pose[k*3+1]=cur[1];pose[k*3+2]=cur[2];
+      if(on&&!grave){const u=vdir(cur),w=(LEY.banda?p.envB:p.env)[k]/envM;acumula(EP,[{t,dt:1/FR,u,w}],LEY.memoria_s);if(g)H5.add(t,w*attP/FR,u)}
       out[k*4]=wrap(cur[0])*D2R;out[k*4+1]=clamp(cur[1],-90,90)/90;out[k*4+2]=Math.log(clamp(cur[2],.26,4.8)/.25)/Math.log(20);out[k*4+3]=p.on[k]}
     scores.push(out);traz.push(pose)}
   /* --- 5b) ECO INDEPENDIENTE (§3 «Eco independiente»): la cola de la voz después de cada frase (lo que sigue sonando
@@ -8769,13 +8870,17 @@ function partitura({tracks,bpm,seed=7,duracion}){
   // cada frase del eco nace donde estaba la voz directa al cantarla (posta) y viaja por su cuenta hasta su cola
   if(voz){const vi=voz.i,T=traz[vi],del=G.beat,tr=[];
     frases.forEach((f,i)=>{const sig=i<frases.length-1?frases[i+1].a+del:dur;const a=f.a+del,z=Math.min(dur,sig-.05,f.z+del+G.beat);if(z-a>=.5)tr.push([a,z,f.a])});
-    if(tr.length){const out=new Float32Array(n*4),pose=new Float32Array(n*3);let cur=[T[0],T[1],T[2]],gi=-1,g=null,used=[];
+    if(tr.length){const out=new Float32Array(n*4),pose=new Float32Array(n*3);let cur=[T[0],T[1],T[2]],gi=-1,g=null,used=[];const EE=balanza();
       for(let k=0;k<n;k++){const t=k/FR;const idx=tr.findIndex(([a,z])=>t>=a&&t<z);
         if(idx>=0&&idx!==gi){gi=idx;const [a,z,fa]=tr[idx],ki=Math.round(fa*FR);cur=[T[ki*3],T[ki*3+1],T[ki*3+2]];// nace donde la voz dijo esas palabras
           const c=elegirFigura({seconds:z-a,kind:S.kindAt(a),rnd,recientes:used.slice(0,3),el0:cur[1],objetivo:65,pesos:{"Altura":.35,"Profundidad":.3,"Órbitas":.1}});
-          g={a,z,origin:cur.slice(),fig:c?c.f:null};if(g.fig)used.unshift(g.fig.id);
+          g={a,z,origin:cur.slice(),fig:c?c.f:null,op:null};
+          // ley 50/50: el eco se abre hacia el lado contrario de la voz directa (espejo) y hacia lo que le falta al conjunto
+          if(g.fig){const Gw=H5.win(a-LEY.ventana_s,z);let bj=null;for(const op of LEY.OPS){const M=[];let ok=true;for(let q=0;q<12;q++){const u=(q+.5)/12,tt=a+u*(z-a),pp=poseFig(g.fig,u,g.origin,0,op);if(pp[1]>LEY.el_max||pp[1]<LEY.el_min){ok=false;break}M.push({t:tt,dt:(z-a)/12,u:vdir(pp),w:.3,ga:.3*LEY.att.eco})}
+            if(!ok)continue;const kv=tt=>{const kk=clamp(Math.round(tt*FR),0,n-1);return vdir([T[kk*3],T[kk*3+1]])};const J=costo5(EE,Gw,M,kv);if(!bj||J<bj.J)bj={J,op,M}}
+            if(bj){g.op=bj.op;acumula(EE,bj.M,LEY.memoria_s)}}if(g.fig)used.unshift(g.fig.id);
           log.push({tipo:"eco",pista:"Voz · eco",ids:[vi],figura:g.fig?g.fig.id:"quieto",inicio:a,dur:z-a,grados_figura:g.fig?Math.round(g.fig.ang):0,seccion:S.kindAt(a),separacion:false,motivo:"el eco (un pulso después, −17 dB) toma la posta donde la voz cantó y viaja solo",eco:true})}
-        if(idx>=0&&g&&g.fig){const u=clamp((t-g.a)/(g.z-g.a),0,1);cur=poseFig(g.fig,u,g.origin);cur[2]=clamp(g.origin[2]+(cur[2]-g.origin[2])*.7,1.3,2.3)}
+        if(idx>=0&&g&&g.fig){const u=clamp((t-g.a)/(g.z-g.a),0,1);cur=poseFig(g.fig,u,g.origin,0,g.op);cur[2]=clamp(g.origin[2]+(cur[2]-g.origin[2])*.7,1.3,2.3)}
         pose[k*3]=cur[0];pose[k*3+1]=cur[1];pose[k*3+2]=cur[2];
         out[k*4]=wrap(cur[0])*D2R;out[k*4+1]=clamp(cur[1],-90,90)/90;out[k*4+2]=Math.log(clamp(cur[2],.26,4.8)/.25)/Math.log(20);out[k*4+3]=idx>=0?1:0}
       eco={fuente:vi,nombre:"Voz · eco",retardo:del,ganancia_db:-17,tramos:tr.map(x=>[x[0],x[1]]),score:out,traz:pose}}}
@@ -8797,8 +8902,28 @@ function partitura({tracks,bpm,seed=7,duracion}){
     tracks:P.map(p=>({name:p.name,clase:p.clase,activo:Math.round(100*p.on.reduce((a,b)=>a+b,0)/n),brillo:Math.round(p.tim.brillo),ataque:+p.tim.ataque.toFixed(2),cola:+p.tim.cola.toFixed(2)})),
     secciones:S.list.map(s=>({kind:s.kind,letra:s.letra,t0:+G.at(s.b0).toFixed(2),t1:+Math.min(dur,G.at(s.b1)).toFixed(2)})),
     frases:frases.map(f=>({a:+f.a.toFixed(2),z:+f.z.toFixed(2),modo:f.modo,intima:!!f.intima})),separaciones:elegidas.map(s=>({pista:s.p.name,a:+s.a.toFixed(2),z:+s.z.toFixed(2),porque:s.porque,hueco:s.hueco,relevo:s.relevo||null,prot:s.prot})),
-    rejilla:{bpm,t0:+G.t0.toFixed(3),compas:+G.bar.toFixed(3)},bloqueJunto:+(1-usado/dur).toFixed(2),activity:P.map(p=>p.on),traz}}
-return {partitura,clase,VEL,DIST,FIG,elegirFigura};// elegirFigura: la usa también la Mesa (IAH8D.planearClub)
+    rejilla:{bpm,t0:+G.t0.toFixed(3),compas:+G.bar.toFixed(3)},bloqueJunto:+(1-usado/dur).toFixed(2),activity:P.map(p=>p.on),traz}};
+  const mide=r=>{const pistas=[];r.tracks.forEach((T,i)=>{if(GRAVE.has(T.clase))return;const sp=r.separaciones.filter(x=>x.pista===T.name),att=new Float32Array(n);
+      for(let k=0;k<n;k++){const t=k/FR;att[k]=T.clase==="voz"?LEY.att.voz:sp.some(x=>t>=x.a&&t<x.z)?LEY.att.solista:LEY.att.bloque}
+      pistas.push({nombre:T.name,papel:T.clase==="voz"?"protagonista":sp.length?"solista":"bloque",pose:r.traz[i],on:P[i].on,w:P[i].env,att})});
+    const B=balance3({fr:FR,pistas,secciones:r.secciones.map(x=>({nombre:x.kind+(x.letra?"·"+x.letra:""),t0:x.t0,t1:x.t1}))});
+    let sc=0;for(const a of ["x","y","z"])sc+=10*Math.max(0,Math.abs(B.global[a])-LEY.tol);
+    for(const q of B.pistas){if(q.papel==="bloque"||q.audible_s<20)continue;for(const a of ["x","y","z"]){sc+=Math.max(0,Math.max(q[a].lado_menos,q[a].lado_mas)-100*LEY.lado_max)/10+Math.max(0,q[a].max_sin_cruzar_s-LEY.cruce_cada_s)/10}}
+    // y lo que se oye: banda 1,5–6 kHz, sin pesos de atención (lo que mide el ILD del audio)
+    B.puntaje_plan=+sc.toFixed(3);B.cumple_plan=sc===0;
+    const A=balance3({fr:FR,pistas:pistas.map(q=>Object.assign({},q,{w:P[r.tracks.findIndex(T=>T.name===q.nombre)].envB,att:1}))});B.audible=A.global;
+    sc+=10*Math.max(0,Math.abs(A.global.x)-LEY.tol_audible_x);
+    B.puntaje=+sc.toFixed(3);B.cumple=sc===0;return B};
+  // 1.º las variantes aprobadas el 21 nov (Llamada y Bateria aprobadas así): si una cumple también lo que se OYE, se usa tal cual.
+  // 2.º solo si no, otras variantes pesadas por la banda 1,5–6 kHz (lo que el oído ubica a los lados).
+  const DEF=Object.assign({},LEY),V1=[{},{k_global:20,k_propio:40,memoria_s:20,ventana_s:30},{k_global:30,k_glide:.2}],
+    V2=[{banda:true},{banda:true,k_global:20,k_propio:40,memoria_s:20,ventana_s:30},{banda:true,k_global:30,k_glide:.2}];
+  const corre=(vi,V)=>{Object.assign(LEY,DEF,V);let r;try{r=runPlan(vi?rng(seed+101*vi):rnd)}finally{Object.assign(LEY,DEF)}const B=mide(r);B.variante=vi;r.ley5050=B;return r};
+  let best=null;
+  for(let vi=0;vi<V1.length;vi++){const r=corre(vi,V1[vi]),B=r.ley5050;if(!best||B.puntaje_plan<best.ley5050.puntaje_plan)best=r;if(B.cumple_plan)break}
+  if(!best.ley5050.cumple){let b2=best;for(let j=0;j<V2.length;j++){const r=corre(V1.length+j,V2[j]);if(r.ley5050.puntaje<b2.ley5050.puntaje)b2=r;if(r.ley5050.cumple)break}best=b2}
+  return best}
+return {partitura,clase,VEL,DIST,FIG,elegirFigura,LEY,balance3,envBanda};// elegirFigura: la usa también la Mesa (IAH8D.planearClub)
 })();
 try{window.IAH_DJ_CRITERIO=IAH_DJ_CRITERIO}catch(e){}
 if(typeof module!=="undefined"&&module.exports)module.exports=IAH_DJ_CRITERIO;
@@ -25249,13 +25374,20 @@ const E8_ED=[20,60,100,200,500,3000,8000,20000],E8_REF=[-4.7,-7.5,-8.2,-10.6,-9.
 function e8Bandas(L,R){const n=8192,N=L.length,hop=Math.max(n,Math.floor((N-n)/300)),re=new Float64Array(n),im=new Float64Array(n),P=new Float64Array(n/2),w=new Float64Array(n);
   for(let i=0;i<n;i++)w[i]=.5-.5*Math.cos(TAU*i/n);for(let o=0;o+n<=N;o+=hop){for(let i=0;i<n;i++){re[i]=(L[o+i]+R[o+i])*.5*w[i];im[i]=0}fftR(re,im);for(let k=0;k<n/2;k++)P[k]+=re[k]*re[k]+im[k]*im[k]}
   const e=E8_ED.slice(0,-1).map((lo,b)=>{let s=0;for(let k=Math.ceil(lo*n/SR);k<E8_ED[b+1]*n/SR&&k<n/2;k++)s+=P[k];return s}),tot=e.reduce((a,b)=>a+b,0)+1e-30;return e.map(x=>10*Math.log10(x/tot+1e-12))}
+/* ACENTO FRONTAL B (21 nov 2026): el balance tonal adaptativo mide la mezcla YA acentuada y recortaría el acento. Se descuenta lo que el
+   acento agrega a cada banda: con el «adelante» medio del render (ORB.frente5) se pasa un ruido rosa por el mismo acento y se miden las bandas.
+   En vivo no hace falta: el tono se calcula con las pistas, antes del acento. */
+const E8F={};function e8Frente(){const fr=typeof ORB!=="undefined"&&ORB.frente5?ORB.frente5(true):0;if(!(fr>.01))return E8_REF.map(()=>0);const key=fr.toFixed(2);if(E8F[key])return E8F[key];
+  const n=SR*2,x=new Float32Array(n);let b0=0,b1=0,b2=0,s=7;for(let i=0;i<n;i++){s=(s*16807)%2147483647;const w=s/2147483647*2-1;b0=.99765*b0+w*.099046;b1=.963*b1+w*.2965164;b2=.57*b2+w*1.0526913;x[i]=(b0+b1+b2+w*.1848)*.05}
+  const y=x.slice(),pk=bq("peaking",3300,.99,5.5*fr);bqRun(pk,y);const g=dB(1.5*fr);for(let i=0;i<n;i++)y[i]*=g;
+  const a=e8Bandas(x,x),b=e8Bandas(y,y);return E8F[key]=b.map((v,i)=>v-a[i])}
 function e8Post(L,R,arr,inf){const N=L.length,tmp=new Float32Array(N);let pk=Math.max(e8pk(L),e8pk(R));if(pk>0){const k=.5/pk;for(let i=0;i<N;i++){L[i]*=k;R[i]*=k}}
   {const lL=e8ff(L,"lp120"),lR=e8ff(R,"lp120");for(let i=0;i<N;i++){const M=(lL[i]+lR[i])/2,S=(lL[i]-lR[i])/2*.3;L[i]+=M+S-lL[i];R[i]+=M-S-lR[i]}}
   for(const X of [L,R]){bqRun(bq("peaking",140,.8,2),X);bqRun(bq("peaking",1200,.6,-2),X);e8ff(X,"lp110",tmp);let k=dB(-1.5)-1;for(let i=0;i<N;i++)X[i]+=tmp[i]*k;e8ff(X,"hp7k",tmp);k=dB(-2.5)-1;for(let i=0;i<N;i++)X[i]+=tmp[i]*k}
   {const lu0=lufsOf(L,R),pk0=Math.max(e8pk(L),e8pk(R));inf.plr_db=+(20*Math.log10(pk0)-lu0).toFixed(1);const W=4800,top=[];for(let o=0;o+W<=N;o+=W){let m=0;for(let i=o;i<o+W;i++){const v=Math.max(Math.abs(L[i]),Math.abs(R[i]));if(v>m)m=v}top.push([m,o/SR])}
     top.sort((a,b)=>b[0]-a[0]);inf.picos=top.slice(0,8).map(([m,t])=>[+t.toFixed(1),+(20*Math.log10(m/pk0)).toFixed(1)])}
   // balance tonal suave hacia el perfil de las referencias aprobadas («ayer»): 70 % de la diferencia por banda, ±3 dB como mucho
-  {const sp=e8Bandas(L,R),gs=E8_REF.map((r,i)=>+clamp(.8*(r-sp[i]),-5,5).toFixed(1));inf.bandas_pre=sp.map(v=>+v.toFixed(1));inf.balance_db=gs;
+  {const sp=e8Bandas(L,R),dF=e8Frente(),gs=E8_REF.map((r,i)=>+clamp(.8*(r-(sp[i]-dF[i])),-5,5).toFixed(1));if(dF.some(x=>x))inf.acento_frontal_db=dF.map(x=>+x.toFixed(2));inf.bandas_pre=sp.map(v=>+v.toFixed(1));inf.balance_db=gs;
     E8_EQ.forEach(([t,f,Q],i)=>{if(Math.abs(gs[i])<.2)return;const c=bq(t,f,Q,gs[i]);bqRun(c,L);bqRun(c,R)})}
   // pegamento lento enlazado (misma ganancia en las dos orejas: no toca el 8D): suaviza las fases «cerca + arriba + drop»
   {const thrO=4,ratio=2,att=.03,rel=.3,knee=6,lu0=lufsOf(L,R),aA=Math.exp(-1/(att*SR)),aR=Math.exp(-1/(rel*SR));
