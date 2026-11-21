@@ -1,12 +1,20 @@
-/* ORBITAL · service worker para uso sin conexión. Versión 0f9f0e557130 (la pone build.py).
+/* ORBITAL · service worker para uso sin conexión. Versión cda88d4d0e44 (la pone build.py).
    - La página se pide primero a la red (así GitHub Pages actualiza normal); sin red, usa la copia guardada.
    - Canciones y sonidos ya escuchados se guardan para volver a sonar sin conexión. */
-const V="0f9f0e557130",SHELL="orbital-shell-"+V,MEDIA="orbital-media-v1";
+const V="cda88d4d0e44",SHELL="orbital-shell-"+V,MEDIA="orbital-media-v1";
 const CORE=["./","index.html","benzai-strip.js","orbital-spatial-worklet.js","orbital-spatial.wasm"];
 const MEDIA_RE=/\/(audio-web|musica|sonidos[^/]*|fonts|inst|visuales|fondos_8d)\//;
 self.addEventListener("install",e=>{e.waitUntil(caches.open(SHELL).then(c=>Promise.all(CORE.map(u=>c.add(u).catch(()=>null)))))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.startsWith("orbital-shell-")&&k!==SHELL).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
-self.addEventListener("message",e=>{if(e.data==="orbital-sw-skip")self.skipWaiting()});
+self.addEventListener("message",e=>{if(e.data==="orbital-sw-skip")self.skipWaiting();
+  else if(e.data&&e.data.type==="orbital-cache-media"&&Array.isArray(e.data.urls))e.waitUntil(keepMedia(e.data.urls))});
+// Canción de Sound Healing ya escuchada: la página manda la lista de sus trozos y aquí se guardan los que falten (2 a la vez).
+async function keepMedia(urls){
+  const c=await caches.open(MEDIA),todo=[];
+  for(const u of urls.slice(0,4000)){try{const url=new URL(u,self.registration.scope);if(url.origin===location.origin&&MEDIA_RE.test(url.pathname))todo.push(url.href)}catch(_){}}
+  let i=0;const worker=async()=>{while(i<todo.length){const u=todo[i++];try{if(await c.match(u))continue;const r=await fetch(u);if(r.ok&&r.status===200&&!r.headers.get("content-type")?.includes("text/html"))await c.put(u,r)}catch(_){}}};
+  await Promise.all([worker(),worker()]);
+}
 async function networkFirst(req){
   const c=await caches.open(SHELL);
   try{const r=await fetch(req);if(r.ok&&r.status===200)c.put(req,r.clone());return r}
