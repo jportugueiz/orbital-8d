@@ -1,14 +1,14 @@
 # Manual de experiencia inmersiva de Orbital
 
-IAH es el operador 8D de ORBITAL. Usa las figuras de E8A en el DJ y la Mesa, con un criterio lento en Sound Healing.
+IAH es el operador 8D de ORBITAL. En DJ 8D (en vivo, Mesa, creaciones y exportar) aplica el criterio de docs/CRITERIO_IAH_DJ_8D_2026-11-20.md con el banco aprobado de figuras; en Sound Healing usa su propio pulso lento.
+
+## Criterio de DJ 8D (20 nov 2026)
+
+El criterio vigente de DJ 8D Auto está en docs/CRITERIO_IAH_DJ_8D_2026-11-20.md. Único criterio de IAH en DJ 8D Auto (DJ en vivo, Mesa e IAH DJ creations). Las secciones 1–4 son las reglas; la 5 describe lo que estaba mal programado. Fórmula vigente: análisis de la partitura (todas las pistas) → figuras del banco que se reconocen completas → posta → cadena posterior aprobada (e8Post, −14 LUFS, graves al centro). Ver «Fórmula vigente» en el documento.
 
 ## Regla permanente de la posta espacial
 
 La posta espacial es obligatoria para todos los DJ y modos que muevan audio, en vivo y al exportar. Cada figura continúa desde el último azimut, altura y distancia del sonido o grupo. Un silencio conserva esa posición. Si la figura siguiente comienza en otro lugar, conecta ambos puntos con un recorrido audible y continuo. Cuando otro instrumento toma la posta, debe llegar al punto de entrega del anterior en el mismo instante antes de continuar. La velocidad, la figura y los instrumentos pueden variar.
-
-## Director de DJ 8D
-
-En DJ 8D manda la versión larga final de Beyond Sound; 1:20–1:30 es la referencia de cercanía y velocidad percibida. Escucha cada pista dentro de la mezcla antes de darle movimiento. Un canal en silencio conserva su posición. Los ataques articulan una frase y la figura debe poder seguirse mientras la frase se oye. La música suele viajar junta (cerca del 80 %); el bombo y el bajo participan. La voz entra en movimiento y alterna frases acompañadas e independientes (aproximadamente mitad y mitad); el eco puede tomar la posta. Distancia habitual 1,5–1,8 m, con matices. Permite reposo, anticipación, ascensos y regresos sin perder pegada. Solo un efecto audible puede hacer un cruce rápido intencional. El drop no acelera por sí mismo a los instrumentos. Mantén la posta, los fundidos y las colas. El oído con audífonos decide.
 
 ## El único criterio creativo
 
