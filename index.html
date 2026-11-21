@@ -33960,6 +33960,7 @@ const MODO_SIMPLE=(()=>{
     const play=q("#play");if(!play)return;
     const prod=document.body.dataset.orbitalProduct;
     if(play.hidden){if(root&&!root.hidden){token++;clearInterval(timer);timer=null;hide()}removePill();return}
+    if(document.body.classList.contains("ldjx-open")){if(root&&!root.hidden){token++;clearInterval(timer);timer=null;hide()}removePill();return}/* DJ abierto encima de Live: DJ tiene su propio modo simple */
     if(!MANEJA.has(prod)){hide();removePill();return}
     if(root&&!root.hidden&&product===prod)return;
     intent=null;dur=EXPS[prod].dur;
@@ -33969,7 +33970,7 @@ const MODO_SIMPLE=(()=>{
   function init(){
     const play=q("#play");if(!play)return;
     new MutationObserver(onPlay).observe(play,{attributes:true,attributeFilter:["hidden"]});
-    new MutationObserver(()=>{if(!q("#play").hidden)onPlay()}).observe(document.body,{attributes:true,attributeFilter:["data-orbital-product"]});
+    new MutationObserver(()=>{if(!q("#play").hidden)onPlay()}).observe(document.body,{attributes:true,attributeFilter:["data-orbital-product","class"]});
     onPlay();
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
