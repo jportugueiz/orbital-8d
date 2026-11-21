@@ -6121,7 +6121,7 @@ function buildMaster(c,o={}){const m={ctx:c,rt:!(c instanceof OfflineAudioContex
     // de 4.º orden en medio/lado (los dos caminos pasan por el mismo pasatodo, así no hay desfase entre grave y agudo ni entre M y S).
     // Va dentro de la cadena DJ (djPostOn); fuera del DJ la señal va directa (Healing/Baño intactos).
     {const sp=c.createChannelSplitter(2);m.djGain.connect(sp);const g=v=>{const n=c.createGain();n.gain.value=v;return n};
-      const Mi=g(.5),Si=g(.5),inv=g(-.5);sp.connect(Mi,0);sp.connect(Mi,1);sp.connect(Si,0);sp.connect(inv,1);inv.connect(Si);
+      const Mi=g(.5),Si=g(.5),inv=g(-1);sp.connect(Mi,0);sp.connect(Mi,1);sp.connect(Si,0);sp.connect(inv,1);inv.connect(Si);
       const lr4=(src,type)=>{const f1=c.createBiquadFilter(),f2=c.createBiquadFilter();for(const f of [f1,f2]){f.type=type;f.frequency.value=120;f.Q.value=.7071}src.connect(f1);f1.connect(f2);return f2};
       const Mo=g(1),So=g(1);lr4(Mi,"lowpass").connect(Mo);lr4(Mi,"highpass").connect(Mo);m.graveS=g(.1);lr4(Si,"lowpass").connect(m.graveS);m.graveS.connect(So);lr4(Si,"highpass").connect(So);
       const Sn=g(-1);So.connect(Sn);const msOut=c.createChannelMerger(2);Mo.connect(msOut,0,0);So.connect(msOut,0,0);Mo.connect(msOut,0,1);Sn.connect(msOut,0,1);
