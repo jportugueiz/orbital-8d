@@ -33735,7 +33735,7 @@ const MODO_SIMPLE=(()=>{
     root.hidden=false;document.body.classList.add("osm-on");consoleInert(true);removePill();
     if(LS.get("orb_ms_guia","0")!=="1")go("hola");else go("inicio");
   }
-  function hide(){if(!root)return;root.hidden=true;document.body.classList.remove("osm-on");consoleInert(false)}
+  function hide(){if(!root||root.hidden)return;root.hidden=true;document.body.classList.remove("osm-on");consoleInert(false)}
 
   function go(s){screen=s;render();const t=root.querySelector("#msTitulo");if(t)t.focus({preventScroll:true});root.scrollTop=0}
 
