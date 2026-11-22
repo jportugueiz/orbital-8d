@@ -33189,8 +33189,10 @@ const DJ_SIMPLE=(()=>{
   const fmt=s=>Math.floor(Math.max(0,s)/60)+":"+String(Math.floor(Math.max(0,s)%60)).padStart(2,"0");
   const phone=()=>matchMedia("(max-width: 640px)").matches||(matchMedia("(pointer: coarse)").matches&&Math.min(screen.width,screen.height)<=500);
   const pref=()=>{try{return localStorage.getItem(LS_MODE)}catch(_){return null}};
-  // ronda 2 (21 nov 2026): la vista simple es la primera también en el PC («bambi por fuera»); «Más» abre la consola completa
-  const wanted=()=>pref()!=="0";
+  // 22 nov (Jorge): en el PC el DJ abre SIEMPRE la consola completa, como antes de la ronda 2; la vista simple solo con el botón
+  // «Vista simple» de la cabecera (no se recuerda). En el teléfono sigue el modo simple. La preferencia guardada en la ronda 2 se borra una vez.
+  try{if(localStorage.getItem("orbdj_simple_v3")!=="1"){localStorage.removeItem(LS_MODE);localStorage.setItem("orbdj_simple_v3","1")}}catch(_){}
+  const wanted=()=>phone()&&pref()!=="0";
   const song=()=>typeof LAB_DJ_UI!=="undefined"&&LAB_DJ_UI.on?LAB_DJ_UI.songs:null;
   const ws=()=>globalThis.ORBITAL_DJ_WORKSPACE;
   const pro=()=>(typeof DJ_PRO!=="undefined"?DJ_PRO:null)?.on?DJ_PRO:null;
@@ -33297,7 +33299,7 @@ const DJ_SIMPLE=(()=>{
   }
   const toggleAuto=()=>auto?stopAuto():startAuto(false);
   function setSimple(v,persist=true){
-    if(persist)try{localStorage.setItem(LS_MODE,v?"1":"0")}catch(_){}
+    if(persist&&phone())try{localStorage.setItem(LS_MODE,v?"1":"0")}catch(_){}
     on=v;if(!root&&v)build();if(!root)return;
     root.hidden=!v;document.body.classList.toggle("djs-on",v);
     if(v){if(!auto)void toMode("classic");paint();maybeGuide()}else endGuide(false);
@@ -33327,6 +33329,7 @@ const DJ_SIMPLE=(()=>{
     const ld=document.getElementById("ldjx"),open=ld&&!ld.hidden;
     const h=document.querySelector("#ldjx .ldx-w-header");
     if(open&&!on&&!root&&wanted()&&ws()?.ready)setSimple(true,false);
+    if(h&&!phone()&&!h.querySelector(".djs-viewbtn"))h.append(E("button",{type:"button",class:"djs-btn djs-viewbtn",title:"Dos decks grandes y «Mezclar» (el copiloto)","aria-label":"Vista simple",onclick:()=>setSimple(true,false)},"Vista simple"));
     // Posicionamiento: «DJ espacial 3D por instrumento»
     const TITLE="ORBITAL DJ · DJ espacial 3D por instrumento";
     if(open&&document.title!==TITLE){prevTitle=document.title;document.title=TITLE}
@@ -33338,7 +33341,8 @@ const DJ_SIMPLE=(()=>{
     if(root&&open&&on&&root.hidden){root.hidden=false;document.body.classList.add("djs-on")}
     paint();
   },200);
-  try{pro()?.menuAdd("Vista simple","Cambiar a la vista simple",()=>setSimple(true))}catch(_){}
+  try{pro()?.menuAdd("Vista simple","Cambiar a la vista simple",()=>setSimple(true,false))}catch(_){}
+  try{pro()?.menuAdd("Mezclar (copiloto)","El copiloto elige y mezcla por ti",()=>{try{setSimple(true,false);DJ_MEZCLAR.start()}catch(e){console.warn("Mezclar",e)}})}catch(_){}
   return {on:true,set:setSimple,set8D(v){auto=!!v;paint()},get active(){return on},startAuto,stopAuto,guide:()=>{try{localStorage.removeItem(LS_GUIDE)}catch(_){}guideStep=-1;maybeGuide()}};
 })();
 
