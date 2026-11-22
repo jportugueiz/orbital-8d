@@ -8960,29 +8960,10 @@ function partitura({tracks,bpm,seed=7,duracion,rasgos}){
       if(on&&!grave){const u=vdir(cur),w=(LEY.banda?p.envB:p.env)[k]/envM;acumula(EP,[{t,dt:1/FR,u,w}],LEY.memoria_s);if(g)H5.add(t,w*attP/FR,u)}
       out[k*4]=wrap(cur[0])*D2R;out[k*4+1]=clamp(cur[1],-90,90)/90;out[k*4+2]=Math.log(clamp(cur[2],.26,4.8)/.25)/Math.log(20);out[k*4+3]=p.on[k]}
     scores.push(out);traz.push(pose)}
-  /* --- 5b) ECO INDEPENDIENTE (§3 «Eco independiente»): la cola de la voz después de cada frase (lo que sigue sonando
-     cuando ya no hay palabras) toma la posta desde donde está la voz directa y hace su propio recorrido.
-     Se entrega como una pista aparte «Voz · eco» (ventanas de cola + partitura): el render la separa de la voz directa
-     con fundidos de 30 ms; así se distingue sin tapar las palabras. --- */
-  let eco=null;
-  // eco = la voz retrasada un pulso, unos −17 dB (como el eco propio de la voz de la referencia ORBITAL 125), con recorrido propio:
-  // cada frase del eco nace donde estaba la voz directa al cantarla (posta) y viaja por su cuenta hasta su cola
-  if(voz){const vi=voz.i,T=traz[vi],del=G.beat,tr=[];
-    frases.forEach((f,i)=>{const sig=i<frases.length-1?frases[i+1].a+del:dur;const a=f.a+del,z=Math.min(dur,sig-.05,f.z+del+G.beat);if(z-a>=.5)tr.push([a,z,f.a])});
-    if(tr.length){const out=new Float32Array(n*4),pose=new Float32Array(n*3);let cur=[T[0],T[1],T[2]],gi=-1,g=null,used=[];const EE=balanza();
-      for(let k=0;k<n;k++){const t=k/FR;const idx=tr.findIndex(([a,z])=>t>=a&&t<z);
-        if(idx>=0&&idx!==gi){gi=idx;const [a,z,fa]=tr[idx],ki=Math.round(fa*FR);cur=[T[ki*3],T[ki*3+1],T[ki*3+2]];// nace donde la voz dijo esas palabras
-          const c=elegirFigura({seconds:z-a,kind:S.kindAt(a),rnd,recientes:used.slice(0,3),el0:cur[1],objetivo:65,pesos:{"Altura":.35,"Profundidad":.3,"Órbitas":.1}});
-          g={a,z,origin:cur.slice(),fig:c?c.f:null,op:null};
-          // ley 50/50: el eco se abre hacia el lado contrario de la voz directa (espejo) y hacia lo que le falta al conjunto
-          if(g.fig){const Gw=H5.win(a-LEY.ventana_s,z);let bj=null;for(const op of LEY.OPS){const M=[];let ok=true;for(let q=0;q<12;q++){const u=(q+.5)/12,tt=a+u*(z-a),pp=poseFig(g.fig,u,g.origin,0,op);if(pp[1]>LEY.el_max||pp[1]<LEY.el_min){ok=false;break}M.push({t:tt,dt:(z-a)/12,u:vdir(pp),w:.3,ga:.3*LEY.att.eco})}
-            if(!ok)continue;const kv=tt=>{const kk=clamp(Math.round(tt*FR),0,n-1);return vdir([T[kk*3],T[kk*3+1]])};const J=costo5(EE,Gw,M,kv);if(!bj||J<bj.J)bj={J,op,M}}
-            if(bj){g.op=bj.op;acumula(EE,bj.M,LEY.memoria_s)}}if(g.fig)used.unshift(g.fig.id);
-          log.push({tipo:"eco",pista:"Voz · eco",ids:[vi],figura:g.fig?g.fig.id:"quieto",inicio:a,dur:z-a,grados_figura:g.fig?Math.round(g.fig.ang):0,seccion:S.kindAt(a),separacion:false,motivo:"el eco (un pulso después, −17 dB) toma la posta donde la voz cantó y viaja solo",eco:true})}
-        if(idx>=0&&g&&g.fig){const u=clamp((t-g.a)/(g.z-g.a),0,1);cur=poseFig(g.fig,u,g.origin,0,g.op);cur[2]=clamp(g.origin[2]+(cur[2]-g.origin[2])*.7,1.3,2.3)}
-        pose[k*3]=cur[0];pose[k*3+1]=cur[1];pose[k*3+2]=cur[2];
-        out[k*4]=wrap(cur[0])*D2R;out[k*4+1]=clamp(cur[1],-90,90)/90;out[k*4+2]=Math.log(clamp(cur[2],.26,4.8)/.25)/Math.log(20);out[k*4+3]=idx>=0?1:0}
-      eco={fuente:vi,nombre:"Voz · eco",retardo:del,ganancia_db:-17,tramos:tr.map(x=>[x[0],x[1]]),score:out,traz:pose}}}
+  /* --- 5b) ECO: sin eco sintético (decisión de Jorge, 2026-11-21). IAH no inventa un eco: «eco independiente» es solo el eco
+     que ya viene en la canción. La cola propia de la voz sigue sonando en su misma pista y con su mismo recorrido;
+     si la canción trae una pista de eco/efecto aparte, esa pista viaja con su propia partitura como cualquier otra. --- */
+  const eco=null;
   /* --- 6) bitácora con lo que REALMENTE recorrió cada gesto (no el nombre de la figura) --- */
   const recorrido=(i,a,z,T0)=>{const T=T0||traz[i],ka=Math.round(a*FR),kz=Math.min(n-1,Math.round(z*FR));let s=0,rmin=9,rmax=0;for(let k=ka+1;k<=kz;k++){s+=angle([T[(k-1)*3],T[(k-1)*3+1]],[T[k*3],T[k*3+1]]);rmin=Math.min(rmin,T[k*3+2]);rmax=Math.max(rmax,T[k*3+2])}return {s,rmin,rmax}};
   for(const g of log){let ref=g.ids[0];if(g.pista==="Bloque"){// el miembro del bloque que más suena en ese tramo
@@ -27239,23 +27220,13 @@ function create(B){
       for(const t of list){const b=t.buffer,a=b.getChannelData(0),z=b.getChannelData(b.numberOfChannels>1?1:0);for(let i0=0;i0<b.length;i0+=1<<20){const i1=Math.min(b.length,i0+(1<<20));for(let i=i0;i<i1;i++)X[i]+=(a[i]+z[i])*.5;await yieldUI();if(stale())return}}
       const sp=k.e8Bandas(X,X);gs=k.E8_REF.map((v,i)=>+Math.max(-3,Math.min(3,.8*(v-sp[i]))).toFixed(1))}}catch(e){console.warn("IAH: balance tonal en vivo",e)}
     if(stale())return;
-    // eco independiente EN VIVO (§3 «Eco independiente»): pista derivada «Voz · eco (IAH)» = la voz un pulso después, −17 dB,
-    // solo donde la partitura la abre, con su propio recorrido. No se guarda con el proyecto (se vuelve a calcular al cargar).
-    let eco=null;
-    if(r.eco&&!tracks.some(t=>t.derivado)){const v=list[r.eco.fuente],b=v.buffer,sr=b.sampleRate,dl=Math.round(r.eco.retardo*sr),g=Math.pow(10,r.eco.ganancia_db/20),S=r.eco.score;
-      const eb=new AudioBuffer({length:b.length,numberOfChannels:b.numberOfChannels,sampleRate:sr});
-      for(let c=0;c<b.numberOfChannels;c++){const x=b.getChannelData(c),y=eb.getChannelData(c);let gs=0;const a=1/(.03*sr);
-        for(let i0=dl;i0<b.length;i0+=1<<19){const i1=Math.min(b.length,i0+(1<<19));for(let i=i0;i<i1;i++){const k=Math.min(S.length/4-1,Math.floor(i/sr*100));gs+=((S[k*4+3]||0)-gs)*a;y[i]=x[i-dl]*g*gs}await yieldUI();if(stale())return}}
-      eco={v,eb,S}}
+    // sin eco sintético (decisión de Jorge, 2026-11-21): no se crea ninguna pista derivada «Voz · eco»; solo suena el eco propio de la canción.
     if(stale())return;
     // todo se aplica junto, en el mismo orden que antes
     list.forEach((t,i)=>{t.autoScore=r.scores[i]});
     const info={titulo:title,ms,rejilla:r.rejilla,secciones:r.secciones,frases:r.frases,separaciones:r.separaciones,bloqueJunto:r.bloqueJunto,pistas:r.tracks,gestos:r.log};
     globalThis.ORB_DJ_PARTITURA=info;globalThis.ORB_DJ_PARTITURA_RAW={eco:r.eco,golpes:r.golpes};if(globalThis.ORB_DJ_IAH)globalThis.ORB_DJ_IAH.partitura=info;
     if(gs)try{info.balance_vivo_db=gs;ORB.setDjTone(gs)}catch(e){console.warn("IAH: balance tonal en vivo",e)}
-    if(eco&&!tracks.some(t=>t.derivado)){const {v,eb,S}=eco;
-      const et=makeTrack({name:"Voz · eco (IAH)",buffer:eb,role:v.role,rol:"voces_eco"},tracks.length);et.derivado=true;et.autoScore=S;if(list.some(t=>t.ctl==="iah"))et.ctl="iah";
-      tracks.push(et);render();B.changed()}
    }catch(e){console.warn("IAH: no pude escribir la partitura del criterio",e)}finally{if(scorePending===pending)scorePending=null;done()}},30)}
  function loadDemo(options){return load(demoId,options)}
  async function loadBuiltIn(song,{reveal=true,preview}={}){if(loading)return;const token=++loadingToken;pause();releaseForLoad();loading=true;const ac=loadAbort=new AbortController();paint();message("Cargando "+song.name+" por pistas…");
