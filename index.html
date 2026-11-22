@@ -33192,7 +33192,10 @@ const DJ_SIMPLE=(()=>{
   // 22 nov (Jorge): en el PC el DJ abre SIEMPRE la consola completa, como antes de la ronda 2; la vista simple solo con el botón
   // «Vista simple» de la cabecera (no se recuerda). En el teléfono sigue el modo simple. La preferencia guardada en la ronda 2 se borra una vez.
   try{if(localStorage.getItem("orbdj_simple_v3")!=="1"){localStorage.removeItem(LS_MODE);localStorage.setItem("orbdj_simple_v3","1")}}catch(_){}
-  const wanted=()=>phone()&&pref()!=="0";
+  // 22 nov (Jorge: «lo fácil debe ser una opción, no la forma en que abre la consola»): en TODOS los dispositivos el DJ abre la
+  // consola normal; la vista fácil solo con su botón y nunca queda como predeterminada.
+  try{if(localStorage.getItem("orbdj_simple_v4")!=="1"){localStorage.removeItem(LS_MODE);localStorage.setItem("orbdj_simple_v4","1")}}catch(_){}
+  const wanted=()=>false;
   const song=()=>typeof LAB_DJ_UI!=="undefined"&&LAB_DJ_UI.on?LAB_DJ_UI.songs:null;
   const ws=()=>globalThis.ORBITAL_DJ_WORKSPACE;
   const pro=()=>(typeof DJ_PRO!=="undefined"?DJ_PRO:null)?.on?DJ_PRO:null;
@@ -33299,7 +33302,7 @@ const DJ_SIMPLE=(()=>{
   }
   const toggleAuto=()=>auto?stopAuto():startAuto(false);
   function setSimple(v,persist=true){
-    if(persist&&phone())try{localStorage.setItem(LS_MODE,v?"1":"0")}catch(_){}
+    /* no se recuerda: la consola normal es siempre la de inicio */
     on=v;if(!root&&v)build();if(!root)return;
     root.hidden=!v;document.body.classList.toggle("djs-on",v);
     if(v){if(!auto)void toMode("classic");paint();maybeGuide()}else endGuide(false);
@@ -33329,7 +33332,8 @@ const DJ_SIMPLE=(()=>{
     const ld=document.getElementById("ldjx"),open=ld&&!ld.hidden;
     const h=document.querySelector("#ldjx .ldx-w-header");
     if(open&&!on&&!root&&wanted()&&ws()?.ready)setSimple(true,false);
-    if(h&&!phone()&&!h.querySelector(".djs-viewbtn"))h.append(E("button",{type:"button",class:"djs-btn djs-viewbtn",title:"Dos decks grandes y «Mezclar» (el copiloto)","aria-label":"Vista simple",onclick:()=>setSimple(true,false)},"Vista simple"));
+    {const host=phone()?document.querySelector("#ldjx .ldx-w-nav"):h;/* en el teléfono la cabecera no tiene sitio: va en la barra de áreas */
+      if(host&&!host.querySelector(".djs-viewbtn")){document.querySelector("#ldjx .djs-viewbtn")?.remove();host.append(E("button",{type:"button",class:"djs-btn djs-viewbtn",title:"Dos decks grandes y «Mezclar» (el copiloto)","aria-label":"Modo fácil",onclick:()=>setSimple(true,false)},"Modo fácil"))}}
     // Posicionamiento: «DJ espacial 3D por instrumento»
     const TITLE="ORBITAL DJ · DJ espacial 3D por instrumento";
     if(open&&document.title!==TITLE){prevTitle=document.title;document.title=TITLE}
@@ -33341,7 +33345,7 @@ const DJ_SIMPLE=(()=>{
     if(root&&open&&on&&root.hidden){root.hidden=false;document.body.classList.add("djs-on")}
     paint();
   },200);
-  try{pro()?.menuAdd("Vista simple","Cambiar a la vista simple",()=>setSimple(true,false))}catch(_){}
+  try{pro()?.menuAdd("Modo fácil","Cambiar al modo fácil",()=>setSimple(true,false))}catch(_){}
   try{pro()?.menuAdd("Mezclar (copiloto)","El copiloto elige y mezcla por ti",()=>{try{setSimple(true,false);DJ_MEZCLAR.start()}catch(e){console.warn("Mezclar",e)}})}catch(_){}
   return {on:true,set:setSimple,set8D(v){auto=!!v;paint()},get active(){return on},startAuto,stopAuto,guide:()=>{try{localStorage.removeItem(LS_GUIDE)}catch(_){}guideStep=-1;maybeGuide()}};
 })();
@@ -33699,7 +33703,9 @@ const MODO_SIMPLE=(()=>{
       guia:"Cada sonido viaja a tu alrededor. No tienes que hacer nada."}};
   const MANEJA=new Set(Object.keys(EXPS));
   let root=null,live=null,product=null,screen="inicio",intent=null,dur=20,left=0,paused=false,timer=null,token=0,lastSong="",quiet=0,hpReason="mute",tip=false,expertPill=null;
-  const experto=()=>LS.get("orb_ms_experto","0")==="1"||new URLSearchParams(location.search).get("experto")==="1";
+  // 22 nov (Jorge): la consola normal abre siempre; el Modo fácil solo con su botón y no se recuerda. Las claves viejas se borran una vez.
+  try{if(localStorage.getItem("orb_ms_v2")!=="1"){localStorage.removeItem("orb_ms_experto");localStorage.setItem("orb_ms_v2","1")}}catch(e){}
+  const experto=()=>true;
 
   /* ---------- DOM ---------- */
   function h(tag,attrs,...kids){const e=document.createElement(tag);for(const [k,v] of Object.entries(attrs||{})){if(v==null||v===false)continue;if(k.startsWith("on"))e.addEventListener(k.slice(2),v);else if(k==="class")e.className=v;else e.setAttribute(k,v===true?"":v)}for(const k of kids.flat()){if(k==null||k===false)continue;e.append(k.nodeType?k:document.createTextNode(String(k)))}return e}
@@ -33816,7 +33822,7 @@ const MODO_SIMPLE=(()=>{
         h("div",{class:"osm-experto"},
           h("button",{type:"button",role:"switch","aria-checked":"false",class:"osm-btn osm-switch",onclick:()=>{LS.set("orb_ms_experto","1");hide();addPill();say("Modo experto. Consola completa.")}},
             h("span",{},"Modo experto"),h("span",{class:"osm-knob"},"No")),
-          p("Para quien ya conoce ORBITAL: muestra la consola completa de siempre. Para volver, toca «Modo simple» arriba.","osm-chico")));
+          p("Para quien ya conoce ORBITAL: muestra la consola completa de siempre. Para volver, toca «Modo fácil» arriba.","osm-chico")));
     }
     root.replaceChildren(h("div",{class:"osm-pantalla"},kids));
   }
@@ -33927,7 +33933,7 @@ const MODO_SIMPLE=(()=>{
   function addPill(){
     if(expertPill&&expertPill.isConnected)return;
     const close=q("#pClose");if(!close)return;
-    expertPill=h("button",{type:"button",class:"pbtn osm-pill",id:"msVolverSimple","aria-label":"Volver al Modo simple",onclick:()=>{LS.set("orb_ms_experto","0");if(MANEJA.has(document.body.dataset.orbitalProduct))show(document.body.dataset.orbitalProduct)}},"Modo simple");
+    expertPill=h("button",{type:"button",class:"pbtn osm-pill",id:"msVolverSimple","aria-label":"Abrir el Modo fácil",title:"Una vista guiada y sencilla (opcional)",onclick:()=>{const p=document.body.dataset.orbitalProduct;if(MANEJA.has(p)){intent=null;dur=EXPS[p].dur;show(p)}}},"Modo fácil");
     close.before(expertPill);
   }
   function removePill(){if(expertPill)expertPill.remove();expertPill=null}
