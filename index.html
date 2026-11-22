@@ -6442,11 +6442,11 @@ function mkVoice(c,m,o={}){const v={c,m,k:o.k==null?1:o.k,reverb:o.reverb??1,dj:
   if(v.dj)controlFilters(c,[v.dAir,v.eHs,v.eN,v.ePr,v.eLs,...v.ls,...v.ap]);
   v.last=null;return v}
 function elevCue(v,t,P,ramp){if(!v.eHs)return;const u=clamp(P[1]/75,-1,1),up=Math.max(0,u),dn=Math.max(0,-u),x=v.dx||{hs:0,ls:0,pr:0};
-  const S_=(p,x)=>{try{ramp?p.linearRampToValueAtTime(x,t):p.setValueAtTime(x,t)}catch(e){}};
+  const S_=(p,x)=>{try{audioParamSet(p,x,t,ramp)}catch(e){}};
   S_(v.eHs.gain,4.5*up-6*dn+x.hs);S_(v.eN.frequency,6800+3400*up-1400*dn);S_(v.eN.gain,-(3+4*Math.abs(u)));S_(v.ePr.gain,2*up-1.5*dn+x.pr);S_(v.eLs.gain,2.5*dn-1.2*up+x.ls)}
 // distancia de una voz: todo sale de distInfo (la misma función que ve la consola/IAH) y se programa con rampas lineales cortas → sin «zipper»
 function distApply(v,t,P,k,ramp){const m=v.m,I=distInfo(P[2],m.space,m.hyper,P[0],P[1],v.ren),iso=m.iso;
-  const S_=(p,x)=>{try{ramp?p.linearRampToValueAtTime(x,t):p.setValueAtTime(x,t)}catch(e){}};
+  const S_=(p,x)=>{try{audioParamSet(p,x,t,ramp)}catch(e){}};
   const D0=Math.round(D_REF/C_SND*v.dop.context.sampleRate)/v.dop.context.sampleRate,dT=v.labDop?v.labDop(t,P,I,ramp):D0;/* retardo fijo: el Doppler físico es inaudible a estas velocidades y su retardo variable quitaba agudos y desfasaba pistas */// LAB (gancho): Doppler por fuente; sin él, dT = I.dop
   S_(v.dop.delayTime,dT);if(v.lowSplit&&LABV.splitDist)LABV.splitDist(v,S_,I,dT,iso);/* LAB (gancho): divisor de graves */S_(v.dAir.frequency,I.air_fc);const gMv=I.g*(v.mv||1);/* realce de movimiento (auditoría 8D) */S_(v.dG.gain,iso==="wet"?0:gMv);S_(v.oG.gain,v.ab?1:iso==="wet"?0:gMv);S_(v.oD.delayTime,v.ab?0:dT);v.dx={hs:I.hs_db,ls:I.body_db,pr:I.pres_db};
   const nr=I.lat>=0?1:0,dk=v.duck||[0,0];/* mute contrario (Mesa) */S_(v.ls[nr].gain,I.ild_near+dk[nr]);S_(v.ls[1-nr].gain,I.ild_far+dk[1-nr]);S_(v.pd[1-nr].delayTime,Math.min(.0025,I.itd_x));S_(v.pd[nr].delayTime,0);
@@ -6505,7 +6505,7 @@ function voicePos(v,t,P,k,ramp){
   const center=1-directional;
   if(!v.ab){
     const direct=v.originalMix??0,anchor=direct+(1-direct)*center;
-    const set=(param,value)=>ramp?param.linearRampToValueAtTime(value,t):param.setValueAtTime(value,t);
+    const set=(param,value)=>audioParamSet(param,value,t,ramp);
     set(v.sp.gain,directional);
     set(v.orig.gain,anchor);
   }
@@ -6534,7 +6534,7 @@ const FXON=(v,k)=>{const s=v.labSrc;if(!s)return 0;if(s.fx&&s.fx[k])return 1;con
     const g=c.createGain();g.gain.value=1;
     v.dop.disconnect(v.sp);v.dop.connect(sh);sh.connect(g);g.connect(v.sp);v.labD={sh,g};
     const st={t:null,r:0,v:0,x:0,c:0,a:0,on:false,sw:0};
-    const S_=(p,x,t,ramp)=>{try{ramp?p.linearRampToValueAtTime(x,t):p.setValueAtTime(x,t)}catch(e){}};
+    const S_=(p,x,t,ramp)=>{try{audioParamSet(p,x,t,ramp)}catch(e){}};
     v.labDop=(t,P,I,ramp)=>{const A=FXON(v,"doppler"),r=P[2],dt=st.t==null?0:t-st.t,lab=()=>clamp(I.dop+st.x,LO,HI);
       if(!ramp||!(dt>0)||dt>.5){st.t=t;st.r=r;st.v=0;st.c=0;st.a=A;st.on=A>0;st.x=st.on?X0:0;st.sw=0;S_(g.gain,1,t,false);S_(sh.gain,0,t,false);return st.on?lab():I.dop}
       st.v+=((r-st.r)/dt-st.v)*(1-Math.exp(-dt/TAU_V));st.t=t;st.r=r;st.a+=(A-st.a)*(1-Math.exp(-dt/.3));
@@ -6576,7 +6576,7 @@ const FRENTE5={n:0,s:0};/* B: cuánto «adelante» hubo en el último render off
       if(!ramp||!st.u||!(dt>0)||dt>.5)st.u=u.slice();else{const a=1-Math.exp(-dt/TAU);for(let i=0;i<3;i++)st.u[i]+=(u[i]-st.u[i])*a}st.t=t;
       const A=v.labFront?1:FXON(v,"hiper");st.a=st.a==null||!ramp?A:st.a+(A-st.a)*(1-Math.exp(-Math.max(0,dt)/.3));
       const fr=clamp(st.u[2],0,1)*st.a,bk=v.labFront?0:clamp(-st.u[2],0,1)*st.a,up=v.labFront?0:clamp(st.u[1],0,1)*st.a,dn=v.labFront?0:clamp(-st.u[1],0,1)*st.a;if(v.labFront&&!m.rt){FRENTE5.n++;FRENTE5.s+=fr}/* B: atrás, arriba y abajo no se tocan */
-      const S_=(p,x)=>{try{ramp?p.linearRampToValueAtTime(x,t):p.setValueAtTime(x,t)}catch(e){}};
+      const S_=(p,x)=>{try{audioParamSet(p,x,t,ramp)}catch(e){}};
       S_(H.g.gain,dB(1.5*fr));S_(H.pk.gain,5.5*fr);S_(H.up.gain,6*up);
       S_(H.sh.frequency,(4000*bk+3000*dn+4)/(bk+dn+.001));S_(H.sh.gain,-10*bk-8*dn);S_(H.sh2.gain,-5*bk);S_(H.dn.gain,-4*dn);
       S_(H.cG.gain,dB(-7)*up);S_(H.fG.gain,dB(-6)*dn);
