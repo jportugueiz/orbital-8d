@@ -13352,6 +13352,14 @@ function sourcePoint(s){
 function orbs(){const L=S.sources.filter(s=>!s.waiting).map(s=>{const P=sourcePoint(s);return {id:s.id,s,P,col:colOf(s),img:s.kind==="file"||s.kind==="freq"?null:SOUND_LIBRARY.photoFor(s.inst),label:s.label}});
   if(document.body.dataset.orbitalProduct==="healing"&&!document.body.classList.contains("ldjx-open"))L.push(...SH_SONGS.circleSources());
   if(SHX.B&&SHX.B.on)L.push({id:"__ses",ses:true,P:[HK.rotAz,0,2.6],col:"#8a6bff",label:"Sesión"});return L}
+// nivel de cada sonido (0 = callado, 1 = fuerte): lee el medidor de su canal; solo para dibujar, no toca el audio
+const NIVEL_ORBE=new WeakMap();
+function nivelOrbe(o){const s=o.s;if(!s)return o.ses?.6:0;let an=s.meter||null;const v=s._v;
+  if(!an&&v&&v.lvl){an=v._luz;if(!an){try{an=v._luz=v.c.createAnalyser();an.fftSize=256;v.lvl.connect(an)}catch(e){return 0}}}
+  if(!an)return 0;let m=NIVEL_ORBE.get(an);if(!m)NIVEL_ORBE.set(an,m={t:0,v:0,buf:new Float32Array(an.fftSize)});
+  const now=performance.now();if(now-m.t>40){m.t=now;an.getFloatTimeDomainData(m.buf);let q=0;for(let i=0;i<m.buf.length;i+=2)q+=m.buf[i]*m.buf[i];
+    const x=Math.min(1,Math.max(0,(20*Math.log10(Math.sqrt(q/(m.buf.length/2))+1e-7)+62)/40));m.v=x>m.v?x:m.v+(x-m.v)*.22}
+  return m.v}
 const hitR=()=>Math.max(40,Math.min(W,H*.78)*.09);
 function hit(x,y,busy){let best=null,bd=1e9;for(const o of orbs()){if(busy&&busy.has(o.id))continue;if(LINK.has(o.id))continue;const p=proj(o.P),d=Math.hypot(p[0]-x,p[1]-y);if(d<hitR()&&d<bd){bd=d;best=o}}return best}
 
@@ -14089,8 +14097,12 @@ function draw(){raf=requestAnimationFrame(draw);if(!on||document.hidden)return;c
     if(p.kind==="elev"){const s=S.sources.find(q=>q.id===p.sid);if(s&&s.live){g.fillStyle="#ffb347";g.font="700 13px UI";g.textAlign="center";g.fillText((s.live.el>=0?"▲ ":"▼ ")+Math.abs(s.live.el).toFixed(0)+"°",p.x,p.y-34)}}}
   if(twist){const a=PT.get(twist.a),b=PT.get(twist.b);if(a&&b){g.setLineDash([3,6]);g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);g.strokeStyle="rgba(120,150,255,.5)";g.lineWidth=1.5;g.stroke();g.setLineDash([]);g.fillStyle="#cfe0ff";g.font="600 11px UI";g.textAlign="center";g.fillText(`↻ ${S.rot.toFixed(0)}° · ×${S.scale.toFixed(2)}`,(a.x+b.x)/2,(a.y+b.y)/2-12)}}
   // orbes
+  const algoSuena=OB.some(o=>nivelOrbe(o)>.06);
   for(const o of OB){if(!o.P||!isFinite(o.P[0])||!isFinite(o.P[2]))continue;const Q=proj(o.P),x=Q[0],y=Q[1];if(!isFinite(x)||!isFinite(y))continue;const sz=Math.max(22,Math.min(W,H*.78)*.06)*(1+Math.max(-.6,Math.min(.6,Q[2]))*.35)*(LINK.has(o.id)?.55:1);const L=o.s&&o.s.live;const isSel=o.id===sel;
-    const gr=g.createRadialGradient(x,y,0,x,y,sz*2.2);gr.addColorStop(0,o.col+"cc");gr.addColorStop(1,o.col+"00");g.fillStyle=gr;g.beginPath();g.arc(x,y,sz*2.2*(1+lev*.3),0,7);g.fill();
+    // 23 nov (Jorge): cada sonido se «prende» cuando está sonando y queda apagado cuando calla, para ver de un vistazo cuál mover
+    const lv=algoSuena?nivelOrbe(o):.55,hx=n=>("0"+Math.round(n).toString(16)).slice(-2);
+    const gr=g.createRadialGradient(x,y,0,x,y,sz*(1.5+1.5*lv));gr.addColorStop(0,o.col+hx(40+215*lv));gr.addColorStop(1,o.col+"00");g.fillStyle=gr;g.beginPath();g.arc(x,y,sz*(1.5+1.5*lv)*(1+lev*.3),0,7);g.fill();
+    if(algoSuena&&lv>.18){g.strokeStyle="rgba(255,255,255,"+(.25+.6*lv).toFixed(2)+")";g.lineWidth=1.5+3*lv;g.beginPath();g.arc(x,y,sz+4+5*lv,0,7);g.stroke()}
     g.globalCompositeOperation="source-over";g.save();g.beginPath();g.arc(x,y,sz,0,7);g.closePath();g.fillStyle="#0a0e18";g.fill();const im=img(o.img);if(im){g.clip();g.drawImage(im,x-sz,y-sz,sz*2,sz*2)}else{g.fillStyle=o.col;g.font=`700 ${sz}px UI`;g.textAlign="center";g.textBaseline="middle";g.fillText(o.ses?"✺":"♪",x,y+1)}g.restore();
     g.lineWidth=isSel?3:1.5;g.strokeStyle=isSel?"#ffb347":o.col;g.beginPath();g.arc(x,y,sz,0,7);g.stroke();
     if(o.songStem){g.fillStyle="#fff";g.textAlign="center";g.font="600 12px UI";g.fillText(o.label,x,y-sz-5)}
@@ -29026,7 +29038,10 @@ function drawOv(){if(!OVRO&&typeof ResizeObserver!=="undefined"){try{OVRO=new Re
   const LBL=[];for(const t of allTracks()){if(t.state.play<0&&t.state.queue<0&&!t.state.ext&&!t.man)continue;if(!t.clips.some(Boolean)&&!t.state.ext)continue;
     const P=posOf(t,b),q=projP(P),h=clamp(P[1]/60,-1,1),rad=(S.sel.has(t.id)?20:17)*(1+.25*h);// del tamaño de los íconos de la Mesa (34 px): cómodos de tomar con el dedo
     if(GHOST&&!isAncla(t)){const Pg=roomXform(basePos(t,b),t,b,GHOST),qg=projP(Pg);g.strokeStyle=t.color;g.globalAlpha=.6;g.setLineDash([3,3]);g.beginPath();g.arc(qg[0],qg[1],rad,0,Math.PI*2);g.stroke();g.setLineDash([]);g.globalAlpha=1}
-    g.shadowColor=t.color;g.shadowBlur=10+10*Math.max(0,h);g.fillStyle=t.color;g.globalAlpha=t.song&&!t.audible?.16:t.state.play>=0?.55+.45*(1+h)/2:.35;g.beginPath();g.arc(q[0],q[1],rad,0,Math.PI*2);g.fill();g.shadowBlur=0;g.globalAlpha=1;
+    // 23 nov (Jorge): cada sonido se «prende» cuando está sonando (lee el medidor de su canal) y queda apagado cuando calla
+    const mq=K.deck?.R[t.eng]?.ch?.eq;let lit=null;if(mq&&mq.an&&t.state.play>=0){const x=clamp((20*Math.log10(rmsOf(mq)+1e-7)+54)/36,0,1),p0=t._lit||0;lit=t._lit=x>p0?x:p0+(x-p0)*.2}else t._lit=0;
+    g.shadowColor=t.color;g.shadowBlur=lit==null?10+10*Math.max(0,h):6+26*lit;g.fillStyle=t.color;g.globalAlpha=t.song&&!t.audible?.16:t.state.play>=0?(lit==null?.55+.45*(1+h)/2:.22+.78*lit):.35;g.beginPath();g.arc(q[0],q[1],rad,0,Math.PI*2);g.fill();g.shadowBlur=0;g.globalAlpha=1;
+    if(lit>.18){g.strokeStyle="#fff";g.globalAlpha=.25+.6*lit;g.lineWidth=1.5+2.5*lit;g.beginPath();g.arc(q[0],q[1],rad+2+4*lit,0,Math.PI*2);g.stroke();g.globalAlpha=1}
     if(isMoving(t)&&!t.man){g.strokeStyle=t.color;g.globalAlpha=.45;g.lineWidth=1.5;g.beginPath();g.arc(q[0],q[1],rad+7,0,Math.PI*2);g.stroke();g.globalAlpha=1}// anillo: se está moviendo (tócalo para tomarlo)
     if(S.sel.has(t.id)){g.strokeStyle="#fff";g.lineWidth=2;g.beginPath();g.arc(q[0],q[1],rad+3,0,Math.PI*2);g.stroke()}
     if(isAncla(t)){g.fillStyle="#000a";g.font="700 13px UI,system-ui";g.textAlign="center";g.fillText("⚓",q[0],q[1]+5)}
