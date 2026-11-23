@@ -6222,7 +6222,7 @@ function buildMaster(c,o={}){const m={ctx:c,rt:!(c instanceof OfflineAudioContex
   m.lim=c.createDynamicsCompressor();m.lim.threshold.value=-3;m.lim.knee.value=1;m.lim.ratio.value=20;m.lim.attack.value=.002;m.lim.release.value=.12;/* el umbral va BAJO el recorte de seguridad (rodilla −4,5…−2,8 dBFS): con −1,5 el recorte trabajaba y «clipeaba». Release 120 ms (antes 180) */
   m.limOn=c.createGain();m.limOff=c.createGain();m.limOff.gain.value=0;m.out=c.createGain();
   m.hd=c.createGain();m.hd.gain.value=o.hd==null?1:o.hd;m.agc=c.createGain();m.genius=c.createGain();
-  m.in.connect(m.hd);m.hd.connect(m.agc);m.agc.connect(m.genius);m.genius.connect(m.vol);
+  m.in.connect(m.hd);m.hd.connect(m.agc);m.agc.connect(m.genius);/* 23 nov (Jorge: «el volumen general está muy bajo»): +25 % (+1,9 dB) en vivo, antes del limitador; las exportaciones no cambian */m.mas=c.createGain();m.mas.gain.value=m.rt?1.25:1;m.genius.connect(m.mas);m.mas.connect(m.vol);
   // El Master de JUGAR cubre la mezcla y el fondo sin mover el volumen del proyecto.
   let limiterInput=m.vol;
   if(m.rt){
@@ -22600,7 +22600,7 @@ const FREQUENCY_BATH=(()=>{
     const height=h("input",{type:"range",min:-1.2,max:1.2,step:.05,value:0,"aria-label":"Altura"});
     const useKind=h("strong",{}),useText=h("p",{}),evidence=h("span",{class:"freq-evidence"});
     const setInfo=s=>{const I=infoOf(s.hz);title.textContent=`${s.hz.toFixed(1)} Hz · ${noteOf(s.hz)}`;hzOut.textContent=s.hz.toFixed(1)+" Hz";hz.value=hzNumber.value=s.hz;vol.value=s.db;move.value=s.move;speed.value=s.speed;height.value=s.height;useKind.textContent=I.kind;useText.textContent=I.text;evidence.textContent=I.evidence};
-    function ac(){if(ctx)return ctx;ctx=new (window.AudioContext||window.webkitAudioContext)({sampleRate:48000});master=ctx.createGain();master.gain.value=.72;const lim=ctx.createDynamicsCompressor();lim.threshold.value=-6;lim.knee.value=6;lim.ratio.value=12;lim.attack.value=.005;lim.release.value=.18;master.connect(lim).connect(ctx.destination);return ctx}
+    function ac(){if(ctx)return ctx;ctx=new (window.AudioContext||window.webkitAudioContext)({sampleRate:48000});master=ctx.createGain();master.gain.value=.9/* 23 nov: +25 % */;const lim=ctx.createDynamicsCompressor();lim.threshold.value=-6;lim.knee.value=6;lim.ratio.value=12;lim.attack.value=.005;lim.release.value=.18;master.connect(lim).connect(ctx.destination);return ctx}
     function audioOn(s){const c=ac();if(s.osc)return;const o=c.createOscillator(),g=c.createGain(),p=c.createPanner();o.type="sine";o.frequency.value=s.hz;g.gain.value=0;p.panningModel="HRTF";p.distanceModel="inverse";p.refDistance=.7;p.maxDistance=12;p.rolloffFactor=.65;o.connect(g).connect(p).connect(master);o.start();g.gain.setValueAtTime(0,c.currentTime);g.gain.linearRampToValueAtTime(10**(s.db/20),c.currentTime+.12);Object.assign(s,{osc:o,gain:g,panner:p});setPosition(s)}
     function audioOff(s){if(!s.osc)return;const t=ctx.currentTime;s.gain.gain.cancelScheduledValues(t);s.gain.gain.setValueAtTime(s.gain.gain.value,t);s.gain.gain.linearRampToValueAtTime(0,t+.08);try{s.osc.stop(t+.1)}catch(e){}setTimeout(()=>{for(const n of [s.osc,s.gain,s.panner])try{n.disconnect()}catch(e){}s.osc=s.gain=s.panner=null},130)}
     function setPosition(s){if(!s.panner)return;const scale=3/Math.max(1,Math.hypot(s.x,s.y)),X=s.x*scale,Z=s.y*scale,Y=s.height;const t=ctx.currentTime;for(const [p,v] of [[s.panner.positionX,X],[s.panner.positionY,Y],[s.panner.positionZ,Z]])p.setTargetAtTime(v,t,.035)}
