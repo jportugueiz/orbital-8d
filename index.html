@@ -5960,7 +5960,7 @@ function cInit(){if(cctx)return;const AC=window.AudioContext||window.webkitAudio
   // «Baja latencia» (ronda 2, 21 nov 2026): opción del DJ para cue, scratch y pads (bloques de 128 y búfer mínimo del sistema).
   // Apagada (por defecto) queda «Máxima estabilidad»: 250 ms y bloques de 2048, como siempre. Se elige en Decks A/B y recarga.
   let low=false;try{low=dj&&localStorage.getItem("orbdj_latencia")==="baja"}catch(_){}
-  try{cctx=new AC(low?{sampleRate:48000,latencyHint:"interactive"}:{sampleRate:48000,latencyHint:dj?.25:.1,renderSizeHint:dj?2048:(/[?&]q=(\d+)/.exec(location.search)||[])[1]?+/[?&]q=(\d+)/.exec(location.search)[1]:"default"})}catch(e){cctx=new AC({sampleRate:48000,latencyHint:.1})}
+  try{cctx=new AC(low?{sampleRate:48000,latencyHint:"interactive"}:{sampleRate:48000,latencyHint:dj?.25:.1,renderSizeHint:dj?2048:(/[?&]q=(\d+)/.exec(location.search)||[])[1]?+/[?&]q=(\d+)/.exec(location.search)[1]:window.ORB_APP==="wellness"?2048:"default"})}catch(e){cctx=new AC({sampleRate:48000,latencyHint:.1})}
   cctx.__orbLatencia=low?"baja":dj?"estable":"normal";
   ORB._master(cctx)}
 
@@ -10557,7 +10557,7 @@ class KU extends AudioWorkletProcessor{
     const el=Math.max(EL[0],Math.min(EL[EL.length-1],P[1])),r=P[2],i=Math.floor(az/15)%na,jx=(i+1)%na,fa=(az-AZ[i])/15;
     let k=0;while(k<EL.length-2&&EL[k+1]<=el)k++;const fe=(el-EL[k])/(EL[k+1]-EL[k]);
     const W=[k,i,(1-fe)*(1-fa),k,jx,(1-fe)*fa,k+1,i,fe*(1-fa),k+1,jx,fe*fa];h[0].fill(0);h[1].fill(0);let d0=0,d1=0;
-    const dg=Math.min(4,1/Math.max(.12,r))*this.kcal;
+    const dg=Math.min(this.gmax,1/Math.max(.12,r))*this.kcal;
     for(let q=0;q<12;q+=3){const g=W[q+2];if(!g)continue;const c=W[q]*na+W[q+1],b=c*2*n,gg=g*dg;const o0=h[0],o1=h[1];
       for(let t=0;t<T;t++){o0[t]+=gg*H[b+t];o1[t]+=gg*H[b+n+t]}d0+=g*dl[c*2];d1+=g*dl[c*2+1]}
     if(r<1){const lad=Math.sin(az*Math.PI/180);for(let ch=0;ch<2;ch++){const side=ch===1?lad:-lad,g=Math.pow(10,(1-r)*6*side/20*.5),o=h[ch];for(let t=0;t<24;t++)o[t]*=g}}
@@ -10588,10 +10588,10 @@ registerProcessor("${W_NAME}",KU);`;
   const W_OK=new WeakMap();
   function prepare(ctx){if(!ctx.audioWorklet||!data())return Promise.resolve(false);let p=W_OK.get(ctx);
     if(!p){const u=URL.createObjectURL(new Blob([W_CODE],{type:"text/javascript"}));p=ctx.audioWorklet.addModule(u).then(()=>{ctx._kuW=true;return true}).catch(e=>{console.warn("KU100 worklet",e);return false});W_OK.set(ctx,p)}return p}
-  function voiceW(ctx,dest){const d=data();if(!d||!ctx._kuW||d.sr!==ctx.sampleRate)return null;
+  function voiceW(ctx,dest,opt){const d=data();if(!d||!ctx._kuW||d.sr!==ctx.sampleRate)return null;
     const input=ctx.createGain();input.channelCount=1;input.channelCountMode="explicit";input.channelInterpretation="speakers";
     const node=new AudioWorkletNode(ctx,W_NAME,{numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[2],channelCount:1,channelCountMode:"explicit",channelInterpretation:"speakers",
-      processorOptions:{H:d.H,dl:Float32Array.from(d.dl),AZ:d.AZ,EL:d.EL,n:d.n,T:Math.min(W_TAPS,d.n),kcal:KCAL}});
+      processorOptions:{H:d.H,dl:Float32Array.from(d.dl),AZ:d.AZ,EL:d.EL,n:d.n,T:Math.min(W_TAPS,d.n),kcal:KCAL,gmax:opt&&opt.gmax||4}});
     const out=ctx.createGain();input.connect(node);node.connect(out);out.connect(dest);let last=null;
     function update(at,p){if(last&&Math.abs(p[0]-last[0])<.02&&Math.abs(p[1]-last[1])<.02&&Math.abs(p[2]-last[2])<.001)return;last=[p[0],p[1],p[2]];node.port.postMessage({p:last,at})}
     function stop(){try{node.port.postMessage({stop:true})}catch(e){}try{out.disconnect()}catch(e){}try{input.disconnect()}catch(e){}}
@@ -10620,7 +10620,7 @@ const SH_SONGS=(()=>{
   let healingPlan=null;
   /* 23 nov (página «no responde» al cargar una canción): el plan de IAH tarda 3–6 s de cálculo. Ahora corre en un hilo aparte
      (Web Worker) con el MISMO código del criterio, así la pantalla no se congela. Si el navegador no lo permite, se calcula como antes. */
-  const KUW=/[?&]kuw=1/.test(location.search);// prueba: KU100 dentro del hilo de audio
+  const KUW=!/[?&]kuw=0/.test(location.search)&&(/[?&]kuw=1/.test(location.search)||window.ORB_APP==="wellness");// 23 nov (aprobado por Jorge, versión «C»): KU100 dentro del hilo de audio; ?kuw=0 vuelve al anterior
   let planW=null,planWn=0;const planWP=new Map();
   function planHilo(items){
     if(planW===false)return Promise.resolve(null);
@@ -25734,7 +25734,7 @@ function ensureLive(){if(deck&&ctx)return deck;ctx=NATIVE?NATIVE.makeContext(ORB
         if(!previous||P.some((v,i)=>Math.abs(v-previous[i])>.0001)||web.duckL!==(dk?.[0]||0)||web.duckR!==(dk?.[1]||0)){
           web.port.postMessage({pose:spatialProfile(P,dk),at:t});web.lastPose=P.slice();web.duckL=dk?.[0]||0;web.duckR=dk?.[1]||0;
         }return}
-      const x=RV[id];if(!x||!x.v)return;for(const h of HOOKS.pos)try{P=h(id,P,t)||P}catch(e){}for(const h of HOOKS.capturePos)try{h(id,P,t)}catch(e){console.warn(e)}const L=x.v.last,d0=x.v.duck||[0,0];if(dk)x.v.duck=dk;
+      const x=RV[id];if(!x||!x.v)return;for(const h of HOOKS.pos)try{P=h(id,P,t)||P}catch(e){}if(x.ku)try{x.ku.update(t,P)}catch(e){}for(const h of HOOKS.capturePos)try{h(id,P,t)}catch(e){console.warn(e)}const L=x.v.last,d0=x.v.duck||[0,0];if(dk)x.v.duck=dk;
       if(L&&Math.abs(L[0]-P[0])<.02&&Math.abs(L[1]-P[1])<.02&&Math.abs(L[2]-P[2])<.002&&!(dk&&(Math.abs(dk[0]-d0[0])>.1||Math.abs(dk[1]-d0[1])>.1))){x.held=true;return}
       try{if(x.held&&L)vPos(x.v,Math.max(ctx.currentTime,x.lt||0),L,x.v.k||.7,false);x.held=false;vPos(x.v,t,P,x.v.k||.7,L!=null);x.lt=t}catch(e){deck.audioErrors=(deck.audioErrors||0)+1;deck.lastAudioError=String(e)}}});
   Object.assign(deck,{quant:deck0.quant,metro:deck0.metro});
@@ -25771,10 +25771,18 @@ function rowVoice(id){if(spatialModule){
 }if(NATIVE)return NATIVE.voice(id);let x=RV[id];if(x&&x.v&&x.s._v===x.v)return x.v;
   const s=ORB.newSource({kind:"file",label:"DJ · "+ROW[id].n,dj:true,vol_db:0,depth:.7,speed:.45,distance:.35,ren:"v10-a",path:{type:"still",az0:0,el:0}});
   const v=ORB.rtVoice(s);const t=ctx.currentTime;try{v.lvl.gain.cancelScheduledValues(t);v.lvl.gain.setTargetAtTime(1,t,.05)}catch(e){}
-  RV[id]={s,v};return v}
+  RV[id]={s,v};kuAttach(RV[id]);return v}
+/* 23 nov (Jorge: «implementar KU100 C a Orbital DJ 8D»): el sonido directo de cada pista del círculo pasa por el KU100 dentro del hilo de audio
+   (HEALING_KU100.voiceW, la versión «C» que aprobó); la sala sigue siendo la del motor. Nivel igualado al motor (+2,9 dB medido) y tope de
+   cercanía ×2. ?kuw=0 en la dirección vuelve al motor anterior. Pendiente: el «mute contrario» por oído no actúa sobre la rama KU. */
+const KUDJ=typeof location!=="undefined"&&!/[?&]kuw=0/.test(location.search);
+function kuBusDJ(){const M=ORB.M;if(M._kuDJ&&M._kuDJ.context===ctx)return M._kuDJ;const g=ctx.createGain();g.gain.value=Math.pow(10,2.9/20);g.connect(M.dry);return M._kuDJ=g}
+function kuAttach(x){if(!KUDJ||!x||x.ku||!ctx||!ctx._kuW||typeof HEALING_KU100==="undefined"||!HEALING_KU100.voiceW)return;
+  try{const v=x.v;if(!v||!v.oD||!v.pMg||!v.mono)return;const ku=HEALING_KU100.voiceW(ctx,kuBusDJ(),{gmax:2});if(!ku)return;v.oD.disconnect(ORB.M.dry);v.pMg.disconnect(ORB.M.dry);v.mono.connect(ku.input);x.ku=ku;if(v.last)ku.update(ctx.currentTime,v.last)}catch(e){console.warn("KU100 DJ",e)}}
+function kuPrepare(){if(!KUDJ||!ctx||typeof HEALING_KU100==="undefined"||!HEALING_KU100.prepare)return Promise.resolve(false);return HEALING_KU100.prepare(ctx).then(ok=>{if(ok)for(const x of Object.values(RV))kuAttach(x);return ok}).catch(()=>false)}
 // libera la voz 8D y la cadena de una pista callada (se vuelven a crear al lanzarla)
 function freeRow(id,ch){const web=webVoices.get(id);if(web){web.port.postMessage({stop:true});web.disconnect();web.port.close();webVoices.delete(id)}const dis=n=>{try{n&&n.disconnect&&n.disconnect()}catch(e){}};if(ch){for(const k of ["in","hp","lp","vol","drop","duck","head"])dis(ch[k]);if(ch.eq)for(const n of Object.values(ch.eq))dis(n)}
-  const x=RV[id];if(x){try{ORB.killVoice(x.s,.05)}catch(e){}delete RV[id]}}
+  const x=RV[id];if(x){try{ORB.killVoice(x.s,.05)}catch(e){}if(x.ku){const k=x.ku;setTimeout(()=>{try{k.stop()}catch(e){}},300)}delete RV[id]}}
 function freeVoices(){if(panel&&!panel.hidden)return;for(const id of webVoices.keys())freeRow(id,deck?.R[id]?.ch);for(const id of Object.keys(RV)){try{ORB.killVoice(RV[id].s,.1)}catch(e){}delete RV[id]}if(deck)for(const r of Object.values(deck.R))r.ch=null}
 
 // Canciones: una toma completa por pista, sin estirar, cuantizar ni repetir.
@@ -26071,7 +26079,7 @@ const _t={
   demoArr,renderArr,timeline,movPos,stretch,kitDemoArr,setKit,loadKits,get kits(){return KITS},get kit(){return KIT}};
 return {on:true,open,close,get deck(){return deck},demoArr,renderArr,PAD,ROWS,_t,sessionState,loadState,
   // piezas internas para módulos de Orbital DJ (IAH DJ, selector de kits): lectura y llamadas, sin copiar código
-  _k:{native:NATIVE,freeWebRow:freeRow,prepareSpatial,get webSpatialVoices(){return webVoices.size},spatialProfile,audioStats:()=>NATIVE?({backend:"Benzai C++ / WASAPI",voices:NATIVE.status?.activeVoices||0,spatial:NATIVE.status?.spatialVoices||0,bufferBytes:NATIVE.status?.pcmBytes||0,audioErrors:NATIVE.error?1:0,renderOverruns:NATIVE.status?.renderOverruns||0,wasapi:NATIVE.status?.wasapi||null}):({voices:Object.keys(RV).length,benzai:Object.values(RV).filter(x=>x.v.benzai).length,processorErrors:Object.values(RV).filter(x=>x.v.benzaiError).length,audioErrors:deck?.audioErrors||0,lastAudioError:deck?.lastAudioError||null,bufferBytes:Object.values(STEMBUF).reduce((n,b)=>n+b.length*b.numberOfChannels*4,0)}),stems,E8A_N,e8Bus,e8Espacio,e8Post,e8Bandas,E8_REF,tmap,e8sSesion,e8sCargar,e8sMezcla,TRAMOS,tramoPos,HOOKS,SYN,KH,BAKE,SC_DEF,kicksOf,clubMaster,clubBake,bandsOf,lufsOf,meterOf,PAD,PADS_OF,ROWS,ROW,CAT,CYC,MOVS,SPEED,ICO,BASE_BPM,movPos,movCopy,speedTip,bufFor,bufNow,libPad,renderArr,timeline,tmap,demoArr,ensureLive,padNum,E,say,toast,paint,exportFile,sessionState,loadState,
+  _k:{native:NATIVE,freeWebRow:freeRow,prepareSpatial,kuPrepare,get webSpatialVoices(){return webVoices.size},spatialProfile,audioStats:()=>NATIVE?({backend:"Benzai C++ / WASAPI",voices:NATIVE.status?.activeVoices||0,spatial:NATIVE.status?.spatialVoices||0,bufferBytes:NATIVE.status?.pcmBytes||0,audioErrors:NATIVE.error?1:0,renderOverruns:NATIVE.status?.renderOverruns||0,wasapi:NATIVE.status?.wasapi||null}):({voices:Object.keys(RV).length,benzai:Object.values(RV).filter(x=>x.v.benzai).length,processorErrors:Object.values(RV).filter(x=>x.v.benzaiError).length,audioErrors:deck?.audioErrors||0,lastAudioError:deck?.lastAudioError||null,bufferBytes:Object.values(STEMBUF).reduce((n,b)=>n+b.length*b.numberOfChannels*4,0)}),stems,E8A_N,e8Bus,e8Espacio,e8Post,e8Bandas,E8_REF,tmap,e8sSesion,e8sCargar,e8sMezcla,TRAMOS,tramoPos,HOOKS,SYN,KH,BAKE,SC_DEF,kicksOf,clubMaster,clubBake,bandsOf,lufsOf,meterOf,PAD,PADS_OF,ROWS,ROW,CAT,CYC,MOVS,SPEED,ICO,BASE_BPM,movPos,movCopy,speedTip,bufFor,bufNow,libPad,renderArr,timeline,tmap,demoArr,ensureLive,padNum,E,say,toast,paint,exportFile,sessionState,loadState,
     restoreArrangement(a){CLUB=a?.arr?.club===true;if(deck)deck.A=a},
     get deck(){return deck},get lastArr(){return lastArr},set lastArr(a){lastArr=a},get panel(){return panel}}}})();
 /* ==== LAB_DJ_FIN ==== */
@@ -27347,7 +27355,7 @@ function create(B){
   }catch(e){if(e===STALE||!live())return;pv?.stop();library.value=sourceChoice;message("No se pudo abrir "+song.name+": "+e.message)}finally{if(token===loadingToken){loading=false;loadAbort=null;paint()}}}
  async function playSong(){if(loading&&typeof DJ_RAPIDO!=="undefined"&&DJ_RAPIDO.active){DJ_RAPIDO.stop();return}if(loading||!tracks.length||state==="playing")return;const request=++playRequest,d=K.ensureLive();
   if(scorePending){message("IAH está escuchando las pistas…");await scorePending;if(request!==playRequest||loading||!tracks.length||state==="playing")return}
-  try{await d.c.resume();if(tracks.length>=16)await K.prepareSpatial(d.c)}catch(e){message("No se pudo abrir el audio: "+e.message);paint();return}
+  try{await d.c.resume();if(tracks.length>=16)await K.prepareSpatial(d.c);else if(K.kuPrepare)await K.kuPrepare()}catch(e){message("No se pudo abrir el audio: "+e.message);paint();return}
   if(request!==playRequest||loading||state==="playing")return;
   const extras=Object.values(d.R).filter(r=>!r.song&&(r.cur||r.pend?.pad)).length;
   if(K.native&&extras+tracks.length>36){message("Hay "+extras+" pads activos: detén algunos para no superar 36 sonidos simultáneos.");return}
