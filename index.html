@@ -10506,16 +10506,20 @@ const HEALING_KU100=(()=>{
     const sala=ctx.createConvolver();sala.normalize=false;sala.buffer=salaIR(ctx);const salaG=ctx.createGain();salaG.gain.value=ER_ON?1:0;
     const mono=ctx.createGain();mono.channelCount=1;mono.channelCountMode="explicit";if(ER_ON){dist.connect(mono);mono.connect(sala)}sala.connect(salaG);salaG.connect(out);
     out.connect(dest);
-    let act=A,last=null,lastT=-1;
+    let act=A,last=null,lastT=-1,libre=0;const vivo=typeof OfflineAudioContext==="undefined"||!(ctx instanceof OfflineAudioContext);
     function update(at,p){
       const [az,el,r]=p;
       if(last&&at-lastT<MIN_DT)return;
       const dAng=last?Math.hypot((((az-last[0])%360)+540)%360-180,el-last[1]):999;
       const dg=Math.min(4,1/Math.max(.12,r))*KCAL;dist.gain.setTargetAtTime(dg,at,.04);
       if(dAng<1.5&&last&&Math.abs(r-last[2])<.05)return;
+      // 22 nov (ruido de «interferencia» al moverse): el cruce se programaba 55 ms adelante, pero el filtro nuevo se cargaba YA en el
+      // convolver que todavía estaba sonando → un chasquido en cada paso del viaje (hasta 16 por segundo). En vivo el cruce parte de
+      // inmediato y nunca se recarga un convolver que aún suena. Mismo filtro, mismo cruce de 30 ms, misma cadencia.
+      if(vivo&&ctx.currentTime<libre)return;
       const {h,d:del}=hrir(az,el,r),b=ctx.createBuffer(2,d.n,ctx.sampleRate);b.copyToChannel(h[0],0);b.copyToChannel(h[1],1);
       const idle=act===A?B:A;idle.c.buffer=b;
-      const t0=Math.max(at,ctx.currentTime);
+      const t0=vivo?ctx.currentTime+.012:Math.max(at,ctx.currentTime);libre=t0+XF+.008;
       idle.g.gain.cancelScheduledValues(t0);act.g.gain.cancelScheduledValues(t0);
       idle.g.gain.setValueAtTime(idle.g.gain.value,t0);idle.g.gain.linearRampToValueAtTime(1,t0+XF);
       act.g.gain.setValueAtTime(act.g.gain.value,t0);act.g.gain.linearRampToValueAtTime(0,t0+XF);
