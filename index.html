@@ -880,7 +880,10 @@ body.playing{overflow:hidden}
 #play .play-led-meter{display:grid;grid-template-columns:auto minmax(0,1fr);align-content:center;align-items:center;gap:3px 6px;padding:5px 8px;background:#060910;border:1px solid #445264;border-radius:4px;color:#b9dbff;font:9px var(--mono)}
 #play .play-led-scale{display:flex;justify-content:space-between;color:#a7bacb;font-size:8px}
 #play .play-led-track{position:relative;display:block;height:9px;background:#1b302f;overflow:hidden;border-radius:2px}
-#play .play-led-track i{position:absolute;inset:0;background:linear-gradient(90deg,#00c89d 0%,#7df664 65%,#ffd24d 83%,#ff554e 97%);clip-path:inset(0 calc(100% - var(--signal,0%)) 0 0)}
+#play .play-led-track i{position:absolute;inset:0;background:linear-gradient(90deg,#00c89d 0%,#7df664 65%,#ffd24d 83%,#ff554e 97%);clip-path:inset(0 calc(100% - var(--signal,0%)) 0 0);width:auto;height:auto;border-radius:0;box-shadow:none}
+/* 23 nov (Jorge): en Sound Healing el ▶ de abajo manda la canción; se pone verde cuando la canción ya cargó */
+#play #pPlayB.lista:not(.on){background:linear-gradient(#2f9a5c,#17603a);border-color:#6ee09a;color:#eafff2;box-shadow:0 0 10px #3ad37b66}
+.sh-songs .sh-song-play-oculto{display:none!important}
 #play .play-led-track::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent calc(100% - 2px),#060910 0);background-size:calc(100% / 14) 100%}
 @media(max-width:620px){#play .play-led-meter{grid-column:1/-1}}
 #play .play-stage{grid-template-rows:minmax(0,1fr) auto auto;gap:6px}
@@ -10700,7 +10703,7 @@ const SH_SONGS=(()=>{
     save=button("Guardar canción",saveSong);
     clear=button("Vaciar",clearSong);
     play=button("▶ Play",toggle);
-    play.classList.add("cy");
+    play.classList.add("cy","sh-song-play-oculto");// 23 nov (Jorge): el play de la canción es el ▶ de abajo (transporte); este queda oculto
     home=button("↤ Inicio",()=>seek(0));
     clock=h("output",{class:"mono sh-song-clock"},"0:00 / 0:00");
     progress=h("input",{class:"sh-song-position",type:"range",min:0,max:0,step:.01,value:0,"aria-label":"Posición de la canción"});
@@ -10741,6 +10744,7 @@ const SH_SONGS=(()=>{
   function paint(){
     if(!panel)return;
     play.textContent=pending?"Abriendo audio…":when===null?"▶ Play":"Ⅱ Pausa";
+    try{if(typeof PLAY_DESK!=="undefined"&&PLAY_DESK.syncNowPlaying)PLAY_DESK.syncNowPlaying();else if(typeof PLAY!=="undefined")PLAY.syncTransport()}catch(e){}
     play.disabled=!tracks.length||loading||!!pending;
     home.disabled=progress.disabled=!tracks.length||loading;
     save.disabled=!tracks.length||loading||saving;
@@ -10812,7 +10816,7 @@ const SH_SONGS=(()=>{
       if(streamed.length){
         const abort=preloadAbort=new AbortController();
         let ready=0;
-        const progress=()=>{if(token===loadToken)play.textContent="Cargando pistas "+ready+" / "+streamed.length};
+        const progress=()=>{if(token===loadToken){play.textContent="Cargando pistas "+ready+" / "+streamed.length;tell(play.textContent+"…")}};
         progress();
         const chunk=prepareChunk({tracks:streamed,abort,onDecoded:()=>{ready++;progress()}},0);
         await chunk.ready;
@@ -11452,7 +11456,7 @@ const SH_SONGS=(()=>{
       col:t.color,sel:selected.has(t.id),level:0,big:.95
     }));
   }
-  return {current:position,get tracks(){return tracks},mount,begin,pause,stop,setMotion,visualSources,circleSources,moveInCircle,get playing(){return when!==null}};
+  return {current:position,get tracks(){return tracks},mount,begin,pause,stop,setMotion,visualSources,circleSources,moveInCircle,get playing(){return when!==null},get lista(){return tracks.length>0&&!loading&&!pending},get titulo(){return tracks.length?(name&&name.value||"Canción"):""}};
 })();
 
 /* =====================================================================
@@ -13638,6 +13642,10 @@ function syncTransport(){
   for(const id of ["#pPlayB"]){
     const button=$(id);
     button.classList.toggle("on",active);
+    // 23 nov (Jorge): en Sound Healing este ▶ es el play de la canción: verde cuando ya cargó, Ⅱ mientras suena
+    const heal=product==="healing"&&typeof SH_SONGS!=="undefined";
+    button.classList.toggle("lista",heal&&SH_SONGS.lista&&!SH_SONGS.playing);
+    button.textContent=heal&&SH_SONGS.playing?"Ⅱ":"▶";
     button.setAttribute("aria-label","Reproducir música y fondo");
   }
 }
@@ -14365,6 +14373,7 @@ function init(){cv=$("#pc");PLAY_DESK.init();PLAY_GRUPOS.init();initScript();axe
   ORB.onTransport(()=>{if(on)syncTransport()});
   $("#pPlayB").onclick=()=>{/* ▶ todo lo del círculo: pistas cargadas + canción + fondo, desde el mismo cero */
     unlock();
+    if(product==="healing"&&SH_SONGS.playing){SH_SONGS.pause();syncTransport();return}// 23 nov (Jorge): con la canción sonando, este botón la pausa
     if(S.sources.length&&!S.playing)startTracks();
     PLAY_DESK.startLayers();
     if(product==="healing")void SH_SONGS.begin();
@@ -14457,7 +14466,7 @@ const PLAY_DESK=(()=>{
   function syncNowPlaying(){
     PLAY.syncTransport();
     const song=el("pDeskSong"),background=el("pBackground");
-    const songName=el("pDeskSongFile").files[0]?.name||(song.value?song.selectedOptions[0]?.textContent:"");
+    const songName=el("pDeskSongFile").files[0]?.name||(song.value?song.selectedOptions[0]?.textContent:"")||(document.body.dataset.orbitalProduct==="healing"&&typeof SH_SONGS!=="undefined"&&SH_SONGS.titulo)||"";
     const backgroundName=background.value?background.selectedOptions[0]?.textContent:"";
     for(const [id,prefix,name] of [["pNowSong","Canción",songName],["pNowBackground","Fondo",backgroundName]]){
       const label=el(id);
@@ -15784,7 +15793,7 @@ const PLAY_DESK=(()=>{
     if(!songRequest&&(el("pDeskSong").value||el("pDeskSongFile").files.length))toggleSong();
   }
   return {init,open,close,highlight,render,save,deleteTrack,preview:(...a)=>preview(...a),editHeight:(...a)=>editHeight&&editHeight(...a),// (ganchos para Crear cue de ORBITAL DJ: vista previa y «Dibujar altura»)
-    stopBackground,stopLayers,startLayers,setMasterLevel,motions,applyMotion,get hasBackground(){return !!(backgroundRequest?.voice||songRequest?.source)},
+    stopBackground,stopLayers,startLayers,setMasterLevel,syncNowPlaying,motions,applyMotion,get hasBackground(){return !!(backgroundRequest?.voice||songRequest?.source)},
     get active(){return !!workspace},get workspace(){return workspace},get masterLevel(){return masterMuted?-60:masterDb}};
 })();
 
