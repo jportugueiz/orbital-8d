@@ -5960,7 +5960,7 @@ function cInit(){if(cctx)return;const AC=window.AudioContext||window.webkitAudio
   // «Baja latencia» (ronda 2, 21 nov 2026): opción del DJ para cue, scratch y pads (bloques de 128 y búfer mínimo del sistema).
   // Apagada (por defecto) queda «Máxima estabilidad»: 250 ms y bloques de 2048, como siempre. Se elige en Decks A/B y recarga.
   let low=false;try{low=dj&&localStorage.getItem("orbdj_latencia")==="baja"}catch(_){}
-  try{cctx=new AC(low?{sampleRate:48000,latencyHint:"interactive"}:{sampleRate:48000,latencyHint:dj?.25:.1,renderSizeHint:dj?2048:"default"})}catch(e){cctx=new AC({sampleRate:48000,latencyHint:.1})}
+  try{cctx=new AC(low?{sampleRate:48000,latencyHint:"interactive"}:{sampleRate:48000,latencyHint:dj?.25:.1,renderSizeHint:dj?2048:(/[?&]q=(\d+)/.exec(location.search)||[])[1]?+/[?&]q=(\d+)/.exec(location.search)[1]:"default"})}catch(e){cctx=new AC({sampleRate:48000,latencyHint:.1})}
   cctx.__orbLatencia=low?"baja":dj?"estable":"normal";
   ORB._master(cctx)}
 
@@ -10539,7 +10539,64 @@ const HEALING_KU100=(()=>{
     function stop(){try{out.disconnect()}catch(e){}try{input.disconnect()}catch(e){}}
     return {input,out,update,stop};
   }
-  return {data,hrir,voice,erIR:salaIR,get disponible(){return !!data()}};
+
+  /* ===== 23 nov · KU100 dentro del hilo de audio (AudioWorklet) =====
+     La versión con ConvolverNode cambia de filtro «a saltos» (un cruce cada ~40 ms mandado desde la pantalla). Aquí el filtro y el retardo
+     entre oídos se interpolan MUESTRA A MUESTRA dentro del propio procesador de audio: no hay cambio de filtro ni cruce, y no depende
+     de lo ocupada que esté la pantalla. Mismos HRIR del KU100, misma interpolación de 4 vecinos, misma ley de distancia. */
+  const W_TAPS=160,W_NAME="ku100-voz";
+  const W_CODE=`
+class KU extends AudioWorkletProcessor{
+  constructor(o){super();const q=o.processorOptions;Object.assign(this,q);const T=this.T;
+    this.hA=[new Float32Array(T),new Float32Array(T)];this.hB=[new Float32Array(T),new Float32Array(T)];this.dA=[0,0];this.dB=[0,0];
+    this.X=new Float32Array(1024);this.xi=0;this.D=[new Float32Array(256),new Float32Array(256)];this.wi=0;this.tg=null;this.cur=null;this.dead=false;this.still=0;
+    const PH=128;this.PH=PH;this.K=new Float32Array((PH+1)*8);
+    for(let p=0;p<=PH;p++){const fr=p/PH;let s=0;for(let j=-3;j<=4;j++){const x=j-fr,w=Math.abs(x)<4?.5+.5*Math.cos(Math.PI*x/4):0,v=(Math.abs(x)<1e-7?1:Math.sin(Math.PI*x)/(Math.PI*x))*w;this.K[p*8+j+3]=v;s+=v}for(let j=0;j<8;j++)this.K[p*8+j]/=s}
+    this.st=[0,0];this.port.onmessage=e=>{const m=e.data;if(m.stat){this.port.postMessage({st:this.st});return}if(m.stop){this.dead=true;return}if(m.p){const p=m.p.slice();if(this.cur)p[0]=this.cur[0]+((((p[0]-this.cur[0])%360)+540)%360-180);this.tg=p;this.at=m.at||0}}}
+  filt(P,h,d){const AZ=this.AZ,EL=this.EL,n=this.n,T=this.T,H=this.H,dl=this.dl,na=AZ.length;let az=((P[0]%360)+360)%360;if(az>=360-1e-9)az=0;
+    const el=Math.max(EL[0],Math.min(EL[EL.length-1],P[1])),r=P[2],i=Math.floor(az/15)%na,jx=(i+1)%na,fa=(az-AZ[i])/15;
+    let k=0;while(k<EL.length-2&&EL[k+1]<=el)k++;const fe=(el-EL[k])/(EL[k+1]-EL[k]);
+    const W=[k,i,(1-fe)*(1-fa),k,jx,(1-fe)*fa,k+1,i,fe*(1-fa),k+1,jx,fe*fa];h[0].fill(0);h[1].fill(0);let d0=0,d1=0;
+    const dg=Math.min(4,1/Math.max(.12,r))*this.kcal;
+    for(let q=0;q<12;q+=3){const g=W[q+2];if(!g)continue;const c=W[q]*na+W[q+1],b=c*2*n,gg=g*dg;const o0=h[0],o1=h[1];
+      for(let t=0;t<T;t++){o0[t]+=gg*H[b+t];o1[t]+=gg*H[b+n+t]}d0+=g*dl[c*2];d1+=g*dl[c*2+1]}
+    if(r<1){const lad=Math.sin(az*Math.PI/180);for(let ch=0;ch<2;ch++){const side=ch===1?lad:-lad,g=Math.pow(10,(1-r)*6*side/20*.5),o=h[ch];for(let t=0;t<24;t++)o[t]*=g}}
+    const m=Math.min(d0,d1);d[0]=d0-m;d[1]=d1-m}
+  // El bloque de audio puede ser de 128 muestras o mucho mayor (Orbital DJ pide 2048): se procesa siempre en tramos de 128.
+  process(inputs,outputs){const inp=inputs[0]&&inputs[0][0],out=outputs[0],NT=out[0].length;this.st[0]++;if(!inp)this.st[1]++;
+    for(let o=0;o<NT;o+=128)this.tramo(inp,out,o,Math.min(128,NT-o));return !this.dead}
+  tramo(inp,out,off,N){const X=this.X,T=this.T,xi=this.xi;
+    if(inp)for(let i=0;i<N;i++)X[(xi+i)&1023]=inp[off+i];else for(let i=0;i<N;i++)X[(xi+i)&1023]=0;
+    this.xi=(xi+N)&1023;
+    if(!this.tg){for(let ch=0;ch<out.length;ch++)for(let i=0;i<N;i++)out[ch][off+i]=0;return}
+    let mov=false;
+    if(!this.cur){this.cur=this.tg.slice();this.filt(this.cur,this.hA,this.dA)}
+    else{const c=this.cur,g=this.tg,dt=N/sampleRate,a=Math.min(1,dt/Math.max(.02,this.at-(currentFrame+off)/sampleRate));/* llega al punto pedido justo a su hora, a velocidad pareja */const e0=g[0]-c[0],e1=g[1]-c[1],e2=g[2]-c[2];
+      if(Math.abs(e0)>.01||Math.abs(e1)>.01||Math.abs(e2)>.0005){c[0]+=e0*a;c[1]+=e1*a;c[2]+=e2*a;this.filt(c,this.hB,this.dB);mov=true}}
+    const K=this.K,PH=this.PH,wi=this.wi;
+    for(let ch=0;ch<2;ch++){const a=this.hA[ch],b=this.hB[ch],D=this.D[ch],o=out[ch]||out[0],dA=this.dA[ch],dB=mov?this.dB[ch]:dA;
+      for(let i=0;i<N;i++){const base=xi+i;let ya=0;
+        if(mov){let yb=0;for(let t=0;t<T;t++){const x=X[(base-t)&1023];ya+=a[t]*x;yb+=b[t]*x}ya+=(yb-ya)*((i+1)/N)}
+        else for(let t=0;t<T;t++)ya+=a[t]*X[(base-t)&1023];
+        const w=(wi+i)&255;D[w]=ya;
+        const dd=dA+(dB-dA)*((i+1)/N)+4,di=dd|0,fp=(dd-di)*PH,p0=fp|0,f=fp-p0,k0=p0*8,k1=k0+8;let y=0;
+        for(let j=0;j<8;j++)y+=D[(w-di-j+3)&255]*(K[k0+j]+(K[k1+j]-K[k0+j])*f);
+        o[off+i]=y}}
+    this.wi=(wi+N)&255;
+    if(mov){const t=this.hA;this.hA=this.hB;this.hB=t;this.dA[0]=this.dB[0];this.dA[1]=this.dB[1]}}}
+registerProcessor("${W_NAME}",KU);`;
+  const W_OK=new WeakMap();
+  function prepare(ctx){if(!ctx.audioWorklet||!data())return Promise.resolve(false);let p=W_OK.get(ctx);
+    if(!p){const u=URL.createObjectURL(new Blob([W_CODE],{type:"text/javascript"}));p=ctx.audioWorklet.addModule(u).then(()=>{ctx._kuW=true;return true}).catch(e=>{console.warn("KU100 worklet",e);return false});W_OK.set(ctx,p)}return p}
+  function voiceW(ctx,dest){const d=data();if(!d||!ctx._kuW||d.sr!==ctx.sampleRate)return null;
+    const input=ctx.createGain();input.channelCount=1;input.channelCountMode="explicit";input.channelInterpretation="speakers";
+    const node=new AudioWorkletNode(ctx,W_NAME,{numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[2],channelCount:1,channelCountMode:"explicit",channelInterpretation:"speakers",
+      processorOptions:{H:d.H,dl:Float32Array.from(d.dl),AZ:d.AZ,EL:d.EL,n:d.n,T:Math.min(W_TAPS,d.n),kcal:KCAL}});
+    const out=ctx.createGain();input.connect(node);node.connect(out);out.connect(dest);let last=null;
+    function update(at,p){if(last&&Math.abs(p[0]-last[0])<.02&&Math.abs(p[1]-last[1])<.02&&Math.abs(p[2]-last[2])<.001)return;last=[p[0],p[1],p[2]];node.port.postMessage({p:last,at})}
+    function stop(){try{node.port.postMessage({stop:true})}catch(e){}try{out.disconnect()}catch(e){}try{input.disconnect()}catch(e){}}
+    return {input,out,update,stop,worklet:true,node}}
+  return {data,hrir,voice,voiceW,prepare,erIR:salaIR,get disponible(){return !!data()}};
 })();
 if(typeof module!=="undefined")module.exports=HEALING_KU100;
 
@@ -10561,7 +10618,28 @@ const SH_SONGS=(()=>{
   let pulse={last:-Infinity,attacks:[],period:0};
   // Criterio IAH de Sound Healing (borrador 20 nov): plan calculado antes de tocar, a partir del análisis de cada pista.
   let healingPlan=null;
-  function planHealing(songId){
+  /* 23 nov (página «no responde» al cargar una canción): el plan de IAH tarda 3–6 s de cálculo. Ahora corre en un hilo aparte
+     (Web Worker) con el MISMO código del criterio, así la pantalla no se congela. Si el navegador no lo permite, se calcula como antes. */
+  const KUW=/[?&]kuw=1/.test(location.search);// prueba: KU100 dentro del hilo de audio
+  let planW=null,planWn=0;const planWP=new Map();
+  function planHilo(items){
+    if(planW===false)return Promise.resolve(null);
+    try{
+      if(!planW){
+        const A="const IAH_HEALING_CRITERIO=(()=>{",E='if(typeof module!=="undefined")module.exports=IAH_HEALING_CRITERIO;';
+        const txt=[...document.scripts].map(x=>x.textContent).find(x=>x.includes(A));if(!txt)throw Error("sin criterio");
+        const a=txt.indexOf(A),b=txt.indexOf(E,a);if(b<0)throw Error("sin fin");
+        const code="let C=null;const mk=function(DJ_MOVEMENT_BANK){"+txt.slice(a,b)+"\nreturn IAH_HEALING_CRITERIO};"+
+          "onmessage=function(e){const m=e.data;if(m.bank){C=mk(m.bank);return}try{postMessage({id:m.id,plan:C.planear(m.items)})}catch(err){postMessage({id:m.id,err:String(err)})}};";
+        planW=new Worker(URL.createObjectURL(new Blob([code],{type:"text/javascript"})));
+        planW.onmessage=e=>{const r=planWP.get(e.data.id);if(r){planWP.delete(e.data.id);r(e.data.plan||null)}};
+        planW.onerror=e=>{console.warn("IAH en hilo aparte:",e.message);planW=false;for(const r of planWP.values())r(null);planWP.clear()};
+        planW.postMessage({bank:typeof DJ_MOVEMENT_BANK!=="undefined"?{entries:DJ_MOVEMENT_BANK.entries}:null});
+      }
+      const id=++planWn;return new Promise(res=>{planWP.set(id,res);planW.postMessage({id,items})});
+    }catch(e){console.warn("IAH en hilo aparte:",e);planW=false;return Promise.resolve(null)}
+  }
+  async function planHealing(songId){
     if(typeof IAH_HEALING_CRITERIO==="undefined"||!tracks.length)return null;
     const H=IAH_HEALING_CRITERIO,stored=H.analisis(String(songId||"").replace(/^coleccion:/,""));
     try{
@@ -10573,7 +10651,7 @@ const SH_SONGS=(()=>{
       // nivel de la mezcla de pistas (≈ LUFS de la mezcla a 0 dB, medido contra los renders del 20 nov)
       let P=0,c=0;const n=Math.max(...items.map(x=>x.feat.rms.length));
       for(let k=0;k<n;k++){let q=0;for(const x of items)q+=(x.feat.rms[k]||0)**2;if(q>1e-5){P+=q;c++}}
-      const plan=H.planear(items);plan.mezclaDb=c?10*Math.log10(P/c)-.2:null;return plan;
+      const plan=(await planHilo(items))||H.planear(items);plan.mezclaDb=c?10*Math.log10(P/c)-.2:null;return plan;
     }catch(e){return null}
   }
   const healingPose=(t,seconds)=>healingPlan&&!ORB.S.reduce?IAH_HEALING_CRITERIO.pose(healingPlan,tracks.indexOf(t),seconds):null;
@@ -10746,7 +10824,9 @@ const SH_SONGS=(()=>{
       selected=new Set(tracks.slice(0,1).map(t=>t.id));
       duration=Math.max(...tracks.map(t=>t.duration));
       offset=0;
-      healingPlan=planHealing(songId);
+      tell("Preparando IAH…");paint();
+      healingPlan=await planHealing(songId);
+      if(token!==loadToken)return;
       // Manual (aprobado por Jorge, 21 nov): la colocación por defecto de una canción de la colección usa la cama equilibrada de IAH
       // (graves al centro, cada lado repartido por nivel) en vez del orden de las pistas (que dejaba el bajo a −110° y lo fuerte a la izquierda)
       if(healingPlan&&String(songId).startsWith("coleccion:"))tracks.forEach((t,i)=>{const c=(healingPlan.casaManual||healingPlan.casa)?.[i];if(c&&t.path?.type==="still"){t.path={...t.path,az0:Math.round(c[0]),el:Math.round(c[1])};t._P=null}});
@@ -10820,7 +10900,7 @@ const SH_SONGS=(()=>{
     cancelLoad();
     pause();
     tracks=tracks.filter(track=>track!==t);
-    healingPlan=planHealing(id);
+    healingPlan=null;{const tr=tracks;planHealing(id).then(p=>{if(tracks===tr)healingPlan=p})}
     selected.delete(t.id);
     duration=Math.max(0,...tracks.map(t=>t.duration));
     offset=Math.min(duration,offset);
@@ -11148,6 +11228,7 @@ const SH_SONGS=(()=>{
     try{
       ctx=ORB.ac();
       await ctx.resume();
+      try{if(KUW&&typeof HEALING_KU100!=="undefined"&&HEALING_KU100.prepare)await HEALING_KU100.prepare(ctx)}catch(e){console.warn(e)}
       if(request!==playToken)return;
       if(ORB.S.playing)APP.stop();
       ORB.M.out.gain.cancelScheduledValues(ctx.currentTime);
@@ -11186,12 +11267,13 @@ const SH_SONGS=(()=>{
         eqOut.connect(feed);
         const idx=tracks.indexOf(t);t.ku=null;
         if(healingPlan&&(healingPlan.viajes?.[idx]||[]).length&&typeof HEALING_KU100!=="undefined"&&HEALING_KU100.disponible){
-          const ku=HEALING_KU100.voice(ctx,(()=>{
+          const kuDest=(()=>{
             // 23 nov (ruido al moverse): un solo viajero llega hasta +3 dBFS él solo (viene cerca y con +5,5 dB) y el limitador del máster
             // lo aplastaba 9 dB de golpe → crujido. Los viajeros pasan por un nivelador suave propio (techo ≈ −6 dBFS, ataque 5 ms,
             // soltar 250 ms) antes del máster; bajo −12 dBFS no actúa. −4,06 dB compensa la ganancia automática del compresor.
             const M=ORB.M;if(M._kuBus)return M._kuBus;const c=ctx.createDynamicsCompressor();c.threshold.value=-16;c.knee.value=6;c.ratio.value=8;c.attack.value=.005;c.release.value=.25;
-            const g=ctx.createGain();g.gain.value=Math.pow(10,-7.21/20);const b=ctx.createGain();b.connect(c);c.connect(g);g.connect(M.dry);b._c=c;b._g=g;return M._kuBus=b})());
+            const g=ctx.createGain();g.gain.value=Math.pow(10,-7.21/20);const b=ctx.createGain();b.connect(c);c.connect(g);g.connect(M.dry);b._c=c;b._g=g;return M._kuBus=b})();
+          const ku=(HEALING_KU100.voiceW&&KUW&&HEALING_KU100.voiceW(ctx,kuDest))||HEALING_KU100.voice(ctx,kuDest);
           if(ku){const kg=ctx.createGain();kg.gain.value=0;const air=ctx.createBiquadFilter();air.type="highshelf";air.frequency.value=4000;air.gain.value=IAH_HEALING_CRITERIO.REGLAS.viajero_aire_db;
             const pres=ctx.createBiquadFilter();pres.type="peaking";pres.frequency.value=3200;pres.Q.value=.7;pres.gain.value=0;
             kg.connect(air);air.connect(pres);pres.connect(ku.input);t.ku={...ku,kg,air,pres,on:false}}
