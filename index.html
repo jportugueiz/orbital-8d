@@ -32536,7 +32536,7 @@ function refreshPads(){if(!padGrid||!padFamily)return;const fold=padGrid.closest
    if(ds.length>=2&&g.width>0){const gap=12,ca=ds[0].getBoundingClientRect(),cb=ds[1].getBoundingClientRect(),dw=Math.min(ca.width,cb.width),w=Math.max(80,Math.floor((dw*.92-3*gap)/4)),bw=4*w+3*gap,
      a=(ca.left+ca.width/2)-g.left-bw/2,b=(cb.left+cb.width/2)-(ca.left+ca.width/2)-bw;
      if(a>gap&&b>2*gap){padGrid.style.setProperty("--p2-w",w+"px");padGrid.style.setProperty("--p2-l",Math.round(a-gap)+"px");padGrid.style.setProperty("--p2-m",Math.round(b-2*gap)+"px")}}
-   let top=parseInt(padRack.style.top);if(!(top>0)){try{top=+localStorage.getItem("orb_pads_top")}catch(e){}}if(!(top>0))top=padsTopMax();
+   let top=parseInt(padRack.style.top);if(!(top>0))top=padsTopMax();// 24 nov (Jorge): SIEMPRE parte abajo, mostrando solo la primera fila (no se recuerda la posición entre aperturas)
    padRack.style.top=Math.max(56,Math.min(padsTopMax(),top))+"px"});
  if(compact3)requestAnimationFrame(()=>{const l=padRack.querySelector(".ldx-w-pad-bank");if(l&&l.offsetParent){const r=l.getBoundingClientRect();document.documentElement.style.setProperty("--pads3-bank-bottom",Math.round(innerHeight-r.top-r.height/2-11)+"px")}});
  padGrid.querySelectorAll(".ldx-w-pad-spacer").forEach(n=>n.remove());if(padPage&&!padMatrix&&!padRack.classList.contains("ldx-live-compact"))for(let i=2;i<8;i++){const n=E("span",{class:"ldx-w-pad-spacer","aria-hidden":"true"},"—");n.style.gridColumn=String(i%4+1);n.style.gridRow=String(Math.floor(i/4)+2);padGrid.append(n)}

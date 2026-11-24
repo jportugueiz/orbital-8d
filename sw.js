@@ -1,7 +1,7 @@
 /* ORBITAL · service worker para uso sin conexión. Versión e4c1d0bd9e74 (la pone build.py).
    - La página se pide primero a la red (así GitHub Pages actualiza normal); sin red, usa la copia guardada.
    - Canciones y sonidos ya escuchados se guardan para volver a sonar sin conexión. */
-const V="379ee9b418f5",SHELL="orbital-shell-"+V,MEDIA="orbital-media-v1";
+const V="f9d9032f177f",SHELL="orbital-shell-"+V,MEDIA="orbital-media-v1";
 const CORE=["./","index.html","benzai-strip.js","orbital-spatial-worklet.js","orbital-spatial.wasm"];
 const MEDIA_RE=/\/(audio-web|musica|sonidos[^/]*|fonts|inst|visuales|fondos_8d)\//;
 self.addEventListener("install",e=>{e.waitUntil(caches.open(SHELL).then(c=>Promise.all(CORE.map(u=>c.add(u).catch(()=>null)))))});
