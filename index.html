@@ -2491,7 +2491,8 @@ body.ldjx-open #play :is(.play-stroke-options svg,#pHeightGraph){height:clamp(22
 .ldx-workspace .ldx-live-compact .ldx-p2-toggle{margin-left:12px;height:22px;min-height:0;padding:0 10px;font-size:11px}
 .ldx-workspace .ldx-live-compact.p2-abierto{position:fixed;bottom:auto;z-index:60;border:1px solid #6c8794;border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.75),0 -6px 24px rgba(0,0,0,.5),inset 0 1px 0 #ffffff18;
   background:linear-gradient(180deg,#1a242c,#0e151b);padding:6px 12px 10px}
-.ldx-workspace .ldx-live-compact.p2-abierto .ldx-w-pad-bankrow{cursor:grab;touch-action:none;user-select:none;position:relative;padding:8px 4px 6px!important}
+.ldx-workspace .ldx-live-compact.p2-abierto{cursor:grab;touch-action:none;user-select:none}.ldx-workspace .ldx-live-compact.p2-abierto.p2-arrastrando{cursor:grabbing}.ldx-workspace .ldx-live-compact.p2-abierto .ldx-pad,.ldx-workspace .ldx-live-compact.p2-abierto button{cursor:pointer}
+.ldx-workspace .ldx-live-compact.p2-abierto .ldx-w-pad-bankrow{position:relative;padding:8px 4px 6px!important}
 .ldx-workspace .ldx-live-compact.p2-abierto .ldx-w-pad-bankrow:before{content:"";position:absolute;left:50%;top:1px;width:64px;height:5px;margin-left:-32px;border-radius:3px;background:#8aa4b0;opacity:.7}
 .ldx-workspace .ldx-live-compact.p2-abierto .ldx-w-pad-bankrow.p2-arrastrando{cursor:grabbing}
 /* 24 nov (Jorge): los hot cues de cada deck 20 % más bajos para darles espacio a las 2 filas de pads */
@@ -32435,6 +32436,8 @@ function layoutPositions(headers){
  padGrid.style.setProperty("--family-count",cols);
  return families;
 }
+// lo más abajo que puede quedar el teclado: solo se ve su barra y la primera fila de pads (no tapa nada)
+function padsTopMax(){const r=padRack.getBoundingClientRect(),f=[...padGrid.querySelectorAll(".ldx-pad.ldx-w-pad-visible")].find(p=>p.offsetParent);if(!f)return innerHeight-60;const b=f.getBoundingClientRect().bottom-r.top+8;return Math.round(innerHeight-b)}
 function stepPadBank(direction){
  padPage=(padPage+direction+2)%2;
  refreshPads();
@@ -32472,22 +32475,23 @@ function refreshPads(){if(!padGrid||!padFamily)return;const fold=padGrid.closest
  const compact3=!allFamilies&&!padMatrix&&padRack.classList.contains("ldx-live-compact");let fams3=[padFamily];
  if(compact3){const b0=U.S.bank*per,inBank=U.S.tracks.slice(b0,b0+per).filter(t=>t.clips&&t.clips.some(Boolean)).map(t=>t.id);const k=inBank.indexOf(padFamily);
   if(k>=0){const s=Math.max(0,Math.min(k,inBank.length-4));fams3=inBank.slice(s,s+4);if(!fams3.includes(padFamily))fams3=[padFamily]}}
- const p2open=!!padRack._p2open;
+ const p2open=padRack._p2open!==false;// 24 nov: parte con las 4 filas; se puede recoger a 2
  padGrid.classList.remove("ldx-w-3filas");padGrid.classList.toggle("ldx-w-pads2",compact3);padRack.classList.toggle("p2-abierto",compact3);if(!compact3){padRack.style.left="";padRack.style.width="";padRack.style.top=""}
- if(compact3){let t=padRack.querySelector(".ldx-p2-toggle");if(!t){t=button("",()=>{padRack._p2open=!padRack._p2open;refreshPads()},"ldx-p2-toggle");
+ if(compact3){let t=padRack.querySelector(".ldx-p2-toggle");if(!t){t=button("",()=>{padRack._p2open=!(padRack._p2open!==false);refreshPads()},"ldx-p2-toggle");
   const row=padRack.querySelector(".ldx-w-pad-bankrow");row?.append(t);
   // teclado de pads flotante: siempre encima de la consola; se arrastra hacia arriba o abajo desde su barra (dedo o mouse)
-  row?.addEventListener("pointerdown",e=>{if(e.target.closest("button"))return;e.preventDefault();const y0=e.clientY,t0=padRack.getBoundingClientRect().top;row.setPointerCapture(e.pointerId);row.classList.add("p2-arrastrando");
-   const mv=ev=>{const top=Math.max(56,Math.min(innerHeight-60,t0+ev.clientY-y0));padRack.style.top=top+"px"};
-   const up=()=>{row.removeEventListener("pointermove",mv);row.removeEventListener("pointerup",up);row.removeEventListener("pointercancel",up);row.classList.remove("p2-arrastrando");try{localStorage.setItem("orb_pads_top",parseInt(padRack.style.top))}catch(e){}};
-   row.addEventListener("pointermove",mv);row.addEventListener("pointerup",up);row.addEventListener("pointercancel",up)})}
-  t.textContent=p2open?"▾ Recoger pads":"▴ Desplegar 2 filas más";t.hidden=fams3.length<3}
+  // 24 nov (Jorge): todo lo que no es un pad o un botón (barra, centro y bordes) sirve para subir o bajar el teclado con el dedo o el mouse
+  padRack.addEventListener("pointerdown",e=>{if(!padRack.classList.contains("p2-abierto")||e.target.closest("button,select,input,label,.ldx-pad"))return;e.preventDefault();const y0=e.clientY,t0=padRack.getBoundingClientRect().top;padRack.setPointerCapture(e.pointerId);padRack.classList.add("p2-arrastrando");
+   const mv=ev=>{padRack.style.top=Math.max(56,Math.min(padsTopMax(),t0+ev.clientY-y0))+"px"};
+   const up=()=>{padRack.removeEventListener("pointermove",mv);padRack.removeEventListener("pointerup",up);padRack.removeEventListener("pointercancel",up);padRack.classList.remove("p2-arrastrando");try{localStorage.setItem("orb_pads_top",parseInt(padRack.style.top))}catch(e){}};
+   padRack.addEventListener("pointermove",mv);padRack.addEventListener("pointerup",up);padRack.addEventListener("pointercancel",up)})}
+  t.textContent=p2open?"▾ Solo 2 filas":"▴ 4 filas";t.hidden=fams3.length<3}
  for(const p of padGrid.querySelectorAll(".ldx-pad")){
   const r=+p.dataset.r,channel=U.S.tracks.findIndex(t=>t.id===p.dataset.t),track=U.S.tracks[channel];
   const pos=positions?.get(p.dataset.t);
   const fi=compact3?fams3.indexOf(p.dataset.t):-1,band=fi<0?0:Math.floor(fi/2);
   const shown=allFamilies?!!pos?.open&&Math.floor(r/5)===padPage:compact3?(fi>=0&&r<8&&(band===0||p2open)):(p.dataset.t===padFamily&&Math.floor(r/8)===padPage);
-  const fila=1;if(compact3&&fi>=0){p.style.setProperty("--p2-col",(fi%2)*5+r%4+2);p.style.setProperty("--p2-row",(p2open?(1-band)*2:band*2)+Math.floor(r/4)+1)}
+  const fila=1;if(compact3&&fi>=0){p.style.setProperty("--p2-col",(fi%2)*5+r%4+2);p.style.setProperty("--p2-row",band*2+Math.floor(r/4)+1)}
   const slot=allFamilies?channel%per:r%8;
   const name=p.querySelector("span")?.textContent||"Vacío";
   p.classList.toggle("ldx-w-pad-visible",shown);p.dataset.hardwareNumber=String(allFamilies?slot+1:r+1);
@@ -32518,8 +32522,8 @@ function refreshPads(){if(!padGrid||!padFamily)return;const fold=padGrid.closest
    if(ds.length>=2&&g.width>0){const gap=12,ca=ds[0].getBoundingClientRect(),cb=ds[1].getBoundingClientRect(),dw=Math.min(ca.width,cb.width),w=Math.max(80,Math.floor((dw*.92-3*gap)/4)),bw=4*w+3*gap,
      a=(ca.left+ca.width/2)-g.left-bw/2,b=(cb.left+cb.width/2)-(ca.left+ca.width/2)-bw;
      if(a>gap&&b>2*gap){padGrid.style.setProperty("--p2-w",w+"px");padGrid.style.setProperty("--p2-l",Math.round(a-gap)+"px");padGrid.style.setProperty("--p2-m",Math.round(b-2*gap)+"px")}}
-   const hh=padRack.offsetHeight;let top=parseInt(padRack.style.top);if(!(top>0)){try{top=+localStorage.getItem("orb_pads_top")}catch(e){}}if(!(top>0))top=innerHeight-hh-10;
-   padRack.style.top=Math.max(56,Math.min(innerHeight-hh-6,top))+"px"});
+   let top=parseInt(padRack.style.top);if(!(top>0)){try{top=+localStorage.getItem("orb_pads_top")}catch(e){}}if(!(top>0))top=padsTopMax();
+   padRack.style.top=Math.max(56,Math.min(padsTopMax(),top))+"px"});
  if(compact3)requestAnimationFrame(()=>{const l=padRack.querySelector(".ldx-w-pad-bank");if(l&&l.offsetParent){const r=l.getBoundingClientRect();document.documentElement.style.setProperty("--pads3-bank-bottom",Math.round(innerHeight-r.top-r.height/2-11)+"px")}});
  padGrid.querySelectorAll(".ldx-w-pad-spacer").forEach(n=>n.remove());if(padPage&&!padMatrix&&!padRack.classList.contains("ldx-live-compact"))for(let i=2;i<8;i++){const n=E("span",{class:"ldx-w-pad-spacer","aria-hidden":"true"},"—");n.style.gridColumn=String(i%4+1);n.style.gridRow=String(Math.floor(i/4)+2);padGrid.append(n)}
  updatePadActivity();}
