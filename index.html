@@ -1726,8 +1726,8 @@ body.ldjx-open .ldj-fab{display:none!important}
 .ldx-sectors .s-l{background:conic-gradient(from 225deg,#3fe6ee77 0 90deg,#0000 0)}
 .ldx-platter[data-sec="f"] .s-f,.ldx-platter[data-sec="r"] .s-r,.ldx-platter[data-sec="b"] .s-b,.ldx-platter[data-sec="l"] .s-l{opacity:1}
 .ldx-sectors b{position:absolute;font:700 16px/1 UI;color:#b8c8d6aa;letter-spacing:0;z-index:3}
-.ldx-sectors .ic-f{left:50%;top:3%;transform:translateX(-50%);margin-left:28px}
-.ldx-sectors .ic-b{left:50%;bottom:3%;transform:translateX(-50%)}
+.ldx-sectors .ic-f{left:50%;top:calc(var(--vw) + 4px);transform:translateX(-50%)}
+.ldx-sectors .ic-b{left:50%;bottom:calc(var(--vw) + 4px);transform:translateX(-50%)}
 .ldx-sectors .ic-l{left:2.6%;top:50%;transform:translateY(-50%)}
 .ldx-sectors .ic-r{right:2.6%;top:50%;transform:translateY(-50%)}
 .ldx-platter[data-sec="f"] .ic-f,.ldx-platter[data-sec="r"] .ic-r,.ldx-platter[data-sec="b"] .ic-b,.ldx-platter[data-sec="l"] .ic-l{color:#3fe6ee;text-shadow:0 0 8px #3fe6ee}
@@ -10554,7 +10554,10 @@ const HEALING_KU100=(()=>{
 class KU extends AudioWorkletProcessor{
   constructor(o){super();const q=o.processorOptions;Object.assign(this,q);const T=this.T;
     this.hA=[new Float32Array(T),new Float32Array(T)];this.hB=[new Float32Array(T),new Float32Array(T)];this.dA=[0,0];this.dB=[0,0];
-    this.X=new Float32Array(1024);this.xi=0;this.D=[new Float32Array(256),new Float32Array(256)];this.wi=0;this.tg=null;this.cur=null;this.dead=false;this.still=0;
+    this.X=new Float32Array(1024);this.xi=0;this.XL=new Float32Array(T+256);this.rA=[new Float32Array(T),new Float32Array(T)];this.rB=[new Float32Array(T),new Float32Array(T)];this.zr=0;this.w=null;
+    try{if(q.wasm){const ins=new WebAssembly.Instance(new WebAssembly.Module(q.wasm),{}),B=ins.exports.buf(),mem=ins.exports.memory.buffer,V=(o,l)=>new Float32Array(mem,B+o*4,l);
+      this.w={conv:ins.exports.conv,B,XL:V(0,512),oL:V(1536,128),oR:V(1664,128)};this.XL=this.w.XL;this.rA=[V(512,T),V(768,T)];this.rB=[V(1024,T),V(1280,T)];this.pA=512;this.pB=1024}}catch(e){this.w=null}
+    this.rev(this.hA,this.rA);this.port.postMessage({w:!!this.w});this.D=[new Float32Array(256),new Float32Array(256)];this.wi=0;this.tg=null;this.cur=null;this.dead=false;this.still=0;
     const PH=128;this.PH=PH;this.K=new Float32Array((PH+1)*8);
     for(let p=0;p<=PH;p++){const fr=p/PH;let s=0;for(let j=-3;j<=4;j++){const x=j-fr,w=Math.abs(x)<4?.5+.5*Math.cos(Math.PI*x/4):0,v=(Math.abs(x)<1e-7?1:Math.sin(Math.PI*x)/(Math.PI*x))*w;this.K[p*8+j+3]=v;s+=v}for(let j=0;j<8;j++)this.K[p*8+j]/=s}
     this.st=[0,0];this.port.onmessage=e=>{const m=e.data;if(m.stat){this.port.postMessage({st:this.st});return}if(m.stop){this.dead=true;return}if(m.p){const p=m.p.slice();if(this.cur)p[0]=this.cur[0]+((((p[0]-this.cur[0])%360)+540)%360-180);this.tg=p;this.at=m.at||0}}}
@@ -10570,34 +10573,44 @@ class KU extends AudioWorkletProcessor{
   // El bloque de audio puede ser de 128 muestras o mucho mayor (Orbital DJ pide 2048): se procesa siempre en tramos de 128.
   process(inputs,outputs){const inp=inputs[0]&&inputs[0][0],out=outputs[0],NT=out[0].length;this.st[0]++;if(!inp)this.st[1]++;
     for(let o=0;o<NT;o+=128)this.tramo(inp,out,o,Math.min(128,NT-o));return !this.dead}
-  tramo(inp,out,off,N){const X=this.X,T=this.T,xi=this.xi;
-    if(inp)for(let i=0;i<N;i++)X[(xi+i)&1023]=inp[off+i];else for(let i=0;i<N;i++)X[(xi+i)&1023]=0;
-    this.xi=(xi+N)&1023;
-    if(!this.tg){for(let ch=0;ch<out.length;ch++)for(let i=0;i<N;i++)out[ch][off+i]=0;return}
+  rev(h,r){const T=this.T;for(let c=0;c<2;c++){const a=h[c],o=r[c];for(let t=0;t<T;t++)o[t]=a[T-1-t]}}
+  // 24 nov: mismo cálculo exacto, más liviano: historia lineal (sin índices circulares), un solo recorrido para los dos oídos,
+  // y si la pista lleva silencio completo (entrada y colas en cero) no se convoluciona nada: la salida ya es cero.
+  tramo(inp,out,off,N){const T=this.T,XL=this.XL;
+    let z=true;if(inp){for(let i=0;i<N;i++){const v=inp[off+i];XL[T-1+i]=v;if(v!==0)z=false}}else{for(let i=0;i<N;i++)XL[T-1+i]=0}
+    this.zr=z?this.zr+N:0;
+    if(!this.tg){for(let ch=0;ch<out.length;ch++)for(let i=0;i<N;i++)out[ch][off+i]=0;XL.copyWithin(0,N,N+T-1);return}
     let mov=false;
-    if(!this.cur){this.cur=this.tg.slice();this.filt(this.cur,this.hA,this.dA)}
-    else{const c=this.cur,g=this.tg,dt=N/sampleRate,a=Math.min(1,dt/Math.max(.02,this.at-(currentFrame+off)/sampleRate));/* llega al punto pedido justo a su hora, a velocidad pareja */const e0=g[0]-c[0],e1=g[1]-c[1],e2=g[2]-c[2];
-      if(Math.abs(e0)>.01||Math.abs(e1)>.01||Math.abs(e2)>.0005){c[0]+=e0*a;c[1]+=e1*a;c[2]+=e2*a;this.filt(c,this.hB,this.dB);mov=true}}
-    const K=this.K,PH=this.PH,wi=this.wi;
-    for(let ch=0;ch<2;ch++){const a=this.hA[ch],b=this.hB[ch],D=this.D[ch],o=out[ch]||out[0],dA=this.dA[ch],dB=mov?this.dB[ch]:dA;
-      for(let i=0;i<N;i++){const base=xi+i;let ya=0;
-        if(mov){let yb=0;for(let t=0;t<T;t++){const x=X[(base-t)&1023];ya+=a[t]*x;yb+=b[t]*x}ya+=(yb-ya)*((i+1)/N)}
-        else for(let t=0;t<T;t++)ya+=a[t]*X[(base-t)&1023];
-        const w=(wi+i)&255;D[w]=ya;
-        const dd=dA+(dB-dA)*((i+1)/N)+4,di=dd|0,fp=(dd-di)*PH,p0=fp|0,f=fp-p0,k0=p0*8,k1=k0+8;let y=0;
-        for(let j=0;j<8;j++)y+=D[(w-di-j+3)&255]*(K[k0+j]+(K[k1+j]-K[k0+j])*f);
-        o[off+i]=y}}
-    this.wi=(wi+N)&255;
-    if(mov){const t=this.hA;this.hA=this.hB;this.hB=t;this.dA[0]=this.dB[0];this.dA[1]=this.dB[1]}}}
+    if(!this.cur){this.cur=this.tg.slice();this.filt(this.cur,this.hA,this.dA);this.rev(this.hA,this.rA)}
+    else{const c=this.cur,g=this.tg,dt=N/sampleRate,a=Math.min(1,dt/Math.max(.02,this.at-(currentFrame+off)/sampleRate));const e0=g[0]-c[0],e1=g[1]-c[1],e2=g[2]-c[2];
+      if(Math.abs(e0)>.01||Math.abs(e1)>.01||Math.abs(e2)>.0005){c[0]+=e0*a;c[1]+=e1*a;c[2]+=e2*a;this.filt(c,this.hB,this.dB);this.rev(this.hB,this.rB);mov=true}}
+    const K=this.K,PH=this.PH,wi=this.wi,o0=out[0],o1=out[1]||out[0],D0=this.D[0],D1=this.D[1];
+    if(this.zr>=N+T+300){for(let i=0;i<N;i++){o0[off+i]=0;if(o1!==o0)o1[off+i]=0;const w=(wi+i)&255;D0[w]=0;D1[w]=0}}
+    else{const aL=this.rA[0],aR=this.rA[1];
+      if(this.w){const W=this.w,Bp=W.B,pa=this.pA,pb=this.pB;W.conv(Bp,Bp+pa*4,Bp+(pa+256)*4,Bp+pb*4,Bp+(pb+256)*4,Bp+1536*4,Bp+1664*4,N,T,mov?1:0);
+        const oL=W.oL,oR=W.oR;for(let i=0;i<N;i++){const w=(wi+i)&255;D0[w]=oL[i];D1[w]=oR[i]}}
+      else if(mov){const bL=this.rB[0],bR=this.rB[1];
+        for(let i=0;i<N;i++){let yaL=0,yaR=0,ybL=0,ybR=0;for(let t=0;t<T;t++){const x=XL[i+t];yaL+=aL[t]*x;yaR+=aR[t]*x;ybL+=bL[t]*x;ybR+=bR[t]*x}
+          const f=(i+1)/N,w=(wi+i)&255;D0[w]=yaL+(ybL-yaL)*f;D1[w]=yaR+(ybR-yaR)*f}}
+      else{for(let i=0;i<N;i++){let yL=0,yR=0;for(let t=0;t<T;t++){const x=XL[i+t];yL+=aL[t]*x;yR+=aR[t]*x}const w=(wi+i)&255;D0[w]=yL;D1[w]=yR}}
+      for(let ch=0;ch<2;ch++){const D=ch?D1:D0,o=ch?o1:o0,dA=this.dA[ch],dB=mov?this.dB[ch]:dA;
+        for(let i=0;i<N;i++){const w=(wi+i)&255;
+          const dd=dA+(dB-dA)*((i+1)/N)+4,di=dd|0,fp=(dd-di)*PH,p0=fp|0,f=fp-p0,k0=p0*8,k1=k0+8;let y=0;
+          for(let j=0;j<8;j++)y+=D[(w-di-j+3)&255]*(K[k0+j]+(K[k1+j]-K[k0+j])*f);
+          o[off+i]=y}}}
+    XL.copyWithin(0,N,N+T-1);this.wi=(wi+N)&255;
+    if(mov){let t=this.hA;this.hA=this.hB;this.hB=t;t=this.rA;this.rA=this.rB;this.rB=t;if(this.w){const p=this.pA;this.pA=this.pB;this.pB=p}this.dA[0]=this.dB[0];this.dA[1]=this.dB[1]}}}
 registerProcessor("${W_NAME}",KU);`;
+  // 24 nov (aprobado por Jorge tras probar ?kuw=2): núcleo de convolución del KU100 en WebAssembly SIMD, mismo cálculo 4 muestras a la vez (~3x más liviano). ?kuwasm=0 vuelve al cálculo en JavaScript.
+  const W_WASM=(()=>{try{if(/[?&]kuwasm=0/.test(location.search)||typeof WebAssembly==="undefined")return null;const s=atob("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"),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u}catch(e){return null}})();
   const W_OK=new WeakMap();
   function prepare(ctx){if(!ctx.audioWorklet||!data())return Promise.resolve(false);let p=W_OK.get(ctx);
     if(!p){const u=URL.createObjectURL(new Blob([W_CODE],{type:"text/javascript"}));p=ctx.audioWorklet.addModule(u).then(()=>{ctx._kuW=true;return true}).catch(e=>{console.warn("KU100 worklet",e);return false});W_OK.set(ctx,p)}return p}
   function voiceW(ctx,dest,opt){const d=data();if(!d||!ctx._kuW||d.sr!==ctx.sampleRate)return null;
     const input=ctx.createGain();input.channelCount=1;input.channelCountMode="explicit";input.channelInterpretation="speakers";
     const node=new AudioWorkletNode(ctx,W_NAME,{numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[2],channelCount:1,channelCountMode:"explicit",channelInterpretation:"speakers",
-      processorOptions:{H:d.H,dl:Float32Array.from(d.dl),AZ:d.AZ,EL:d.EL,n:d.n,T:Math.min(W_TAPS,d.n),kcal:KCAL,gmax:opt&&opt.gmax||4}});
-    const out=ctx.createGain();input.connect(node);node.connect(out);out.connect(dest);let last=null;
+      processorOptions:{H:d.H,dl:Float32Array.from(d.dl),AZ:d.AZ,EL:d.EL,n:d.n,T:Math.min(W_TAPS,d.n),kcal:KCAL,gmax:opt&&opt.gmax||4,wasm:W_WASM}});
+    const out=ctx.createGain();input.connect(node);node.connect(out);out.connect(dest);let last=null;node.port.onmessage=e=>{const m=e.data;if(m&&"w" in m){const s=(window.ORB_KU_ESTADO=window.ORB_KU_ESTADO||{wasm:0,js:0});s[m.w?"wasm":"js"]++}};
     function update(at,p){if(last&&Math.abs(p[0]-last[0])<.02&&Math.abs(p[1]-last[1])<.02&&Math.abs(p[2]-last[2])<.001)return;last=[p[0],p[1],p[2]];node.port.postMessage({p:last,at})}
     function stop(){try{node.port.postMessage({stop:true})}catch(e){}try{out.disconnect()}catch(e){}try{input.disconnect()}catch(e){}}
     return {input,out,update,stop,worklet:true,node}}
