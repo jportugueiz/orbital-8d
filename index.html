@@ -2456,13 +2456,25 @@ body.ldjx-open #play :is(.play-stroke-options svg,#pHeightGraph){height:clamp(22
 .ldx-workspace .ldx-live-compact .ldx-w-hardware>.ldx-w-pad-visible,
 .ldx-workspace .ldx-live-compact .ldx-w-hardware>.ldx-w-pad-load,
 .ldx-workspace .ldx-live-compact .ldx-w-pad-spacer{
-  grid-column:var(--live-pad-column)!important;grid-row:1!important;
+  grid-column:var(--live-pad-column)!important;grid-row:var(--live-pad-row,1)!important;
 }
 .ldx-workspace .ldx-live-compact .ldx-w-hardware>.ldx-pad.ldx-w-pad-visible{
   min-height:68px;aspect-ratio:auto;justify-content:flex-start;padding:16px 4px 26px;
 }
 .ldx-workspace .ldx-live-compact .ldx-w-pad-visible>span{font-size:10px}
 .ldx-workspace .ldx-live-compact .ldx-w-hardware>.ldx-w-pad-load{min-height:20px;font-size:9px;margin:0 2px 3px;padding:1px 2px}
+/* 24 nov: 3 filas en DJ solo sin tapar los decks: pads más bajos, mismo ancho */
+.ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-3filas{gap:4px;padding:3px}
+.ldx-workspace .ldx-live-compact:has(.ldx-w-3filas){padding-top:4px;padding-bottom:4px}
+.ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-3filas>.ldx-pad.ldx-w-pad-visible{min-height:42px;height:42px;padding:3px 4px 16px}
+.ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-3filas>.ldx-pad.ldx-w-pad-visible>span{font-size:12px;line-height:1.15;font-weight:600}
+.ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-3filas>.ldx-pad.ldx-w-pad-visible:before{display:none}
+.ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-3filas>.ldx-w-pad-load{min-height:14px;height:14px;font-size:9px;line-height:14px;margin:0 4px 3px;padding:0 2px;align-self:end}
+/* 24 nov (Jorge): los hot cues de cada deck 20 % más bajos para darles espacio a las 2 filas de pads */
+#ldjx .djp-deck .djp-hot{min-height:45px;height:45px}
+.ldx-workspace .ldx-live-compact:has(.ldx-w-3filas) .ldx-w-pad-bankrow{padding-bottom:2px}
+.ldx-workspace .ldx-live-compact:has(.ldx-w-3filas){position:relative}
+#ldjx[data-console-view="dj"] .ldx-live-compact:has(.ldx-w-3filas) .ldx-w-pad-toolbar .ldx-legacy-pad-bank{bottom:var(--pads3-bank-bottom,118px)!important}
 .ldx-workspace .ldx-live-show{margin-left:auto;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px}
 .ldx-workspace .ldx-live-show button{min-height:28px;padding:3px 6px;font-size:10px}
 .ldx-workspace .ldx-live-show p{flex-basis:100%;text-align:right;font-size:10px;margin:0;color:#c5e4e6}
@@ -28169,17 +28181,22 @@ function ensureRow(t){if(!K.ROW[t.eng])K.ROW[t.eng]={id:t.eng,n:t.name,r:.8,def:
 const quantVal=()=>S.quant||1/16;
 function padPress(t,r,atBar){const id=t.clips[r];if(S.delMode){delSound(t,r);return}if(!id){openPicker(t,r);return}
   const d=deck();d.quant=quantVal();if(!d.playing)d.start();const nb=atBar??d.nextBar();
-  // ya suena como capa en otra pista: tocarlo otra vez lo para
-  if(atBar==null){const lay=S.tracks.find(o=>o!==t&&o.layerOf===t.id&&o.clips[0]===id&&isLive(o));if(lay){trackStop(lay);syncPads();return}}
+  // 24 nov (Jorge: «un pad quedó sonando y no había cómo pararlo»): cada pad es un interruptor parejo. Se mira lo que VA a sonar
+  // (lo que está en cola manda sobre lo que suena): si ese pad va a sonar —en su pista o como capa— tocarlo lo apaga; si no, lo prende.
+  const fut=Q=>Q?(Q.pend?Q.pend.pad:(Q.cur?Q.cur.pad:null)):null,isShot=x=>K.PAD[x]?.kind==="shot";
+  const toggle=atBar==null&&!S.shift&&!isShot(id);
+  if(toggle){const lay=S.tracks.find(o=>o!==t&&o.layerOf===t.id&&o.clips[0]===id&&fut(K.deck&&K.deck.R[o.eng])===id);if(lay){trackStop(lay);syncPads();return}}
+  else if(atBar==null){const lay=S.tracks.find(o=>o!==t&&o.layerOf===t.id&&o.clips[0]===id&&isLive(o));if(lay){trackStop(lay);syncPads();return}}
   const R=ensureRow(t);const p=K.PAD[id];
-  // varios sonidos de la misma familia a la vez: si la pista ya suena con otro loop, el nuevo entra como capa en una pista libre (Shift: reemplaza)
-  if(atBar==null&&!S.shift&&R.cur&&R.cur.pad!==id&&K.PAD[R.cur.pad]?.kind!=="shot"&&!(R.pend&&R.pend.pad===null)&&!(R.pend&&R.pend.pad===id)){layer(t,r,id,R.cur.pad);return}
+  const f0=fut(R);
+  if(toggle&&f0&&f0!==id&&!isShot(f0)){layer(t,r,id,f0);return}
   const fresh=!R.cur&&!(R.pend&&R.pend.pad);
   if(fresh&&!voiceRoom())return;
   K.bufFor(id,d.bpm).catch(()=>{});R.sel=id;
   if(fresh&&!t.pinned&&!t.groupKey){place(t,id);t.ctl=S.movMode==="iah"?"iah":"dj"}
   R.mov=movOf(t);
-  if(p&&p.kind==="shot")R.pend={pad:id,bar:nb};
+  if(toggle){if(f0===id)R.pend=R.cur&&R.cur.pad===id?{pad:null,bar:nb}:null;else R.pend=R.cur&&R.cur.pad===id?null:{pad:id,bar:nb}}
+  else if(p&&p.kind==="shot")R.pend={pad:id,bar:nb};
   else if(atBar!=null)R.pend=R.cur&&R.cur.pad===id?null:{pad:id,bar:nb};// cambio de sesión: lo que ya suena igual sigue
   else if(R.pend&&R.pend.pad===id)R.pend=null;
   else if(R.cur&&R.cur.pad===id)R.pend={pad:null,bar:nb};
@@ -32426,10 +32443,16 @@ function refreshPads(){if(!padGrid||!padFamily)return;const fold=padGrid.closest
   mountInto(h,toggle);
  });
  padGrid.querySelectorAll(".ldx-w-pad-load").forEach(n=>n.remove());
+ // 24 nov (Jorge): en DJ solo, abajo se ven 2 filas grandes: la familia elegida y la siguiente del mismo banco
+ const compact3=!allFamilies&&!padMatrix&&padRack.classList.contains("ldx-live-compact");let fams3=[padFamily];
+ if(compact3){const b0=U.S.bank*per,inBank=U.S.tracks.slice(b0,b0+per).filter(t=>t.clips&&t.clips.some(Boolean)).map(t=>t.id);const k=inBank.indexOf(padFamily);
+  if(k>=0){const s=Math.max(0,Math.min(k,inBank.length-2));fams3=inBank.slice(s,s+2);if(!fams3.includes(padFamily))fams3=[padFamily]}}
+ padGrid.classList.toggle("ldx-w-3filas",compact3&&fams3.length>1);
  for(const p of padGrid.querySelectorAll(".ldx-pad")){
   const r=+p.dataset.r,channel=U.S.tracks.findIndex(t=>t.id===p.dataset.t),track=U.S.tracks[channel];
   const pos=positions?.get(p.dataset.t);
-  const shown=allFamilies?!!pos?.open&&Math.floor(r/5)===padPage:p.dataset.t===padFamily&&Math.floor(r/8)===padPage;
+  const shown=allFamilies?!!pos?.open&&Math.floor(r/5)===padPage:(compact3?fams3.includes(p.dataset.t):p.dataset.t===padFamily)&&Math.floor(r/8)===padPage;
+  const fila=compact3?Math.max(1,fams3.indexOf(p.dataset.t)+1):1;p.style.setProperty("--live-pad-row",fila);
   const slot=allFamilies?channel%per:r%8;
   const name=p.querySelector("span")?.textContent||"Vacío";
   p.classList.toggle("ldx-w-pad-visible",shown);p.dataset.hardwareNumber=String(allFamilies?slot+1:r+1);
@@ -32447,12 +32470,13 @@ function refreshPads(){if(!padGrid||!padFamily)return;const fold=padGrid.closest
    const edit=button("Elegir sonido",()=>U.openPadPicker(p.dataset.t,r),"ldx-w-pad-load");
    edit.setAttribute("aria-label","Elegir sonido de "+family+" · Pad "+(r+1));
    edit.style.gridColumn=String(r%4+1);edit.style.gridRow=String(Math.floor((r%8)/4)+2);
-   edit.style.setProperty("--live-pad-column",r%8+1);
+   edit.style.setProperty("--live-pad-column",r%8+1);edit.style.setProperty("--live-pad-row",fila);
    edit.style.setProperty("--live-pad-column-small",r%4+1);
    edit.style.setProperty("--live-pad-row-small",Math.floor((r%8)/4)+1);
    padGrid.append(edit);
   }
  }
+ if(compact3)requestAnimationFrame(()=>{const l=padRack.querySelector(".ldx-w-pad-bank");if(l&&l.offsetParent){const r=l.getBoundingClientRect();document.documentElement.style.setProperty("--pads3-bank-bottom",Math.round(innerHeight-r.top-r.height/2-11)+"px")}});
  padGrid.querySelectorAll(".ldx-w-pad-spacer").forEach(n=>n.remove());if(padPage&&!padMatrix&&!padRack.classList.contains("ldx-live-compact"))for(let i=2;i<8;i++){const n=E("span",{class:"ldx-w-pad-spacer","aria-hidden":"true"},"—");n.style.gridColumn=String(i%4+1);n.style.gridRow=String(Math.floor(i/4)+2);padGrid.append(n)}
  updatePadActivity();}
 function positionLivePads(){
