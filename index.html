@@ -2497,7 +2497,9 @@ body.ldjx-open #play :is(.play-stroke-options svg,#pHeightGraph){height:clamp(22
 .ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-pads2>.ldx-pad.ldx-w-pad-visible{padding-right:calc(33% + 6px)!important}
 .ldx-workspace .ldx-live-compact.p2-abierto{position:fixed;bottom:auto;z-index:60;border:1px solid #6c8794;border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.75),0 -6px 24px rgba(0,0,0,.5),inset 0 1px 0 #ffffff18;
   background:linear-gradient(180deg,#1a242c,#0e151b);padding:6px 12px 10px}
-.ldx-workspace .ldx-live-compact.p2-abierto{cursor:grab;touch-action:none;user-select:none}.ldx-workspace .ldx-live-compact.p2-abierto.p2-arrastrando{cursor:grabbing;box-shadow:0 10px 24px rgba(0,0,0,.6)}.ldx-workspace .ldx-live-compact.p2-arrastrando .ldx-pad{transition:none!important}.ldx-workspace .ldx-live-compact.p2-abierto .ldx-pad,.ldx-workspace .ldx-live-compact.p2-abierto button{cursor:pointer}
+.ldx-workspace .ldx-live-compact.p2-abierto,.ldx-workspace .ldx-live-compact.p2-abierto *{touch-action:none}/* 24 nov: con el dedo, ningún área interior (centro, bordes) se queda con el gesto: todo lo que no es pad mueve el teclado */
+.ldx-workspace .ldx-live-compact.p2-abierto :is(.ldx-gridscroll,.ldx-launch,.ldx-fold,.ldx-grid){overflow:visible!important}
+.ldx-workspace .ldx-live-compact.p2-abierto{cursor:grab;user-select:none}.ldx-workspace .ldx-live-compact.p2-abierto.p2-arrastrando{cursor:grabbing;box-shadow:0 10px 24px rgba(0,0,0,.6)}.ldx-workspace .ldx-live-compact.p2-arrastrando .ldx-pad{transition:none!important}.ldx-workspace .ldx-live-compact.p2-abierto .ldx-pad,.ldx-workspace .ldx-live-compact.p2-abierto button{cursor:pointer}
 .ldx-workspace .ldx-live-compact.p2-abierto .ldx-w-pad-bankrow{position:relative;padding:8px 4px 6px!important}
 .ldx-workspace .ldx-live-compact.p2-abierto .ldx-w-pad-bankrow:before{content:"";position:absolute;left:50%;top:1px;width:64px;height:5px;margin-left:-32px;border-radius:3px;background:#8aa4b0;opacity:.7}
 .ldx-workspace .ldx-live-compact.p2-abierto .ldx-w-pad-bankrow.p2-arrastrando{cursor:grabbing}
