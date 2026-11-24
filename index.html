@@ -2491,7 +2491,7 @@ body.ldjx-open #play :is(.play-stroke-options svg,#pHeightGraph){height:clamp(22
 .ldx-workspace .ldx-live-compact .ldx-p2-toggle{margin-left:12px;height:22px;min-height:0;padding:0 10px;font-size:11px}
 .ldx-workspace .ldx-live-compact.p2-abierto{position:fixed;bottom:auto;z-index:60;border:1px solid #6c8794;border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.75),0 -6px 24px rgba(0,0,0,.5),inset 0 1px 0 #ffffff18;
   background:linear-gradient(180deg,#1a242c,#0e151b);padding:6px 12px 10px}
-.ldx-workspace .ldx-live-compact.p2-abierto{cursor:grab;touch-action:none;user-select:none}.ldx-workspace .ldx-live-compact.p2-abierto.p2-arrastrando{cursor:grabbing}.ldx-workspace .ldx-live-compact.p2-abierto .ldx-pad,.ldx-workspace .ldx-live-compact.p2-abierto button{cursor:pointer}
+.ldx-workspace .ldx-live-compact.p2-abierto{cursor:grab;touch-action:none;user-select:none}.ldx-workspace .ldx-live-compact.p2-abierto.p2-arrastrando{cursor:grabbing;box-shadow:0 10px 24px rgba(0,0,0,.6)}.ldx-workspace .ldx-live-compact.p2-arrastrando .ldx-pad{transition:none!important}.ldx-workspace .ldx-live-compact.p2-abierto .ldx-pad,.ldx-workspace .ldx-live-compact.p2-abierto button{cursor:pointer}
 .ldx-workspace .ldx-live-compact.p2-abierto .ldx-w-pad-bankrow{position:relative;padding:8px 4px 6px!important}
 .ldx-workspace .ldx-live-compact.p2-abierto .ldx-w-pad-bankrow:before{content:"";position:absolute;left:50%;top:1px;width:64px;height:5px;margin-left:-32px;border-radius:3px;background:#8aa4b0;opacity:.7}
 .ldx-workspace .ldx-live-compact.p2-abierto .ldx-w-pad-bankrow.p2-arrastrando{cursor:grabbing}
@@ -32482,8 +32482,12 @@ function refreshPads(){if(!padGrid||!padFamily)return;const fold=padGrid.closest
   // teclado de pads flotante: siempre encima de la consola; se arrastra hacia arriba o abajo desde su barra (dedo o mouse)
   // 24 nov (Jorge): todo lo que no es un pad o un botón (barra, centro y bordes) sirve para subir o bajar el teclado con el dedo o el mouse
   padRack.addEventListener("pointerdown",e=>{if(!padRack.classList.contains("p2-abierto")||e.target.closest("button,select,input,label,.ldx-pad"))return;e.preventDefault();const y0=e.clientY,t0=padRack.getBoundingClientRect().top;padRack.setPointerCapture(e.pointerId);padRack.classList.add("p2-arrastrando");
-   const mv=ev=>{padRack.style.top=Math.max(56,Math.min(padsTopMax(),t0+ev.clientY-y0))+"px"};
-   const up=()=>{padRack.removeEventListener("pointermove",mv);padRack.removeEventListener("pointerup",up);padRack.removeEventListener("pointercancel",up);padRack.classList.remove("p2-arrastrando");try{localStorage.setItem("orb_pads_top",parseInt(padRack.style.top))}catch(e){}};
+   // 24 nov: el arrastre mueve la capa con transform (lo hace la tarjeta de video, sin recalcular la pantalla): fluido aunque la consola esté ocupada
+   const lo=56,hi=padsTopMax();let dy=0,raf=0;padRack.style.willChange="transform";
+   const pinta=()=>{raf=0;padRack.style.transform="translate3d(0,"+dy+"px,0)"};
+   const mv=ev=>{dy=Math.max(lo,Math.min(hi,t0+ev.clientY-y0))-t0;if(!raf)raf=requestAnimationFrame(pinta)};
+   const up=()=>{padRack.removeEventListener("pointermove",mv);padRack.removeEventListener("pointerup",up);padRack.removeEventListener("pointercancel",up);if(raf)cancelAnimationFrame(raf);
+    padRack.style.top=Math.round(t0+dy)+"px";padRack.style.transform="";padRack.style.willChange="";padRack.classList.remove("p2-arrastrando");try{localStorage.setItem("orb_pads_top",Math.round(t0+dy))}catch(e){}};
    padRack.addEventListener("pointermove",mv);padRack.addEventListener("pointerup",up);padRack.addEventListener("pointercancel",up)})}
   t.textContent=p2open?"▾ Solo 2 filas":"▴ 4 filas";t.hidden=fams3.length<3}
  for(const p of padGrid.querySelectorAll(".ldx-pad")){
@@ -32516,7 +32520,7 @@ function refreshPads(){if(!padGrid||!padFamily)return;const fold=padGrid.closest
   }
  }
  // los dos bloques quedan centrados bajo el deck A y el deck B, anchos como cada deck (espacio libre al medio y a los bordes para tocar y mover)
- if(compact3)requestAnimationFrame(()=>{const ds=[...document.querySelectorAll("#ldjx .ldx-deck")].filter(e=>e.offsetParent);const home=padRack.parentElement?.getBoundingClientRect();
+ if(compact3)requestAnimationFrame(()=>{if(padRack.classList.contains("p2-arrastrando"))return;/* mientras lo arrastras no se recoloca: antes «peleaba» con el dedo */const ds=[...document.querySelectorAll("#ldjx .ldx-deck")].filter(e=>e.offsetParent);const home=padRack.parentElement?.getBoundingClientRect();
    if(home&&home.width>0){padRack.style.left=Math.round(home.left)+"px";padRack.style.width=Math.round(home.width)+"px"}
    const g=padGrid.getBoundingClientRect();
    if(ds.length>=2&&g.width>0){const gap=12,ca=ds[0].getBoundingClientRect(),cb=ds[1].getBoundingClientRect(),dw=Math.min(ca.width,cb.width),w=Math.max(80,Math.floor((dw*.92-3*gap)/4)),bw=4*w+3*gap,
