@@ -2473,7 +2473,7 @@ body.ldjx-open #play :is(.play-stroke-options svg,#pHeightGraph){height:clamp(22
 /* 24 nov (Jorge): pads tipo controlador, con materialidad: goma mate iluminada desde abajo con el color de la familia */
 .ldx-workspace .ldx-live-compact .ldx-grid.ldx-w-hardware.ldx-w-pads2{grid-template-columns:var(--p2-l,1fr) repeat(4,var(--p2-w,74px)) var(--p2-m,1fr) repeat(4,var(--p2-w,74px)) minmax(0,1fr)!important;column-gap:12px;row-gap:10px;padding:4px 0 6px;max-width:none;margin:0;background:none!important}
 .ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-pads2>.ldx-w-pad-visible,.ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-pads2>.ldx-w-pad-load{grid-column:var(--p2-col)!important;grid-row:var(--p2-row)!important}
-.ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-pads2>.ldx-pad.ldx-w-pad-visible{height:62px;min-height:62px;padding:4px 22px 4px 10px;border-radius:9px;justify-content:center;align-items:center;
+.ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-pads2>.ldx-pad.ldx-w-pad-visible{height:62px;min-height:62px;padding:4px 10px;border-radius:9px;justify-content:center;align-items:center;
   border:1px solid #050709;color:color-mix(in srgb,var(--c) 45%,#e8eef2);text-shadow:0 1px 0 #000a;
   background:radial-gradient(ellipse 85% 70% at 50% 115%,color-mix(in srgb,var(--c) 42%,transparent),transparent 72%),radial-gradient(rgba(255,255,255,.035) 1px,transparent 1.2px) 0 0/3px 3px,linear-gradient(180deg,#2f353c 0%,#1d2227 48%,#14171b 100%);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.13),inset 0 -3px 4px rgba(0,0,0,.55),inset 0 0 0 1px color-mix(in srgb,var(--c) 22%,transparent),0 2px 0 #030405,0 4px 7px rgba(0,0,0,.6);transition:transform .05s,box-shadow .05s,background .12s}
@@ -2488,7 +2488,13 @@ body.ldjx-open #play :is(.play-stroke-options svg,#pHeightGraph){height:clamp(22
 .ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-pads2>.ldx-w-pad-load{justify-self:end;align-self:start;width:18px;height:18px;min-height:18px;margin:3px 4px 0 0;padding:0;font-size:11px;line-height:18px;border-radius:4px;z-index:2;background:#0b0f13aa;border:1px solid #ffffff22;color:#cfe}
 .ldx-workspace .ldx-live-compact:has(.ldx-w-pads2) .ldx-legacy-pad-bank,.ldx-workspace .ldx-live-compact:has(.ldx-w-pads2) .ldx-w-pad-spacer{display:none!important}
 .ldx-workspace .ldx-live-compact:has(.ldx-w-pads2){padding-top:4px;padding-bottom:4px;max-height:none;overflow:visible}
-.ldx-workspace .ldx-live-compact .ldx-p2-toggle{margin-left:12px;height:22px;min-height:0;padding:0 10px;font-size:11px}
+.ldx-workspace .ldx-live-compact .ldx-p2-toggle{margin-left:12px;height:30px;min-height:0;padding:0 14px;font-size:12px}
+/* 24 nov (Jorge): el tercio derecho de cada pad es la zona para elegir su sonido, con un lápiz grande y separada por una línea: el resto del pad toca */
+.ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-pads2>.ldx-w-pad-load{justify-self:end;align-self:stretch;width:33%;height:auto;min-height:0;margin:0;padding:0;border:0;border-left:1px solid #ffffff24;border-radius:0 9px 9px 0;
+  background:linear-gradient(180deg,#ffffff0d,#00000033);color:#d9e6ea;font-size:24px;line-height:1;display:flex!important;align-items:center;justify-content:center;z-index:2;box-shadow:inset 1px 0 0 #0006}
+.ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-pads2>.ldx-w-pad-load:hover{background:linear-gradient(180deg,#ffffff1f,#0000002a);color:#fff}
+.ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-pads2>.ldx-w-pad-load:active{background:#ffffff26}
+.ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-pads2>.ldx-pad.ldx-w-pad-visible{padding-right:calc(33% + 6px)!important}
 .ldx-workspace .ldx-live-compact.p2-abierto{position:fixed;bottom:auto;z-index:60;border:1px solid #6c8794;border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.75),0 -6px 24px rgba(0,0,0,.5),inset 0 1px 0 #ffffff18;
   background:linear-gradient(180deg,#1a242c,#0e151b);padding:6px 12px 10px}
 .ldx-workspace .ldx-live-compact.p2-abierto{cursor:grab;touch-action:none;user-select:none}.ldx-workspace .ldx-live-compact.p2-abierto.p2-arrastrando{cursor:grabbing;box-shadow:0 10px 24px rgba(0,0,0,.6)}.ldx-workspace .ldx-live-compact.p2-arrastrando .ldx-pad{transition:none!important}.ldx-workspace .ldx-live-compact.p2-abierto .ldx-pad,.ldx-workspace .ldx-live-compact.p2-abierto button{cursor:pointer}
@@ -32479,15 +32485,17 @@ function refreshPads(){if(!padGrid||!padFamily)return;const fold=padGrid.closest
  padGrid.classList.remove("ldx-w-3filas");padGrid.classList.toggle("ldx-w-pads2",compact3);padRack.classList.toggle("p2-abierto",compact3);if(!compact3){padRack.style.left="";padRack.style.width="";padRack.style.top=""}
  if(compact3){let t=padRack.querySelector(".ldx-p2-toggle");if(!t){t=button("",()=>{padRack._p2open=!(padRack._p2open!==false);refreshPads()},"ldx-p2-toggle");
   const row=padRack.querySelector(".ldx-w-pad-bankrow");row?.append(t);
+
   // teclado de pads flotante: siempre encima de la consola; se arrastra hacia arriba o abajo desde su barra (dedo o mouse)
   // 24 nov (Jorge): todo lo que no es un pad o un botón (barra, centro y bordes) sirve para subir o bajar el teclado con el dedo o el mouse
   padRack.addEventListener("pointerdown",e=>{if(!padRack.classList.contains("p2-abierto")||e.target.closest("button,select,input,label,.ldx-pad"))return;e.preventDefault();const y0=e.clientY,t0=padRack.getBoundingClientRect().top;padRack.setPointerCapture(e.pointerId);padRack.classList.add("p2-arrastrando");
    // 24 nov: el arrastre mueve la capa con transform (lo hace la tarjeta de video, sin recalcular la pantalla): fluido aunque la consola esté ocupada
-   const lo=56,hi=padsTopMax();let dy=0,raf=0;padRack.style.willChange="transform";
-   const pinta=()=>{raf=0;padRack.style.transform="translate3d(0,"+dy+"px,0)"};
+   // (sin transform: con transform la barra FAMILIA/Nivel, que vive fija en la cabecera, se metía dentro del teclado)
+   const lo=56,hi=padsTopMax();let dy=0,raf=0;
+   const pinta=()=>{raf=0;padRack.style.top=Math.round(t0+dy)+"px"};
    const mv=ev=>{dy=Math.max(lo,Math.min(hi,t0+ev.clientY-y0))-t0;if(!raf)raf=requestAnimationFrame(pinta)};
    const up=()=>{padRack.removeEventListener("pointermove",mv);padRack.removeEventListener("pointerup",up);padRack.removeEventListener("pointercancel",up);if(raf)cancelAnimationFrame(raf);
-    padRack.style.top=Math.round(t0+dy)+"px";padRack.style.transform="";padRack.style.willChange="";padRack.classList.remove("p2-arrastrando");try{localStorage.setItem("orb_pads_top",Math.round(t0+dy))}catch(e){}};
+    padRack.style.top=Math.round(t0+dy)+"px";padRack.classList.remove("p2-arrastrando");try{localStorage.setItem("orb_pads_top",Math.round(t0+dy))}catch(e){}};
    padRack.addEventListener("pointermove",mv);padRack.addEventListener("pointerup",up);padRack.addEventListener("pointercancel",up)})}
   t.textContent=p2open?"▾ Solo 2 filas":"▴ 4 filas";t.hidden=fams3.length<3}
  for(const p of padGrid.querySelectorAll(".ldx-pad")){
