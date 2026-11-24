@@ -2097,7 +2097,7 @@ body.ldjx-open #play :is(.play-stroke-options svg,#pHeightGraph){height:clamp(22
 .ldjx .ldx-song-title{flex:1;min-width:100px;border:0;border-bottom:1px solid #355161;background:transparent;color:#e9f9fc;padding:7px;font:600 15px UI,system-ui}
 .ldjx .ldx-song-actions select{min-width:130px;max-width:100%;padding:8px;background:#0d171f;color:#d2e6ef;border:1px solid #3c525e;border-radius:7px}
 .ldjx .ldx-song-transport{padding:10px 0;border-top:1px solid #ffffff12;border-bottom:1px solid #ffffff12}
-.ldjx .ldx-song-play{background:#1da9b0;border-color:#49e9ef;color:#04191c;min-width:90px;font-weight:800}
+.ldjx .ldx-song-play{background:#1da9b0;border-color:#49e9ef;color:#04191c;min-width:108px;font-weight:800}
 .ldjx .ldx-song-play.prep{background:#26313a!important;border-color:#3b4a55!important;color:#9fb0bb!important;box-shadow:none!important}
 .ldjx .ldx-song-play.lista{background:#2fd47a!important;border-color:#7dffb5!important;color:#032112!important;box-shadow:0 0 14px #3fe08a88!important}
 .ldjx .ldx-song-time{font:600 12px ui-monospace,monospace;color:#abceda}
@@ -3719,6 +3719,7 @@ body:is([data-orbital-product=frequency],[data-orbital-product=live],[data-orbit
 .djp-info{font:12px system-ui,sans-serif;color:#9fb9c4;flex:1 1 140px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .djp-song{display:flex;flex-wrap:wrap;align-items:center;gap:5px;padding:6px 10px;margin:4px 0;border:1px solid #24323c;border-radius:10px;background:rgba(9,17,23,.75)}
 .djp-song[hidden]{display:none}
+.djp-song.djp-vacio{opacity:.35;pointer-events:none;filter:saturate(.3)}
 .djp-song .djp-hot{min-width:34px;min-height:30px}
 /* biblioteca y MIDI */
 .djp-lib{position:fixed;inset:0;z-index:2147483000;background:rgba(2,6,9,.66);display:flex;align-items:center;justify-content:center;padding:14px}
@@ -33015,7 +33016,7 @@ const DJ_PRO=(()=>{
     if(tl&&!S.el)mountSong(tl);
     if(S.el){
       const s=song(),dj=globalThis.ORBITAL_DJ_WORKSPACE?.viewMode==="dj";
-      const show=!!s?.hasTracks&&!dj;if(S.el.hidden===show)S.el.hidden=!show;
+      const show=!dj;if(S.el.hidden===show)S.el.hidden=!show;S.el.classList.toggle("djp-vacio",!s?.hasTracks);/* 24 nov (Jorge): la fila de CUES/LOOP queda siempre en su lugar (apagada sin canción) para que al cargar pistas no salte la pantalla ni cambie el círculo */
       if(show)songLoad();
     }
     for(const d of P.decks)if(d.pro&&d.speed!==d.pro.speed){const f=d.pro.speed/d.speed;d.pro.hot=d.pro.hot.map(v=>v==null?null:v*f);d.pro.speed=d.speed}
