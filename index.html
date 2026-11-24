@@ -2470,6 +2470,30 @@ body.ldjx-open #play :is(.play-stroke-options svg,#pHeightGraph){height:clamp(22
 .ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-3filas>.ldx-pad.ldx-w-pad-visible>span{font-size:12px;line-height:1.15;font-weight:600}
 .ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-3filas>.ldx-pad.ldx-w-pad-visible:before{display:none}
 .ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-3filas>.ldx-w-pad-load{min-height:14px;height:14px;font-size:9px;line-height:14px;margin:0 4px 3px;padding:0 2px;align-self:end}
+/* 24 nov (Jorge): pads tipo controlador, con materialidad: goma mate iluminada desde abajo con el color de la familia */
+.ldx-workspace .ldx-live-compact .ldx-grid.ldx-w-hardware.ldx-w-pads2{grid-template-columns:var(--p2-l,1fr) repeat(4,var(--p2-w,74px)) var(--p2-m,1fr) repeat(4,var(--p2-w,74px)) minmax(0,1fr)!important;column-gap:12px;row-gap:10px;padding:4px 0 6px;max-width:none;margin:0;background:none!important}
+.ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-pads2>.ldx-w-pad-visible,.ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-pads2>.ldx-w-pad-load{grid-column:var(--p2-col)!important;grid-row:var(--p2-row)!important}
+.ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-pads2>.ldx-pad.ldx-w-pad-visible{height:62px;min-height:62px;padding:4px 22px 4px 10px;border-radius:9px;justify-content:center;align-items:center;
+  border:1px solid #050709;color:color-mix(in srgb,var(--c) 45%,#e8eef2);text-shadow:0 1px 0 #000a;
+  background:radial-gradient(ellipse 85% 70% at 50% 115%,color-mix(in srgb,var(--c) 42%,transparent),transparent 72%),radial-gradient(rgba(255,255,255,.035) 1px,transparent 1.2px) 0 0/3px 3px,linear-gradient(180deg,#2f353c 0%,#1d2227 48%,#14171b 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.13),inset 0 -3px 4px rgba(0,0,0,.55),inset 0 0 0 1px color-mix(in srgb,var(--c) 22%,transparent),0 2px 0 #030405,0 4px 7px rgba(0,0,0,.6);transition:transform .05s,box-shadow .05s,background .12s}
+.ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-pads2>.ldx-pad.ldx-w-pad-visible:not(.full){background:radial-gradient(rgba(255,255,255,.03) 1px,transparent 1.2px) 0 0/3px 3px,linear-gradient(180deg,#262b31,#16191d);color:#6c7882}
+.ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-pads2>.ldx-pad.ldx-w-pad-visible:before,.ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-pads2>.ldx-pad.ldx-w-pad-visible:after{display:none}
+.ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-pads2>.ldx-pad.ldx-w-pad-visible>span{font:700 13px/1.15 system-ui,sans-serif;letter-spacing:.02em;text-align:center}
+.ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-pads2>.ldx-pad.ldx-w-pad-visible:active{transform:translateY(2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 -1px 2px rgba(0,0,0,.5),0 0 0 #030405,0 1px 3px rgba(0,0,0,.6)}
+.ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-pads2>.ldx-pad.ldx-w-pad-visible.play{color:#081014;text-shadow:0 1px 0 #fff6;
+  background:radial-gradient(ellipse 90% 80% at 50% 45%,color-mix(in srgb,var(--c) 35%,#fff) 0%,var(--c) 55%,color-mix(in srgb,var(--c) 70%,#000) 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -3px 5px color-mix(in srgb,var(--c) 50%,#000),0 0 16px color-mix(in srgb,var(--c) 70%,transparent),0 2px 0 #030405,0 4px 8px rgba(0,0,0,.6)}
+.ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-pads2>.ldx-pad.ldx-w-pad-visible.queue{background:radial-gradient(ellipse 90% 80% at 50% 45%,color-mix(in srgb,var(--c) 55%,#222),color-mix(in srgb,var(--c) 35%,#000));opacity:var(--blink)}
+.ldx-workspace .ldx-live-compact .ldx-w-hardware.ldx-w-pads2>.ldx-w-pad-load{justify-self:end;align-self:start;width:18px;height:18px;min-height:18px;margin:3px 4px 0 0;padding:0;font-size:11px;line-height:18px;border-radius:4px;z-index:2;background:#0b0f13aa;border:1px solid #ffffff22;color:#cfe}
+.ldx-workspace .ldx-live-compact:has(.ldx-w-pads2) .ldx-legacy-pad-bank,.ldx-workspace .ldx-live-compact:has(.ldx-w-pads2) .ldx-w-pad-spacer{display:none!important}
+.ldx-workspace .ldx-live-compact:has(.ldx-w-pads2){padding-top:4px;padding-bottom:4px;max-height:none;overflow:visible}
+.ldx-workspace .ldx-live-compact .ldx-p2-toggle{margin-left:12px;height:22px;min-height:0;padding:0 10px;font-size:11px}
+.ldx-workspace .ldx-live-compact.p2-abierto{position:fixed;bottom:auto;z-index:60;border:1px solid #6c8794;border-radius:14px;box-shadow:0 18px 40px rgba(0,0,0,.75),0 -6px 24px rgba(0,0,0,.5),inset 0 1px 0 #ffffff18;
+  background:linear-gradient(180deg,#1a242c,#0e151b);padding:6px 12px 10px}
+.ldx-workspace .ldx-live-compact.p2-abierto .ldx-w-pad-bankrow{cursor:grab;touch-action:none;user-select:none;position:relative;padding:8px 4px 6px!important}
+.ldx-workspace .ldx-live-compact.p2-abierto .ldx-w-pad-bankrow:before{content:"";position:absolute;left:50%;top:1px;width:64px;height:5px;margin-left:-32px;border-radius:3px;background:#8aa4b0;opacity:.7}
+.ldx-workspace .ldx-live-compact.p2-abierto .ldx-w-pad-bankrow.p2-arrastrando{cursor:grabbing}
 /* 24 nov (Jorge): los hot cues de cada deck 20 % más bajos para darles espacio a las 2 filas de pads */
 #ldjx .djp-deck .djp-hot{min-height:45px;height:45px}
 .ldx-workspace .ldx-live-compact:has(.ldx-w-3filas) .ldx-w-pad-bankrow{padding-bottom:2px}
@@ -32443,16 +32467,27 @@ function refreshPads(){if(!padGrid||!padFamily)return;const fold=padGrid.closest
   mountInto(h,toggle);
  });
  padGrid.querySelectorAll(".ldx-w-pad-load").forEach(n=>n.remove());
- // 24 nov (Jorge): en DJ solo, abajo se ven 2 filas grandes: la familia elegida y la siguiente del mismo banco
+ // 24 nov (Jorge): pads de DJ solo como un controlador: 2 bloques de 4 columnas (izquierda y derecha). A la vista 2 filas (2 familias);
+ // «Desplegar» suma 2 filas más (2 familias más) hacia arriba, sin tapar la parte de arriba de los decks.
  const compact3=!allFamilies&&!padMatrix&&padRack.classList.contains("ldx-live-compact");let fams3=[padFamily];
  if(compact3){const b0=U.S.bank*per,inBank=U.S.tracks.slice(b0,b0+per).filter(t=>t.clips&&t.clips.some(Boolean)).map(t=>t.id);const k=inBank.indexOf(padFamily);
-  if(k>=0){const s=Math.max(0,Math.min(k,inBank.length-2));fams3=inBank.slice(s,s+2);if(!fams3.includes(padFamily))fams3=[padFamily]}}
- padGrid.classList.toggle("ldx-w-3filas",compact3&&fams3.length>1);
+  if(k>=0){const s=Math.max(0,Math.min(k,inBank.length-4));fams3=inBank.slice(s,s+4);if(!fams3.includes(padFamily))fams3=[padFamily]}}
+ const p2open=!!padRack._p2open;
+ padGrid.classList.remove("ldx-w-3filas");padGrid.classList.toggle("ldx-w-pads2",compact3);padRack.classList.toggle("p2-abierto",compact3);if(!compact3){padRack.style.left="";padRack.style.width="";padRack.style.top=""}
+ if(compact3){let t=padRack.querySelector(".ldx-p2-toggle");if(!t){t=button("",()=>{padRack._p2open=!padRack._p2open;refreshPads()},"ldx-p2-toggle");
+  const row=padRack.querySelector(".ldx-w-pad-bankrow");row?.append(t);
+  // teclado de pads flotante: siempre encima de la consola; se arrastra hacia arriba o abajo desde su barra (dedo o mouse)
+  row?.addEventListener("pointerdown",e=>{if(e.target.closest("button"))return;e.preventDefault();const y0=e.clientY,t0=padRack.getBoundingClientRect().top;row.setPointerCapture(e.pointerId);row.classList.add("p2-arrastrando");
+   const mv=ev=>{const top=Math.max(56,Math.min(innerHeight-60,t0+ev.clientY-y0));padRack.style.top=top+"px"};
+   const up=()=>{row.removeEventListener("pointermove",mv);row.removeEventListener("pointerup",up);row.removeEventListener("pointercancel",up);row.classList.remove("p2-arrastrando");try{localStorage.setItem("orb_pads_top",parseInt(padRack.style.top))}catch(e){}};
+   row.addEventListener("pointermove",mv);row.addEventListener("pointerup",up);row.addEventListener("pointercancel",up)})}
+  t.textContent=p2open?"▾ Recoger pads":"▴ Desplegar 2 filas más";t.hidden=fams3.length<3}
  for(const p of padGrid.querySelectorAll(".ldx-pad")){
   const r=+p.dataset.r,channel=U.S.tracks.findIndex(t=>t.id===p.dataset.t),track=U.S.tracks[channel];
   const pos=positions?.get(p.dataset.t);
-  const shown=allFamilies?!!pos?.open&&Math.floor(r/5)===padPage:(compact3?fams3.includes(p.dataset.t):p.dataset.t===padFamily)&&Math.floor(r/8)===padPage;
-  const fila=compact3?Math.max(1,fams3.indexOf(p.dataset.t)+1):1;p.style.setProperty("--live-pad-row",fila);
+  const fi=compact3?fams3.indexOf(p.dataset.t):-1,band=fi<0?0:Math.floor(fi/2);
+  const shown=allFamilies?!!pos?.open&&Math.floor(r/5)===padPage:compact3?(fi>=0&&r<8&&(band===0||p2open)):(p.dataset.t===padFamily&&Math.floor(r/8)===padPage);
+  const fila=1;if(compact3&&fi>=0){p.style.setProperty("--p2-col",(fi%2)*5+r%4+2);p.style.setProperty("--p2-row",(p2open?(1-band)*2:band*2)+Math.floor(r/4)+1)}
   const slot=allFamilies?channel%per:r%8;
   const name=p.querySelector("span")?.textContent||"Vacío";
   p.classList.toggle("ldx-w-pad-visible",shown);p.dataset.hardwareNumber=String(allFamilies?slot+1:r+1);
@@ -32470,12 +32505,21 @@ function refreshPads(){if(!padGrid||!padFamily)return;const fold=padGrid.closest
    const edit=button("Elegir sonido",()=>U.openPadPicker(p.dataset.t,r),"ldx-w-pad-load");
    edit.setAttribute("aria-label","Elegir sonido de "+family+" · Pad "+(r+1));
    edit.style.gridColumn=String(r%4+1);edit.style.gridRow=String(Math.floor((r%8)/4)+2);
-   edit.style.setProperty("--live-pad-column",r%8+1);edit.style.setProperty("--live-pad-row",fila);
+   edit.style.setProperty("--live-pad-column",r%8+1);edit.style.setProperty("--live-pad-row",fila);if(compact3){edit.style.setProperty("--p2-col",p.style.getPropertyValue("--p2-col"));edit.style.setProperty("--p2-row",p.style.getPropertyValue("--p2-row"));edit.textContent="✎";edit.title="Elegir sonido"}
    edit.style.setProperty("--live-pad-column-small",r%4+1);
    edit.style.setProperty("--live-pad-row-small",Math.floor((r%8)/4)+1);
    padGrid.append(edit);
   }
  }
+ // los dos bloques quedan centrados bajo el deck A y el deck B, anchos como cada deck (espacio libre al medio y a los bordes para tocar y mover)
+ if(compact3)requestAnimationFrame(()=>{const ds=[...document.querySelectorAll("#ldjx .ldx-deck")].filter(e=>e.offsetParent);const home=padRack.parentElement?.getBoundingClientRect();
+   if(home&&home.width>0){padRack.style.left=Math.round(home.left)+"px";padRack.style.width=Math.round(home.width)+"px"}
+   const g=padGrid.getBoundingClientRect();
+   if(ds.length>=2&&g.width>0){const gap=12,ca=ds[0].getBoundingClientRect(),cb=ds[1].getBoundingClientRect(),dw=Math.min(ca.width,cb.width),w=Math.max(80,Math.floor((dw*.92-3*gap)/4)),bw=4*w+3*gap,
+     a=(ca.left+ca.width/2)-g.left-bw/2,b=(cb.left+cb.width/2)-(ca.left+ca.width/2)-bw;
+     if(a>gap&&b>2*gap){padGrid.style.setProperty("--p2-w",w+"px");padGrid.style.setProperty("--p2-l",Math.round(a-gap)+"px");padGrid.style.setProperty("--p2-m",Math.round(b-2*gap)+"px")}}
+   const hh=padRack.offsetHeight;let top=parseInt(padRack.style.top);if(!(top>0)){try{top=+localStorage.getItem("orb_pads_top")}catch(e){}}if(!(top>0))top=innerHeight-hh-10;
+   padRack.style.top=Math.max(56,Math.min(innerHeight-hh-6,top))+"px"});
  if(compact3)requestAnimationFrame(()=>{const l=padRack.querySelector(".ldx-w-pad-bank");if(l&&l.offsetParent){const r=l.getBoundingClientRect();document.documentElement.style.setProperty("--pads3-bank-bottom",Math.round(innerHeight-r.top-r.height/2-11)+"px")}});
  padGrid.querySelectorAll(".ldx-w-pad-spacer").forEach(n=>n.remove());if(padPage&&!padMatrix&&!padRack.classList.contains("ldx-live-compact"))for(let i=2;i<8;i++){const n=E("span",{class:"ldx-w-pad-spacer","aria-hidden":"true"},"—");n.style.gridColumn=String(i%4+1);n.style.gridRow=String(Math.floor(i/4)+2);padGrid.append(n)}
  updatePadActivity();}
