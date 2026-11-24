@@ -2098,6 +2098,8 @@ body.ldjx-open #play :is(.play-stroke-options svg,#pHeightGraph){height:clamp(22
 .ldjx .ldx-song-actions select{min-width:130px;max-width:100%;padding:8px;background:#0d171f;color:#d2e6ef;border:1px solid #3c525e;border-radius:7px}
 .ldjx .ldx-song-transport{padding:10px 0;border-top:1px solid #ffffff12;border-bottom:1px solid #ffffff12}
 .ldjx .ldx-song-play{background:#1da9b0;border-color:#49e9ef;color:#04191c;min-width:90px;font-weight:800}
+.ldjx .ldx-song-play.prep{background:#26313a!important;border-color:#3b4a55!important;color:#9fb0bb!important;box-shadow:none!important}
+.ldjx .ldx-song-play.lista{background:#2fd47a!important;border-color:#7dffb5!important;color:#032112!important;box-shadow:0 0 14px #3fe08a88!important}
 .ldjx .ldx-song-time{font:600 12px ui-monospace,monospace;color:#abceda}
 .ldjx .ldx-song-transport input{flex:1;min-width:120px;accent-color:#44e1e9}
 .ldjx .ldx-song-tracks{display:flex;flex-direction:column;gap:6px;max-height:45vh;overflow:auto}
@@ -27264,7 +27266,7 @@ const builtInSongs=[
 const db={p:null,open(){return this.p||(this.p=new Promise((resolve,reject)=>{const r=indexedDB.open("orbital_dj_canciones",1);r.onupgradeneeded=()=>r.result.createObjectStore("songs",{keyPath:"id"});r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)}))},async run(mode,fn){const d=await this.open();return new Promise((resolve,reject)=>{const tx=d.transaction("songs",mode),r=fn(tx.objectStore("songs"));tx.oncomplete=()=>resolve(r.result);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error)})}};
 function create(B){
  const K=LAB_DJ._k,E=K.E;
- let tracks=[],state="empty",offset=0,started=0,when=0,duration=0,generation=0,loadingToken=0,projectId=null,loading=false,loadAbort=null,scoreToken=0,scorePending=null;
+ let ready=false,tracks=[],state="empty",offset=0,started=0,when=0,duration=0,generation=0,loadingToken=0,projectId=null,loading=false,loadAbort=null,scoreToken=0,scorePending=null;
  let barCursor=0,playRequest=0;
  let title="Mi canción",saved=[],sourceChoice="",scrub=false,status="",lastPaint=0;
  const section=E("section",{class:"ldx-songs","aria-label":"Canciones por pistas"});
@@ -27307,7 +27309,7 @@ function create(B){
  function message(s){status=s;note.textContent=s}
  function barAt(time){return state==="playing"&&K.deck?K.deck.barAt(time):barCursor}
  function current(){if(state!=="playing")return offset;const d=K.deck,head=K.native&&tracks[0]?K.native.playhead(tracks[0].eng):null;if(head!=null)return clamp(head,0,duration);return clamp(offset+Math.max(0,(d?d.c.currentTime:started)-when),0,duration)}
- function paint(){section.classList.toggle("ldx-song-unloaded",!tracks.length);if(!scrub){progress.value=current();time.textContent=fmt(current())+" / "+fmt(duration)}play.textContent=loading?"Cargando…":state==="playing"?"Ⅱ Pausa":"▶ Play";progress.disabled=play.disabled=stop.disabled=save.disabled=loading||!tracks.length;fresh.disabled=loading||!tracks.length;add.disabled=library.disabled=loading;B.sync()}
+ function paint(){section.classList.toggle("ldx-song-unloaded",!tracks.length);if(!scrub){progress.value=current();time.textContent=fmt(current())+" / "+fmt(duration)}play.textContent=loading?"Cargando…":state==="playing"?"Ⅱ Pausa":tracks.length&&!ready?"Preparando…":"▶ Play";play.classList.toggle("lista",!loading&&ready&&tracks.length>0&&state!=="playing");play.classList.toggle("prep",!loading&&!ready&&tracks.length>0&&state!=="playing");progress.disabled=play.disabled=stop.disabled=save.disabled=loading||!tracks.length;fresh.disabled=loading||!tracks.length;add.disabled=library.disabled=loading;B.sync()}
  function settings(t){const group=t.groupKey&&members(t).every(o=>o.song)?t:{};return {automationFinal:!!t.automationFinal,name:t.name,vol:t.vol,mute:t.mute,solo:t.solo,mov:t.mov,pinned:t.pinned,role:t.role,rol:t.rol,trim:t.trim,hi:t.hi,mid:t.mid,low:t.low,filt:t.filt,br:t.br,rec:t.rec,ctl:t.ctl,groupKey:group.groupKey,groupName:group.groupName,groupLeader:group.groupLeader,groupOffset:group.groupOffset}}
  function classify(name){const n=name.toLowerCase();return /vox|voz|vocal|voice|coros/.test(n)?["lead","voces"]:/kick|bombo|drum|batería/.test(n)?["bombo","bombo"]:/bass|bajo|sub/.test(n)?["bajo","bajo"]:/perc|hat|ritmo/.test(n)?["perc","percusion"]:/pad|atmos|amb/.test(n)?["pads","pads"]:["lead","melodia"]}
  function makeTrack(data,i){const id="song_"+Date.now().toString(36)+"_"+i,role=classify(data.name),t=B.makeTrack(i,{id,eng:id,song:true,name:data.name,color:colors[i%colors.length],role:data.role||role[0],rol:data.rol||role[1],
@@ -27319,7 +27321,9 @@ function create(B){
  // al cargar otra canción, la anterior (ya en pausa) se suelta antes de decodificar la nueva: nunca hay dos canciones enteras en memoria
  function releaseForLoad(){if(!tracks.length)return;dispose();offset=duration=0;barCursor=0;state="empty";sourceChoice="";progress.max=0;progress.value=0;render();paint()}
  function cancelLoad(){if(typeof DJ_RAPIDO!=="undefined")DJ_RAPIDO.stop();if(!loading)return false;++loadingToken;try{loadAbort?.abort()}catch(_){}loadAbort=null;loading=false;library.value=sourceChoice;paint();message("");return true}
- function install(data,newTitle,id=null,{reveal=true,choice=id||""}={}){pause();dispose();title=newTitle||"Mi canción";titleInput.value=title;projectId=id;sourceChoice=choice;library.value=choice;offset=0;barCursor=0;duration=Math.max(...data.map(t=>t.buffer.duration));tracks=data.map(makeTrack);state="paused";
+ // 23 nov (Jorge): el Play se pone verde solo cuando todo está listo (IAH terminó de escuchar y el KU100 está cargado), así parte al instante
+ function warm(){ready=false;const my=tracks[0];paint();new Promise(r=>setTimeout(r,60)).then(async()=>{if(scorePending)await scorePending;if(K.kuPrepare&&tracks.length<16)await K.kuPrepare()}).catch(()=>{}).then(()=>{if(my&&tracks[0]===my){ready=true;paint()}})}
+ function install(data,newTitle,id=null,{reveal=true,choice=id||""}={}){ready=false;setTimeout(warm,0);pause();dispose();title=newTitle||"Mi canción";titleInput.value=title;projectId=id;sourceChoice=choice;library.value=choice;offset=0;barCursor=0;duration=Math.max(...data.map(t=>t.buffer.duration));tracks=data.map(makeTrack);state="paused";
   progress.max=duration;progress.value=0;render();if(tracks[0])B.select(tracks[0]);B.changed();if(reveal)B.show();message(tracks.length+" pistas listas · un solo Play · "+fmt(duration));paint()}
  async function decode(ab){const d=K.ensureLive();return d.c.decodeAudioData(ab)}
  async function importFiles(files){if(loading)return;if(files.length+tracks.length>36){message("Puedes cargar hasta 36 pistas por canción.");return}
